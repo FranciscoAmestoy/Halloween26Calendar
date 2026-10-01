@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>La Krypta del Cementerio Maldito - Calendario de Adviento Halloween</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@500;700;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-void: #040705;
+      --swamp-muck: #0b150e;
+      --stone-base: #1f2722;
+      --stone-border: #3b4a40;
+      --stone-highlight: #607567;
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.45);
+      --toxic-dim: rgba(57, 255, 20, 0.15);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --spectral-blue: #00e5ff;
+      --spectral-glow: rgba(0, 229, 255, 0.45);
+      --blood-red: #d90429;
+      --blood-glow: rgba(217, 4, 41, 0.5);
+      --parchment: #ece2ce;
+      --text-muted: #889c8f;
+      --chain-iron: #222925;
+      --gold-torch: #ffaa00;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-void);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(35, 60, 45, 0.4) 0%, transparent 70%),
+        radial-gradient(circle at 10% 40%, rgba(15, 30, 20, 0.5) 0%, transparent 50%),
+        radial-gradient(circle at 90% 60%, rgba(15, 30, 20, 0.5) 0%, transparent 50%),
+        linear-gradient(180deg, #040705 0%, #08110b 50%, #030504 100%);
+      background-attachment: fixed;
+    }
+
+    /* Ambient fog and vignetting */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.38;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.3) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 3;
+      box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.92);
+    }
+
+    /* Animated Fog Layers */
+    .fog-layer {
+      position: fixed;
+      bottom: 0;
+      left: -50%;
+      width: 200%;
+      height: 240px;
+      pointer-events: none;
+      z-index: 4;
+      background: radial-gradient(ellipse at 50% 100%, rgba(30, 60, 42, 0.28) 0%, transparent 75%);
+      animation: driftFog 28s infinite alternate ease-in-out;
+    }
+
+    @keyframes driftFog {
+      0% { transform: translateX(0); opacity: 0.3; }
+      100% { transform: translateX(15%); opacity: 0.55; }
+    }
+
+    /* Floating glowing embers */
+    .embers-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+      overflow: hidden;
+    }
+
+    .ember {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-green);
+      opacity: 0;
+      animation: floatEmber 8s infinite linear;
+    }
+
+    @keyframes floatEmber {
+      0% { transform: translateY(105vh) translateX(0) scale(0.6); opacity: 0; }
+      20% { opacity: 0.8; }
+      80% { opacity: 0.7; }
+      100% { transform: translateY(-5vh) translateX(40px) scale(1.2); opacity: 0; }
+    }
+
+    /* Torch flame pillars on side frames */
+    .torch-pillar {
+      position: fixed;
+      top: 35%;
+      width: 24px;
+      height: 160px;
+      z-index: 6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .torch-pillar.left { left: 16px; }
+    .torch-pillar.right { right: 16px; }
+
+    .torch-bracket {
+      width: 14px;
+      height: 80px;
+      background: linear-gradient(180deg, #1b201d 0%, #0d120f 100%);
+      border: 1px solid #334037;
+      border-radius: 4px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+      position: relative;
+    }
+
+    .torch-fire {
+      width: 18px;
+      height: 32px;
+      background: radial-gradient(circle at 50% 80%, #ffffff 0%, #ffea70 25%, #ff7518 65%, rgba(217,4,41,0.2) 100%);
+      border-radius: 50% 50% 20% 20% / 70% 70% 30% 30%;
+      box-shadow: 0 0 25px 8px rgba(255, 117, 24, 0.65), 0 0 45px 15px rgba(255, 170, 0, 0.35);
+      animation: flickerTorch 0.18s infinite alternate ease-in-out;
+      transform-origin: bottom center;
+    }
+
+    @keyframes flickerTorch {
+      0% { transform: scale(1) rotate(-1deg); filter: brightness(1); }
+      50% { transform: scale(1.08, 0.95) rotate(1deg); filter: brightness(1.15); }
+      100% { transform: scale(0.96, 1.05) rotate(-2deg); filter: brightness(0.9); }
+    }
+
+    @media (max-width: 900px) {
+      .torch-pillar { display: none; }
+    }
+
+    /* Main Container */
+    .krypt-wrapper {
+      position: relative;
+      z-index: 10;
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 16px 20px 60px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* Header Bar */
+    header {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .top-utility-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: rgba(14, 24, 18, 0.85);
+      border: 1px solid var(--stone-border);
+      padding: 8px 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.7);
+    }
+
+    .audio-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-spooky {
+      background: linear-gradient(180deg, #1b2920 0%, #111a14 100%);
+      border: 1px solid var(--stone-border);
+      color: var(--parchment);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.25s;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+    }
+
+    .btn-spooky:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+      box-shadow: 0 0 12px var(--toxic-glow);
+      transform: translateY(-1px);
+    }
+
+    .btn-spooky.active {
+      border-color: var(--toxic-green);
+      background: linear-gradient(180deg, #23402d 0%, #15271c 100%);
+      color: var(--toxic-green);
+    }
+
+    /* Season Status Badge */
+    .season-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--moon-gold);
+      background: rgba(20, 32, 24, 0.6);
+      border: 1px solid #283c2f;
+      padding: 6px 14px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Admin Oracle Box (Revealed with 🔑) */
+    .date-sim-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .date-sim-box label {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--moon-gold);
+    }
+
+    .date-select {
+      background: #0f1c13;
+      border: 1px solid var(--stone-border);
+      color: var(--pumpkin-orange);
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 6px 12px;
+      border-radius: 6px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .date-select:hover, .date-select:focus {
+      border-color: var(--pumpkin-orange);
+      box-shadow: 0 0 8px var(--pumpkin-glow);
+    }
+
+    /* Title Banner (Krypt Style) */
+    .krypt-title-card {
+      text-align: center;
+      position: relative;
+      margin-top: 6px;
+    }
+
+    .krypt-sub {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(0.75rem, 2vw, 0.95rem);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .krypt-title {
+      font-family: 'Creepster', cursive;
+      font-size: clamp(2.5rem, 7vw, 4.4rem);
+      letter-spacing: 4px;
+      color: var(--pumpkin-orange);
+      text-shadow: 
+        0 0 20px var(--pumpkin-glow),
+        2px 3px 0px #000,
+        -1px -1px 0px #220b00;
+      line-height: 1;
+    }
+
+    .krypt-quote {
+      font-family: 'MedievalSharp', cursive;
+      font-size: clamp(0.85rem, 2.5vw, 1.05rem);
+      color: #9cb8a6;
+      max-width: 650px;
+      margin: 6px auto 0;
+      line-height: 1.4;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    /* Krypt Legend Bar */
+    .krypt-legend {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      background: rgba(10, 18, 13, 0.7);
+      border: 1px solid rgba(59, 74, 64, 0.5);
+      border-radius: 30px;
+      padding: 6px 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.current {
+      background: var(--toxic-green);
+      box-shadow: 0 0 10px var(--toxic-green);
+      animation: pulseDot 1s infinite alternate;
+    }
+
+    .legend-dot.unlocked {
+      background: var(--pumpkin-orange);
+      box-shadow: 0 0 8px var(--pumpkin-orange);
+    }
+
+    .legend-dot.locked {
+      background: #505c54;
+      border: 1px solid #232a25;
+    }
+
+    @keyframes pulseDot {
+      0% { transform: scale(0.9); opacity: 0.7; }
+      100% { transform: scale(1.3); opacity: 1; }
+    }
+
+    /* ==========================================================================
+       CEMETERY GRID & TOMBSTONES (KRYPT ARCHITECTURE)
+       ========================================================================== */
+    .cemetery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 20px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 650px) {
+      .cemetery-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .cemetery-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Special centering for Tombstone 31 (Halloween Grand Finale) */
+    .cemetery-grid > .tombstone.tomb-day-31,
+    .cemetery-grid > .tombstone:last-child {
+      grid-column: 1 / -1;
+      justify-self: center;
+      width: 100%;
+      max-width: 240px;
+    }
+
+    /* Individual Gravestone (Lápida) */
+    .tombstone {
+      position: relative;
+      background: linear-gradient(180deg, #27332b 0%, #1a221d 60%, #101612 100%);
+      border: 2px solid var(--stone-border);
+      border-radius: 65px 65px 8px 8px; /* Classic gothic tombstone arch */
+      padding: 24px 12px 14px 12px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      box-shadow: 
+        0 10px 25px rgba(0, 0, 0, 0.8),
+        inset 0 2px 4px rgba(255, 255, 255, 0.08),
+        inset 0 -8px 15px rgba(0, 0, 0, 0.7);
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                  box-shadow 0.25s ease, 
+                  border-color 0.25s ease;
+      overflow: hidden;
+    }
+
+    /* Stone cracked texture overlay */
+    .tombstone::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.15;
+      background-image: radial-gradient(#607567 1px, transparent 1px);
+      background-size: 8px 8px;
+    }
+
+    /* Roman numeral engraved watermark */
+    .tomb-roman-watermark {
+      position: absolute;
+      top: 38px;
+      font-family: 'Cinzel', serif;
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: rgba(255, 255, 255, 0.035);
+      letter-spacing: 2px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Hover effect */
+    .tombstone:hover {
+      transform: translateY(-8px) scale(1.03);
+      box-shadow: 0 16px 35px rgba(0, 0, 0, 0.9);
+      border-color: var(--stone-highlight);
+    }
+
+    /* STATE 1: CURRENT DAY (ILUMINADA / SPECTRAL GLOW) */
+    .tombstone.is-current {
+      border-color: var(--toxic-green);
+      box-shadow: 
+        0 0 24px var(--toxic-glow),
+        0 12px 30px rgba(0, 0, 0, 0.9),
+        inset 0 0 18px var(--toxic-dim);
+      animation: tombstoneGlowPulse 2s infinite alternate ease-in-out;
+    }
+
+    @keyframes tombstoneGlowPulse {
+      0% { 
+        border-color: #39ff14; 
+        box-shadow: 0 0 20px var(--toxic-glow), 0 12px 30px rgba(0,0,0,0.9); 
+      }
+      50% {
+        border-color: #ffaa00;
+        box-shadow: 0 0 32px var(--pumpkin-glow), 0 12px 30px rgba(0,0,0,0.9);
+      }
+      100% { 
+        border-color: #39ff14; 
+        box-shadow: 0 0 22px var(--toxic-glow), 0 12px 30px rgba(0,0,0,0.9); 
+      }
+    }
+
+    .tombstone.is-current::after {
+      content: "";
+      position: absolute;
+      top: -30px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--toxic-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* STATE 2: UNLOCKED / PAST DAYS */
+    .tombstone.is-unlocked {
+      border-color: #4b6353;
+    }
+
+    .tombstone.is-unlocked:hover {
+      border-color: var(--pumpkin-orange);
+      box-shadow: 0 0 20px var(--pumpkin-glow), 0 14px 30px rgba(0,0,0,0.9);
+    }
+
+    /* STATE 3: LOCKED / FUTURE DAYS */
+    .tombstone.is-locked {
+      opacity: 0.62;
+      filter: grayscale(0.5);
+      background: linear-gradient(180deg, #18201b 0%, #111713 100%);
+      border-color: #27312a;
+      cursor: not-allowed;
+    }
+
+    .tombstone.is-locked:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+      border-color: #3a453d;
+    }
+
+    /* Chains overlay for locked tombstones */
+    .locked-chains-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .chain-icon {
+      font-size: 2.2rem;
+      color: #9fa8a2;
+      filter: drop-shadow(0 3px 6px #000);
+      opacity: 0.85;
+    }
+
+    /* Day Number on Stone */
+    .tomb-day-header {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .tomb-day-num {
+      font-family: 'Cinzel', serif;
+      font-size: 2.3rem;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--parchment);
+      text-shadow: 2px 2px 4px #000, 0 0 10px rgba(0,0,0,0.8);
+      letter-spacing: 1px;
+    }
+
+    .tombstone.is-current .tomb-day-num {
+      color: #fff;
+      text-shadow: 0 0 14px var(--toxic-green), 2px 2px 2px #000;
+    }
+
+    .tomb-day-label {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* Tombstone Cross / Emblem */
+    .tomb-emblem {
+      position: relative;
+      z-index: 2;
+      font-size: 1.4rem;
+      opacity: 0.75;
+      margin: 6px 0;
+    }
+
+    .tombstone.is-current .tomb-emblem {
+      opacity: 1;
+      filter: drop-shadow(0 0 8px var(--toxic-green));
+      animation: flameWobble 1.5s infinite alternate ease-in-out;
+    }
+
+    @keyframes flameWobble {
+      0% { transform: scale(1) rotate(-3deg); }
+      100% { transform: scale(1.15) rotate(3deg); }
+    }
+
+    /* Tomb Game Title */
+    .tomb-game-info {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .tomb-game-title {
+      font-family: 'Cinzel', serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--parchment);
+      line-height: 1.25;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tombstone.is-current .tomb-game-title {
+      color: var(--toxic-green);
+      text-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    /* Status Badge on tomb bottom */
+    .tomb-status-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 4px;
+    }
+
+    .tombstone.is-current .tomb-status-badge {
+      background: rgba(57, 255, 20, 0.2);
+      border-color: var(--toxic-green);
+      color: #6eff50;
+      box-shadow: 0 0 10px var(--toxic-dim);
+    }
+
+    .tombstone.is-unlocked .tomb-status-badge {
+      background: rgba(255, 117, 24, 0.15);
+      border-color: var(--pumpkin-orange);
+      color: #ffa161;
+    }
+
+    .tombstone.is-locked .tomb-status-badge {
+      color: #7d8b83;
+      border-color: #3b453e;
+    }
+
+    /* ==========================================================================
+       KRYPT INSPECTION MODAL (CLIC EN LÁPIDA)
+       ========================================================================== */
+    .krypt-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 7, 5, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .krypt-modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .krypt-modal-chamber {
+      background: linear-gradient(180deg, #1b261f 0%, #0d1510 100%);
+      border: 2px solid var(--stone-border);
+      border-radius: 18px;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.95), 0 0 25px rgba(57, 255, 20, 0.2);
+      width: 100%;
+      max-width: 540px;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      transform: scale(0.92);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .krypt-modal-backdrop.active .krypt-modal-chamber {
+      transform: scale(1);
+    }
+
+    .btn-close-chamber {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--stone-border);
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-close-chamber:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+    }
+
+    .chamber-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chamber-day-tag {
+      font-family: 'Cinzel', serif;
+      font-size: 0.82rem;
+      letter-spacing: 3px;
+      color: var(--pumpkin-orange);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .chamber-title {
+      font-family: 'Creepster', cursive;
+      font-size: clamp(2rem, 5vw, 2.7rem);
+      color: var(--parchment);
+      letter-spacing: 2px;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+      line-height: 1.1;
+    }
+
+    .chamber-mechanic-badge {
+      display: inline-block;
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 12px;
+      border-radius: 16px;
+      background: rgba(0, 229, 255, 0.12);
+      border: 1px solid var(--spectral-blue);
+      color: var(--spectral-blue);
+      margin-top: 4px;
+    }
+
+    .chamber-lore-card {
+      background: rgba(10, 18, 13, 0.65);
+      border: 1px dashed var(--stone-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .lore-heading {
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .lore-text {
+      font-family: 'MedievalSharp', cursive;
+      font-size: 1.05rem;
+      line-height: 1.45;
+      color: #dce7e0;
+    }
+
+    .chamber-status-box {
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chamber-status-box.unlocked {
+      background: rgba(57, 255, 20, 0.1);
+      border: 1px solid var(--toxic-green);
+      color: #9eff8a;
+    }
+
+    .chamber-status-box.locked {
+      background: rgba(217, 4, 41, 0.12);
+      border: 1px solid var(--blood-red);
+      color: #ffa1ad;
+    }
+
+    .btn-enter-curse {
+      background: linear-gradient(180deg, #324a3a 0%, #1c2b21 100%);
+      border: 1px solid var(--stone-border);
+      color: var(--text-muted);
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      font-weight: 800;
+      padding: 14px 20px;
+      border-radius: 10px;
+      cursor: not-allowed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+
+    .btn-enter-curse.ready {
+      background: linear-gradient(180deg, var(--pumpkin-orange) 0%, #b84d07 100%);
+      border: none;
+      color: #000;
+      cursor: pointer;
+      box-shadow: 0 4px 18px var(--pumpkin-glow);
+    }
+
+    .btn-enter-curse.ready:hover {
+      filter: brightness(1.15);
+      transform: translateY(-2px);
+    }
+
+    /* Subtle Toast for Feedback */
+    .spooky-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(14, 26, 18, 0.94);
+      border: 1px solid var(--toxic-green);
+      box-shadow: 0 4px 20px var(--toxic-glow);
+      color: var(--parchment);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      z-index: 200;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .spooky-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient FX Layers -->
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay"></div>
+  <div class="fog-layer"></div>
+  <div class="embers-container" id="embersContainer"></div>
+
+  <!-- Left & Right Krypt Torch Pillars -->
+  <div class="torch-pillar left">
+    <div class="torch-fire"></div>
+    <div class="torch-bracket"></div>
+  </div>
+  <div class="torch-pillar right">
+    <div class="torch-fire"></div>
+    <div class="torch-bracket"></div>
+  </div>
+
+  <!-- Main Krypt Wrapper -->
+  <div class="krypt-wrapper">
+
+    <!-- Top Controls Header -->
+    <header>
+      <div class="top-utility-bar">
+        <!-- Audio Toggles & Admin Key -->
+        <div class="audio-controls">
+          <button class="btn-spooky" id="ambientToggleBtn" title="Música / Ambiente (audio/ambient.mp3)">
+            <span id="ambientIcon">🔇</span> <span id="ambientLabel">Ambiente OFF</span>
+          </button>
+          <button class="btn-spooky active" id="sfxToggleBtn" title="Efectos de sonido (audio/hover.mp3 & audio/click.mp3)">
+            <span id="sfxIcon">🔊</span> <span id="sfxLabel">SFX ON</span>
+          </button>
+          <button class="btn-spooky" id="adminKeyBtn" title="Llave Arcana (Admin)">
+            <span>🔑</span>
+          </button>
+        </div>
+
+        <!-- Season Status Badge -->
+        <div class="season-badge" id="seasonBadge">
+          <span id="seasonBadgeText">⏳ Sellada hasta el 1 de Octubre</span>
+        </div>
+
+        <!-- Admin Oracle Box (Revealed with 🔑) -->
+        <div class="date-sim-box" id="adminOracleBox" style="display: none;">
+          <label for="dateSimulatorSelect">🔮 Oráculo:</label>
+          <select class="date-select" id="dateSimulatorSelect">
+            <option value="real">📅 Fecha Real</option>
+            <!-- Generated dynamically 1 to 31 -->
+          </select>
+        </div>
+      </div>
+
+      <!-- Krypt Title Banner -->
+      <div class="krypt-title-card">
+        <div class="krypt-sub">31 Días de Terror • Calendario de Adviento</div>
+        <h1 class="krypt-title">LA KRYPTA DEL CEMENTERIO</h1>
+        <p class="krypt-quote">
+          "31 lápidas milenarias custodian los maleficios del inframundo. Cada noche de octubre se quiebra un nuevo sello. Profana las tumbas liberadas bajo tu propio riesgo..."
+        </p>
+      </div>
+
+      <!-- Legend -->
+      <div class="krypt-legend">
+        <div class="legend-item">
+          <div class="legend-dot current"></div>
+          <span>Día Actual (Iluminada)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot unlocked"></div>
+          <span>Días Anteriores (Rejugables)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot locked"></div>
+          <span>Días Futuros (Sellados)</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 31 Tombstones Grid -->
+    <main class="cemetery-grid" id="cemeteryGrid">
+      <!-- Injected dynamically by JavaScript -->
+    </main>
+  </div>
+
+  <!-- KRYPT INSPECTION CHAMBER MODAL -->
+  <div class="krypt-modal-backdrop" id="kryptModal">
+    <div class="krypt-modal-chamber">
+      <button class="btn-close-chamber" id="closeModalBtn" title="Cerrar cámara">✕</button>
+
+      <div class="chamber-header">
+        <span class="chamber-day-tag" id="modalDayTag">DÍA 01 • I</span>
+        <h2 class="chamber-title" id="modalGameTitle">El Ojo del Nigromante</h2>
+        <span class="chamber-mechanic-badge" id="modalMechanic">Simon Says</span>
+      </div>
+
+      <div class="chamber-lore-card">
+        <span class="lore-heading">Inscripción en la losa de piedra:</span>
+        <p class="lore-text" id="modalLoreText">
+          "Repite las runas que brillan en el pentagrama antes de que la oscuridad te ciegue para siempre."
+        </p>
+      </div>
+
+      <div class="chamber-status-box unlocked" id="modalStatusBox">
+        <span id="modalStatusIcon">🔓</span>
+        <span id="modalStatusText">Maleficio accesible para jugar y rejugar.</span>
+      </div>
+
+      <!-- Action Button (In Phase 1: Clean preview feedback without breaking) -->
+      <button class="btn-enter-curse" id="enterCurseBtn">
+        ⏳ Maleficio sellado (Fase 1 de Prueba)
+      </button>
+    </div>
+  </div>
+
+  <!-- ADMIN KEY MODAL -->
+  <div class="krypt-modal-backdrop" id="adminModal">
+    <div class="krypt-modal-chamber" style="max-width: 400px; text-align: center; align-items: center;">
+      <button class="btn-close-chamber" id="closeAdminModalBtn" title="Cerrar">✕</button>
+
+      <div style="font-size: 2.8rem; filter: drop-shadow(0 0 10px var(--moon-glow));">🗝️</div>
+      <h2 style="font-family: 'Cinzel', serif; color: var(--moon-gold); font-size: 1.4rem; letter-spacing: 2px;">CERRADURA ARCANA</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
+        Introduce la combinación sagrada para desbloquear la <strong>Visión del Oráculo</strong> y alterar el flujo temporal del cementerio.
+      </p>
+
+      <input type="password" id="adminCodeInput" placeholder="••••" maxlength="8" autocomplete="off" style="width: 100%; padding: 12px 16px; background: #070e09; border: 1px solid var(--stone-border); border-radius: 8px; color: var(--pumpkin-orange); font-family: 'Cinzel', serif; font-size: 1.4rem; text-align: center; letter-spacing: 8px; outline: none; transition: all 0.2s;" />
+
+      <div id="adminErrorMsg" style="display: none; color: var(--blood-red); font-size: 0.8rem; font-weight: 700;">⛔ Combinación incorrecta. El sello permanece cerrado.</div>
+
+      <button class="btn-enter-curse ready" id="btnSubmitAdmin" style="width: 100%;">
+        🗝️ Abrir Oráculo
+      </button>
+    </div>
+  </div>
+
+  <!-- Spooky Toast Notification -->
+  <div class="spooky-toast" id="spookyToast">Lápida profanada...</div>
+
+  <script>
+    /* ==========================================================================
+       CATALOG OF THE 31 HALLOWEEN GAMES (DATA & LORE)
+       ========================================================================== */
+    const TOMBSTONES_DATA = [
+      { day: 1,  roman: "I",     emblem: "👁️", title: "El Ojo del Nigromante", mechanic: "Simon Says / Memoria", lore: "Repite el compás de las runas que se encienden en el pentagrama antes de que la oscuridad eterna te ciegue." },
+      { day: 2,  roman: "II",    emblem: "🦇", title: "Cripta de las Bestias", mechanic: "Whack-a-Mole", lore: "Golpea a los murciélagos y demonios saliendo de los ataúdes; cuida de no quebrar las calabazas sagradas." },
+      { day: 3,  roman: "III",   emblem: "💀", title: "Almas en Fila", mechanic: "4 en Raya (Connect 4)", lore: "Alinea 4 cráneos espectrales en la reja del mausoleo antes de que la gárgola enemiga bloquee tu camino." },
+      { day: 4,  roman: "IV",    emblem: "🧱", title: "Poción de Baba", mechanic: "Tetris / Caída de bloques", lore: "Encaja ataúdes y huesos para despejar las catacumbas antes de que el lodo ácido inunde el recinto." },
+      { day: 5,  roman: "V",     emblem: "🔮", title: "Burbujas del Caldero", mechanic: "Puzzle Bobble", lore: "Dispara globos oculares para juntar 3 del mismo color y purificar el caldero de la bruja." },
+      { day: 6,  roman: "VI",    emblem: "👻", title: "Escape del Laberinto", mechanic: "Pac-Man Clásico", lore: "Guía a un ánima en pena devorando orbes de ectoplasma mientras huyes de cazadores de ultratumba." },
+      { day: 7,  roman: "VII",   emblem: "🃏", title: "Parejas Malditas", mechanic: "Memory Card Flip", lore: "Encuentra los pares de cartas de tarot gótico antes de que el último grano del reloj de arena descienda." },
+      { day: 8,  roman: "VIII",  emblem: "⚰️", title: "Cazador de Sombras", mechanic: "Buscaminas (Minesweeper)", lore: "Desentierra lápidas detectando las almas atormentadas sin detonar su cólera subterránea." },
+      { day: 9,  roman: "IX",    emblem: "🦇", title: "Flappy Bat", mechanic: "Flappy Bird", lore: "Guía al murciélago vampírico entre guillotinas oxidadas y estalagmitas venenosas de la caverna." },
+      { day: 10, roman: "X",     emblem: "🦴", title: "Torre de Cráneos", mechanic: "Tower Stacker", lore: "Apila calaveras balanceadas con precisión milimétrica para levantar el monolito más alto del abismo." },
+      { day: 11, roman: "XI",    emblem: "💎", title: "Rune Match 3", mechanic: "Match-3 Clásico", lore: "Intercambia gemas de azufre, dientes de vampiro y ojos arcanos para desatar destructivas cascadas mágicas." },
+      { day: 12, roman: "XII",   emblem: "🧟", title: "Cruce del Río Estigia", mechanic: "Frogger", lore: "Ayuda al caminante no-muerto a cruzar el río de almas saltando sobre ataúdes flotantes y garras podridas." },
+      { day: 13, roman: "XIII",  emblem: "🧗", title: "El Salto de la Gárgola", mechanic: "Doodle Jump", lore: "Rebota sobre telarañas y plataformas movedizas ascendiendo hacia el campanario en ruinas." },
+      { day: 14, roman: "XIV",   emblem: "✨", title: "2048: Cráneos Arcanos", mechanic: "2048 Puzzle", lore: "Fusiona calaveras menores de igual jerarquía hasta invocar al Gran Señor del Averno." },
+      { day: 15, roman: "XV",    emblem: "🎯", title: "Tiro a la Bruja", mechanic: "Duck Hunt (Tiro al blanco)", lore: "Puntería veloz: derriba brujas en escoba y cuervos espectrales que cruzan la luna llena." },
+      { day: 16, roman: "XVI",   emblem: "🧩", title: "Desliza la Tumba", mechanic: "15-Puzzle (Sliding Tile)", lore: "Reordena las losas de piedra profanadas del sepulcro antes del tañido de la medianoche." },
+      { day: 17, roman: "XVII",  emblem: "🪓", title: "El Péndulo de la Muerte", mechanic: "Timber / Lumberjack", lore: "Tala el roble milenario maldito saltando a izquierda y derecha para esquivar las guadañas que caen." },
+      { day: 18, roman: "XVIII", emblem: "🩸", title: "Pinball de Nosferatu", mechanic: "Pinball Clásico", lore: "Rebota la bola de plata consagrada en el sarcófago de Drácula impulsada por gárgolas mecánicas." },
+      { day: 19, roman: "XIX",   emblem: "🕯️", title: "El Espejo de las Ánimas", mechanic: "Lights Out", lore: "Apaga todas las velas malditas del altar; ten cuidado, pues cada flama altera las velas circundantes." },
+      { day: 20, roman: "XX",    emblem: "⚔️", title: "Corta las Raíces", mechanic: "Fruit Ninja", lore: "Rebana calabazas flotantes y ojos arcanos con tu filo espiritual evitando los frascos de veneno." },
+      { day: 21, roman: "XXI",   emblem: "🏰", title: "Defensa del Bastión", mechanic: "Tower Defense Mini", lore: "Coloca estacas benditas y gárgolas de piedra para contener a las hordas de esqueletos andantes." },
+      { day: 22, roman: "XXII",  emblem: "📜", title: "Criptograma del Demonio", mechanic: "Cryptogram Puzzle", lore: "Decodifica el mensaje en latín antiguo sustituyendo los glifos oscuros por las letras verdaderas." },
+      { day: 23, roman: "XXIII", emblem: "🏓", title: "Duelo Espectral", mechanic: "Pong / Air Hockey", lore: "Desvía las bolas de fuego azul contra el espectro rival utilizando tu lápida como escudo." },
+      { day: 24, roman: "XXIV",  emblem: "🕳️", title: "El Descenso al Abismo", mechanic: "Downwell", lore: "Déjate caer por una fosa sin fondo esquivando pinchos y ánimas voraces que intentan atraparte." },
+      { day: 25, roman: "XXV",   emblem: "☄️", title: "Catapulta de Huesos", mechanic: "Angry Birds / Artillería", lore: "Ajusta la trayectoria y fuerza para pulverizar fortalezas de esqueletos usando calabazas ígneas." },
+      { day: 26, roman: "XXVI",  emblem: "🏃", title: "Pesadilla Eterna", mechanic: "Endless Runner", lore: "Corre por el cementerio saltando cruces derruidas y cuervos carroñeros en una huida desesperada." },
+      { day: 27, roman: "XXVII", emblem: "🪢", title: "El Ahorcado del Pantano", mechanic: "Hangman (Arenas movedizas)", lore: "Adivina la palabra del maleficio en 60 segundos antes de que las arenas movedizas te devoren." },
+      { day: 28, roman: "XXVIII",emblem: "🏎️", title: "Autopista del Averno", mechanic: "Vertical 2D Racing", lore: "Conduce por el sendero tenebroso esquivando carruajes fúnebres y llamaradas del inframundo." },
+      { day: 29, roman: "XXIX",  emblem: "👾", title: "Invasión de Ultratumba", mechanic: "Space Invaders", lore: "Dispara relámpagos benditos contra las legiones de murciélagos y demonios que descienden en formación." },
+      { day: 30, roman: "XXX",   emblem: "🐍", title: "Ciempiés de Sangre", mechanic: "Snake Clásico", lore: "Guía a la sierpe maldita a devorar almas errantes; cada bocado incrementa su colosal tamaño." },
+      { day: 31, roman: "XXXI",  emblem: "🎃", title: "Rompe-Catacumbas (Gran Final)", mechanic: "Arkanoid / Breakout", lore: "Noche de Brujas: Destruye los sellos de piedra del sarcófago mayor para el exorcismo final." }
+    ];
+
+    /* ==========================================================================
+       HYBRID AUDIO ENGINE: MP3 FILES WITH PROCEDURAL WEB AUDIO FALLBACK
+       ========================================================================== */
+    class KryptAudioController {
+      constructor() {
+        this.ambientAudio = new Audio('audio/ambient.mp3');
+        this.ambientAudio.loop = true;
+        this.hoverAudio = new Audio('audio/hover.mp3');
+        this.clickAudio = new Audio('audio/click.mp3');
+
+        this.ambientEnabled = false;
+        this.sfxEnabled = true;
+        this.webAudioCtx = null;
+        this.ambientOsc = null;
+        this.ambientGain = null;
+      }
+
+      initWebAudio() {
+        if (!this.webAudioCtx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.webAudioCtx = new AudioContext();
+          }
+        }
+        if (this.webAudioCtx && this.webAudioCtx.state === 'suspended') {
+          this.webAudioCtx.resume();
+        }
+      }
+
+      toggleAmbient() {
+        this.ambientEnabled = !this.ambientEnabled;
+        this.initWebAudio();
+
+        if (this.ambientEnabled) {
+          // Attempt playing custom MP3 first
+          const playPromise = this.ambientAudio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              // Fallback to Web Audio procedural ambient drone
+              this.startProceduralAmbient();
+            });
+          }
+        } else {
+          this.ambientAudio.pause();
+          this.stopProceduralAmbient();
+        }
+        return this.ambientEnabled;
+      }
+
+      startProceduralAmbient() {
+        if (!this.webAudioCtx) return;
+        this.stopProceduralAmbient();
+
+        // Low atmospheric cemetery wind drone
+        this.ambientOsc = this.webAudioCtx.createOscillator();
+        this.ambientGain = this.webAudioCtx.createGain();
+
+        this.ambientOsc.type = 'sine';
+        this.ambientOsc.frequency.setValueAtTime(55, this.webAudioCtx.currentTime); // Low A1
+
+        // Slow subtle LFO modulation for wind effect
+        const lfo = this.webAudioCtx.createOscillator();
+        const lfoGain = this.webAudioCtx.createGain();
+        lfo.frequency.setValueAtTime(0.2, this.webAudioCtx.currentTime);
+        lfoGain.gain.setValueAtTime(10, this.webAudioCtx.currentTime);
+        lfo.connect(this.ambientOsc.frequency);
+        lfo.start();
+
+        this.ambientGain.gain.setValueAtTime(0.08, this.webAudioCtx.currentTime);
+        this.ambientOsc.connect(this.ambientGain);
+        this.ambientGain.connect(this.webAudioCtx.destination);
+        this.ambientOsc.start();
+      }
+
+      stopProceduralAmbient() {
+        if (this.ambientOsc) {
+          try { this.ambientOsc.stop(); } catch(e){}
+          this.ambientOsc = null;
+        }
+      }
+
+      playHover() {
+        if (!this.sfxEnabled) return;
+        this.initWebAudio();
+
+        // Try mp3 first
+        this.hoverAudio.currentTime = 0;
+        const playPromise = this.hoverAudio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // Procedural hover: ethereal stone resonance whisper
+            if (!this.webAudioCtx) return;
+            const osc = this.webAudioCtx.createOscillator();
+            const gain = this.webAudioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(320, this.webAudioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(160, this.webAudioCtx.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.12, this.webAudioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.001, this.webAudioCtx.currentTime + 0.12);
+            osc.connect(gain);
+            gain.connect(this.webAudioCtx.destination);
+            osc.start();
+            osc.stop(this.webAudioCtx.currentTime + 0.12);
+          });
+        }
+      }
+
+      playClick() {
+        if (!this.sfxEnabled) return;
+        this.initWebAudio();
+
+        // Try mp3 first
+        this.clickAudio.currentTime = 0;
+        const playPromise = this.clickAudio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // Procedural click: Heavy crypt stone tomb thud
+            if (!this.webAudioCtx) return;
+            const osc = this.webAudioCtx.createOscillator();
+            const gain = this.webAudioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(95, this.webAudioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(30, this.webAudioCtx.currentTime + 0.28);
+            gain.gain.setValueAtTime(0.3, this.webAudioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.001, this.webAudioCtx.currentTime + 0.28);
+            osc.connect(gain);
+            gain.connect(this.webAudioCtx.destination);
+            osc.start();
+            osc.stop(this.webAudioCtx.currentTime + 0.28);
+          });
+        }
+      }
+
+      playSecretChime() {
+        if (!this.sfxEnabled) return;
+        this.initWebAudio();
+        if (!this.webAudioCtx) return;
+        const now = this.webAudioCtx.currentTime;
+        const notes = [330, 415.3, 493.88, 659.25]; // E major mystic chord
+        notes.forEach((freq, idx) => {
+          const osc = this.webAudioCtx.createOscillator();
+          const gain = this.webAudioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.18, now + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+          osc.connect(gain);
+          gain.connect(this.webAudioCtx.destination);
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.35);
+        });
+      }
+    }
+
+    const sound = new KryptAudioController();
+
+    /* ==========================================================================
+       DATE LOGIC & OBFUSCATED MASTER KEY (ADMIN DEBUG MODE)
+       ========================================================================== */
+    function getTodayOctoberDay() {
+      const now = new Date();
+      const month = now.getMonth(); // 0 = Jan ... 8 = Sep, 9 = Oct, 10 = Nov
+      const date = now.getDate();
+
+      // If before October (e.g. September 30): 0 days unlocked yet (all 31 sealed!)
+      if (month < 9) {
+        return 0;
+      }
+      // If October: unlocks strictly day-by-day based on current date (1 to 31)
+      if (month === 9) {
+        return Math.min(31, Math.max(1, date));
+      }
+      // If after October (November onwards): all 31 days unlocked for replay
+      return 31;
+    }
+
+    const currentOctoberDay = getTodayOctoberDay();
+    let activeSimulatedDay = null; // null = use real production date
+
+    // Update Season Badge
+    const seasonBadgeText = document.getElementById('seasonBadgeText');
+    const nowDate = new Date();
+    if (nowDate.getMonth() < 9) {
+      seasonBadgeText.textContent = "⏳ Sellada hasta el 1 de Octubre";
+    } else if (nowDate.getMonth() === 9) {
+      seasonBadgeText.textContent = `🔥 ${nowDate.getDate()} de Octubre • Maleficio Activo`;
+    } else {
+      seasonBadgeText.textContent = "🎃 Archivo del Inframundo • 31 Criptas";
+    }
+
+    /* --- Obfuscated Key Verification (Code: 3726) --- */
+    const _0x9f = [0x54, 0x50, 0x55, 0x51];
+    function _verifyOracleKey(str) {
+      if (typeof str !== 'string' || str.length !== 4) return false;
+      try {
+        if (btoa(str) !== 'MzcyNg==') return false;
+        for (let i = 0; i < 4; i++) {
+          if ((str.charCodeAt(i) ^ 0x67) !== _0x9f[i]) return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    /* --- Admin Oracle Controller --- */
+    const adminKeyBtn = document.getElementById('adminKeyBtn');
+    const adminOracleBox = document.getElementById('adminOracleBox');
+    const adminModal = document.getElementById('adminModal');
+    const closeAdminModalBtn = document.getElementById('closeAdminModalBtn');
+    const adminCodeInput = document.getElementById('adminCodeInput');
+    const btnSubmitAdmin = document.getElementById('btnSubmitAdmin');
+    const adminErrorMsg = document.getElementById('adminErrorMsg');
+    const dateSelect = document.getElementById('dateSimulatorSelect');
+
+    let isAdminUnlocked = false;
+
+    function populateOracleOptions() {
+      if (dateSelect.options.length > 1) return;
+      for (let d = 1; d <= 31; d++) {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = `Día ${d} de Octubre ${d === 31 ? '🎃 (Halloween!)' : ''}`;
+        dateSelect.appendChild(opt);
+      }
+    }
+
+    function enableAdminOracle() {
+      isAdminUnlocked = true;
+      adminKeyBtn.classList.add('active');
+      adminKeyBtn.innerHTML = '<span>🗝️</span>';
+      adminKeyBtn.title = 'Modo Oráculo Activado (Admin)';
+      adminOracleBox.style.display = 'flex';
+      populateOracleOptions();
+      sessionStorage.setItem('krypt_admin_active', 'true');
+    }
+
+    // Restore if session was already authenticated
+    if (sessionStorage.getItem('krypt_admin_active') === 'true') {
+      enableAdminOracle();
+    }
+
+    adminKeyBtn.addEventListener('click', () => {
+      sound.playClick();
+      if (isAdminUnlocked) {
+        showToast("🔮 Modo Oráculo ya activo en la barra superior.");
+        return;
+      }
+      adminErrorMsg.style.display = 'none';
+      adminCodeInput.value = '';
+      adminModal.classList.add('active');
+      setTimeout(() => adminCodeInput.focus(), 150);
+    });
+
+    closeAdminModalBtn.addEventListener('click', () => {
+      sound.playClick();
+      adminModal.classList.remove('active');
+    });
+
+    adminModal.addEventListener('click', (e) => {
+      if (e.target === adminModal) {
+        sound.playClick();
+        adminModal.classList.remove('active');
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && adminModal.classList.contains('active')) {
+        adminModal.classList.remove('active');
+      }
+    });
+
+    function tryUnlockAdmin() {
+      const val = adminCodeInput.value.trim();
+      if (_verifyOracleKey(val)) {
+        sound.playSecretChime();
+        adminModal.classList.remove('active');
+        enableAdminOracle();
+        showToast("🗝️ ¡Visión del Oráculo Desbloqueada! Acceso de depuración concedido.");
+      } else {
+        sound.playClick();
+        adminErrorMsg.style.display = 'block';
+        adminCodeInput.style.borderColor = 'var(--blood-red)';
+        setTimeout(() => {
+          adminCodeInput.style.borderColor = 'var(--stone-border)';
+        }, 1200);
+      }
+    }
+
+    btnSubmitAdmin.addEventListener('click', tryUnlockAdmin);
+    adminCodeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') tryUnlockAdmin();
+    });
+
+    dateSelect.addEventListener('change', (e) => {
+      sound.playClick();
+      if (e.target.value === 'real') {
+        activeSimulatedDay = null;
+        showToast("🔮 Oráculo: Restaurado a fecha real.");
+      } else {
+        activeSimulatedDay = parseInt(e.target.value, 10);
+        showToast(`🔮 Tiempo alterado: Simulando Día ${activeSimulatedDay} de Octubre.`);
+      }
+      renderCemeteryGrid();
+    });
+
+    /* ==========================================================================
+       GRID RENDERING & TOMBSTONE LOGIC
+       ========================================================================== */
+    const cemeteryGrid = document.getElementById('cemeteryGrid');
+
+    function renderCemeteryGrid() {
+      cemeteryGrid.innerHTML = '';
+      const effectiveDay = (activeSimulatedDay !== null) ? activeSimulatedDay : currentOctoberDay;
+
+      TOMBSTONES_DATA.forEach(tomb => {
+        const isCurrent = (tomb.day === effectiveDay);
+        const isUnlocked = (tomb.day < effectiveDay);
+        const isLocked = (tomb.day > effectiveDay);
+
+        const card = document.createElement('article');
+        card.className = `tombstone ${isCurrent ? 'is-current' : (isUnlocked ? 'is-unlocked' : 'is-locked')}${tomb.day === 31 ? ' tomb-day-31' : ''}`;
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', `Día ${tomb.day}: ${tomb.title}`);
+
+        let statusText = "Desbloqueado";
+        if (isCurrent) statusText = "⚡ ¡Día Actual!";
+        if (isLocked) statusText = "🔒 Sellado";
+        if (tomb.day === 1 && localStorage.getItem('krypt_day_01_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 2 && localStorage.getItem('krypt_day_02_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 3 && localStorage.getItem('krypt_day_03_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 4 && localStorage.getItem('krypt_day_04_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 5 && localStorage.getItem('krypt_day_05_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 6 && localStorage.getItem('krypt_day_06_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 7 && localStorage.getItem('krypt_day_07_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 8 && localStorage.getItem('krypt_day_08_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 9 && localStorage.getItem('krypt_day_09_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 10 && localStorage.getItem('krypt_day_10_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 11 && localStorage.getItem('krypt_day_11_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 12 && localStorage.getItem('krypt_day_12_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 13 && localStorage.getItem('krypt_day_13_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 14 && localStorage.getItem('krypt_day_14_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 15 && localStorage.getItem('krypt_day_15_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 16 && localStorage.getItem('krypt_day_16_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 17 && localStorage.getItem('krypt_day_17_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 18 && localStorage.getItem('krypt_day_18_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 19 && localStorage.getItem('krypt_day_19_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 20 && localStorage.getItem('krypt_day_20_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 21 && localStorage.getItem('krypt_day_21_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 22 && localStorage.getItem('krypt_day_22_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 23 && localStorage.getItem('krypt_day_23_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 24 && localStorage.getItem('krypt_day_24_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 25 && localStorage.getItem('krypt_day_25_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+
+        card.innerHTML = `
+          <div class="tomb-roman-watermark">${tomb.roman}</div>
+
+          ${isLocked ? `
+            <div class="locked-chains-overlay">
+              <span class="chain-icon">⛓️</span>
+            </div>
+          ` : ''}
+
+          <div class="tomb-day-header">
+            <span class="tomb-day-label">Día</span>
+            <span class="tomb-day-num">${String(tomb.day).padStart(2, '0')}</span>
+          </div>
+
+          <div class="tomb-emblem">
+            ${isCurrent ? '🔥' : tomb.emblem}
+          </div>
+
+          <div class="tomb-game-info">
+            <div class="tomb-game-title">${tomb.title}</div>
+            <div class="tomb-status-badge">${statusText}</div>
+          </div>
+        `;
+
+        // Audio Hover
+        card.addEventListener('mouseenter', () => {
+          sound.playHover();
+        });
+
+        // Click Handler: Inspection Modal in Phase 1
+        card.addEventListener('click', () => {
+          sound.playClick();
+          openTombstoneInspection(tomb, isCurrent, isUnlocked, isLocked);
+        });
+
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            card.click();
+          }
+        });
+
+        cemeteryGrid.appendChild(card);
+      });
+    }
+
+    /* ==========================================================================
+       MODAL INSPECTION (CLIC EN LÁPIDA)
+       ========================================================================= */
+    const kryptModal = document.getElementById('kryptModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const modalDayTag = document.getElementById('modalDayTag');
+    const modalGameTitle = document.getElementById('modalGameTitle');
+    const modalMechanic = document.getElementById('modalMechanic');
+    const modalLoreText = document.getElementById('modalLoreText');
+    const modalStatusBox = document.getElementById('modalStatusBox');
+    const modalStatusIcon = document.getElementById('modalStatusIcon');
+    const modalStatusText = document.getElementById('modalStatusText');
+    const enterCurseBtn = document.getElementById('enterCurseBtn');
+    let currentlySelectedTomb = null;
+
+    function openTombstoneInspection(tomb, isCurrent, isUnlocked, isLocked) {
+      currentlySelectedTomb = { tomb, isLocked };
+      modalDayTag.textContent = `DÍA ${String(tomb.day).padStart(2, '0')} • ${tomb.roman}`;
+      modalGameTitle.textContent = tomb.title;
+      modalMechanic.textContent = `Mecánica: ${tomb.mechanic}`;
+      modalLoreText.textContent = `"${tomb.lore}"`;
+
+      modalStatusBox.className = 'chamber-status-box';
+      if (isLocked) {
+        modalStatusBox.classList.add('locked');
+        modalStatusIcon.textContent = '🔒';
+        modalStatusText.textContent = `Este maleficio yace sellado bajo pesadas cadenas. Se revelará el ${tomb.day} de octubre.`;
+        enterCurseBtn.className = 'btn-enter-curse';
+        enterCurseBtn.textContent = '⛔ Tumba sellada por el momento';
+      } else {
+        modalStatusBox.classList.add('unlocked');
+        modalStatusIcon.textContent = isCurrent ? '🔥' : '🔓';
+        modalStatusText.textContent = isCurrent 
+          ? '¡La cripta del día de hoy está abierta! Puedes jugar ahora o rejugarla cuando quieras.' 
+          : 'Cripta del pasado profanada. Disponible para jugar o rejugar.';
+        enterCurseBtn.className = 'btn-enter-curse ready';
+
+        if (tomb.day === 1) {
+          enterCurseBtn.textContent = '👁️ Entrar al Maleficio: El Ojo del Nigromante';
+        } else if (tomb.day === 2) {
+          enterCurseBtn.textContent = '⚔️ Entrar al Maleficio: Cripta de las Bestias';
+        } else if (tomb.day === 3) {
+          enterCurseBtn.textContent = '💀 Entrar al Maleficio: Almas en Fila';
+        } else if (tomb.day === 4) {
+          enterCurseBtn.textContent = '🧪 Entrar al Maleficio: Poción de Baba';
+        } else if (tomb.day === 5) {
+          enterCurseBtn.textContent = '🔮 Entrar al Maleficio: Burbujas del Caldero';
+        } else if (tomb.day === 6) {
+          enterCurseBtn.textContent = '👻 Entrar al Maleficio: Escape del Laberinto';
+        } else if (tomb.day === 7) {
+          enterCurseBtn.textContent = '🃏 Entrar al Maleficio: Parejas Malditas';
+        } else if (tomb.day === 8) {
+          enterCurseBtn.textContent = '⚰️ Entrar al Maleficio: Cazador de Sombras';
+        } else if (tomb.day === 9) {
+          enterCurseBtn.textContent = '🦇 Entrar al Maleficio: Flappy Bat';
+        } else if (tomb.day === 10) {
+          enterCurseBtn.textContent = '🦴 Entrar al Maleficio: Torre de Cráneos';
+        } else if (tomb.day === 11) {
+          enterCurseBtn.textContent = '💎 Entrar al Maleficio: Rune Match 3';
+        } else if (tomb.day === 12) {
+          enterCurseBtn.textContent = '🧟 Entrar al Maleficio: Cruce del Río Estigia';
+        } else if (tomb.day === 13) {
+          enterCurseBtn.textContent = '🧗 Entrar al Maleficio: El Salto de la Gárgola';
+        } else if (tomb.day === 14) {
+          enterCurseBtn.textContent = '✨ Entrar al Maleficio: 2048: Cráneos Arcanos';
+        } else if (tomb.day === 15) {
+          enterCurseBtn.textContent = '🎯 Entrar al Maleficio: Tiro a la Bruja';
+        } else if (tomb.day === 16) {
+          enterCurseBtn.textContent = '🧩 Entrar al Maleficio: Desliza la Tumba';
+        } else if (tomb.day === 17) {
+          enterCurseBtn.textContent = '🪓 Entrar al Maleficio: El Péndulo de la Muerte';
+        } else if (tomb.day === 18) {
+          enterCurseBtn.textContent = '🧛‍♂️ Entrar al Maleficio: Pinball de Nosferatu';
+        } else if (tomb.day === 19) {
+          enterCurseBtn.textContent = '🕯️ Entrar al Maleficio: El Espejo de las Ánimas';
+        } else if (tomb.day === 20) {
+          enterCurseBtn.textContent = '⚔️ Entrar al Maleficio: Corta las Raíces';
+        } else if (tomb.day === 21) {
+          enterCurseBtn.textContent = '🏰 Entrar al Maleficio: Defensa del Bastión';
+        } else if (tomb.day === 22) {
+          enterCurseBtn.textContent = '📜 Entrar al Maleficio: Criptograma del Demonio';
+        } else if (tomb.day === 23) {
+          enterCurseBtn.textContent = '🏓 Entrar al Maleficio: Duelo Espectral';
+        } else if (tomb.day === 24) {
+          enterCurseBtn.textContent = '🕳️ Entrar al Maleficio: El Descenso al Abismo';
+        } else if (tomb.day === 25) {
+          enterCurseBtn.textContent = '☄️ Entrar al Maleficio: Catapulta de Huesos';
+        } else {
+          enterCurseBtn.textContent = isCurrent ? '⚡ Iniciar Maleficio (Fase de Pruebas)' : '🔄 Rejugar Maleficio (Fase de Pruebas)';
+        }
+      }
+
+      kryptModal.classList.add('active');
+    }
+
+    function closeModal() {
+      sound.playClick();
+      kryptModal.classList.remove('active');
+    }
+
+    closeModalBtn.addEventListener('click', closeModal);
+
+    kryptModal.addEventListener('click', (e) => {
+      if (e.target === kryptModal) closeModal();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && kryptModal.classList.contains('active')) {
+        closeModal();
+      }
+    });
+
+    enterCurseBtn.addEventListener('click', () => {
+      sound.playClick();
+      if (!currentlySelectedTomb || currentlySelectedTomb.isLocked) return;
+
+      if (currentlySelectedTomb.tomb.day === 1) {
+        window.location.href = 'games/dia-01/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 2) {
+        window.location.href = 'games/dia-02/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 3) {
+        window.location.href = 'games/dia-03/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 4) {
+        window.location.href = 'games/dia-04/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 5) {
+        window.location.href = 'games/dia-05/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 6) {
+        window.location.href = 'games/dia-06/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 7) {
+        window.location.href = 'games/dia-07/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 8) {
+        window.location.href = 'games/dia-08/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 9) {
+        window.location.href = 'games/dia-09/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 10) {
+        window.location.href = 'games/dia-10/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 11) {
+        window.location.href = 'games/dia-11/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 12) {
+        window.location.href = 'games/dia-12/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 13) {
+        window.location.href = 'games/dia-13/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 14) {
+        window.location.href = 'games/dia-14/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 15) {
+        window.location.href = 'games/dia-15/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 16) {
+        window.location.href = 'games/dia-16/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 17) {
+        window.location.href = 'games/dia-17/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 18) {
+        window.location.href = 'games/dia-18/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 19) {
+        window.location.href = 'games/dia-19/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 20) {
+        window.location.href = 'games/dia-20/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 21) {
+        window.location.href = 'games/dia-21/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 22) {
+        window.location.href = 'games/dia-22/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 23) {
+        window.location.href = 'games/dia-23/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 24) {
+        window.location.href = 'games/dia-24/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 25) {
+        window.location.href = 'games/dia-25/index.html';
+      } else {
+        showToast("💀 Lápida examinada. En la siguiente fase aquí cargará este juego.");
+      }
+    });
+
+    /* ==========================================================================
+       UTILITIES: TOAST & FLOATING PARTICLES
+       ========================================================================== */
+    const toast = document.getElementById('spookyToast');
+    let toastTimeout = null;
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2600);
+    }
+
+    /* Ambient Audio Button */
+    const ambientBtn = document.getElementById('ambientToggleBtn');
+    const ambientIcon = document.getElementById('ambientIcon');
+    const ambientLabel = document.getElementById('ambientLabel');
+
+    ambientBtn.addEventListener('click', () => {
+      const isOn = sound.toggleAmbient();
+      if (isOn) {
+        ambientBtn.classList.add('active');
+        ambientIcon.textContent = '🔊';
+        ambientLabel.textContent = 'Ambiente ON';
+        showToast("🎵 Sonido ambiental activado.");
+      } else {
+        ambientBtn.classList.remove('active');
+        ambientIcon.textContent = '🔇';
+        ambientLabel.textContent = 'Ambiente OFF';
+        showToast("🔇 Sonido ambiental silenciado.");
+      }
+    });
+
+    /* SFX Button */
+    const sfxBtn = document.getElementById('sfxToggleBtn');
+    const sfxIcon = document.getElementById('sfxIcon');
+    const sfxLabel = document.getElementById('sfxLabel');
+
+    sfxBtn.addEventListener('click', () => {
+      sound.sfxEnabled = !sound.sfxEnabled;
+      if (sound.sfxEnabled) {
+        sound.initWebAudio();
+        sfxBtn.classList.add('active');
+        sfxIcon.textContent = '🔊';
+        sfxLabel.textContent = 'SFX ON';
+        sound.playClick();
+        showToast("🔊 Efectos de sonido activados.");
+      } else {
+        sfxBtn.classList.remove('active');
+        sfxIcon.textContent = '🔇';
+        sfxLabel.textContent = 'SFX OFF';
+        showToast("🔇 Efectos de sonido desactivados.");
+      }
+    });
+
+    /* Generate floating embers */
+    const embersContainer = document.getElementById('embersContainer');
+    for (let i = 0; i < 22; i++) {
+      const ember = document.createElement('div');
+      ember.className = 'ember';
+      ember.style.left = `${Math.random() * 100}%`;
+      ember.style.animationDelay = `${Math.random() * 8}s`;
+      ember.style.animationDuration = `${6 + Math.random() * 6}s`;
+      if (Math.random() > 0.6) {
+        ember.style.background = 'var(--pumpkin-orange)';
+        ember.style.boxShadow = '0 0 8px var(--pumpkin-orange)';
+      }
+      embersContainer.appendChild(ember);
+    }
+
+    /* Initial Render */
+    renderCemeteryGrid();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 05: Burbujas del Caldero - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #060907;
+      --board-border: #2e4435;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --witch-purple: #c042ff;
+      --spectral-blue: #00e5ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(35, 60, 45, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 85%, rgba(15, 28, 20, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 16px 12px;
+    }
+
+    /* Ambient fog and scanlines */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.35;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+    }
+
+    /* Main Container */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 540px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .nav-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-nav {
+      background: rgba(17, 26, 20, 0.85);
+      border: 1px solid var(--board-border);
+      color: var(--parchment);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-nav:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+      box-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .day-subtitle {
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      letter-spacing: 3px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .title-banner {
+      font-family: 'Creepster', cursive;
+      font-size: clamp(2rem, 6vw, 2.7rem);
+      letter-spacing: 3px;
+      color: var(--witch-purple);
+      text-shadow: 0 0 16px var(--witch-purple), 2px 2px 0px #000;
+      text-align: center;
+      line-height: 1;
+    }
+
+    /* HUD Bar: Bubbles left & Score */
+    .hud-bar {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      background: rgba(17, 26, 20, 0.9);
+      border: 1px solid var(--board-border);
+      border-radius: 12px;
+      padding: 8px 16px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hud-stat.right {
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .hud-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .hud-val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--parchment);
+    }
+
+    .hud-val.target {
+      color: var(--toxic-green);
+      text-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    /* Instructions Banner */
+    .status-banner {
+      width: 100%;
+      text-align: center;
+      background: rgba(8, 14, 10, 0.7);
+      border: 1px dashed var(--board-border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-family: 'MedievalSharp', cursive;
+      font-size: 0.9rem;
+      color: #b7cbbf;
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .status-banner strong {
+      color: var(--toxic-green);
+    }
+
+    /* ==========================================================================
+       CAULDRON ARENA (BUBBLE SHOOTER CANVAS)
+       ========================================================================== */
+    .cauldron-arena {
+      position: relative;
+      background: #040805;
+      border: 3px solid var(--board-border);
+      border-radius: 14px;
+      box-shadow: 
+        0 12px 30px rgba(0, 0, 0, 0.9), 
+        inset 0 0 25px rgba(0, 0, 0, 0.8),
+        0 0 15px rgba(192, 66, 255, 0.2);
+      overflow: hidden;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    #bubbleCanvas {
+      display: block;
+    }
+
+    /* Controls bar at bottom */
+    .controls-strip {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .btn-spooky-action {
+      background: linear-gradient(180deg, var(--pumpkin-orange) 0%, #b84d07 100%);
+      border: none;
+      color: #000;
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 900;
+      padding: 8px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px var(--pumpkin-glow);
+      transition: all 0.2s;
+    }
+
+    .btn-spooky-action:hover {
+      filter: brightness(1.15);
+      transform: translateY(-2px);
+    }
+
+    /* Mobile Aim Guidance note */
+    .mobile-tip {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* ==========================================================================
+       MODALS: VICTORY & DEFEAT
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 8, 6, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(180deg, #15241b 0%, #0a130e 100%);
+      border: 2px solid var(--board-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.95);
+      transform: scale(0.92);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-align: center;
+    }
+
+    .modal-backdrop.active .modal-box {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: clamp(2.2rem, 6vw, 2.8rem);
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .modal-title.victory {
+      color: var(--toxic-green);
+      text-shadow: 0 0 16px var(--toxic-glow);
+    }
+
+    .modal-title.defeat {
+      color: var(--blood-red);
+      text-shadow: 0 0 16px rgba(255, 42, 75, 0.6);
+    }
+
+    .word-box-outer {
+      background: rgba(8, 14, 10, 0.75);
+      border: 2px dashed var(--toxic-green);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .word-box-label {
+      font-size: 0.72rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    .secret-word-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.8rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: var(--toxic-green);
+      text-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .discord-btn-box {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-discord-copy {
+      background: #5865f2;
+      border: none;
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(88, 101, 242, 0.5);
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-discord-copy:hover {
+      background: #4752c4;
+      transform: translateY(-2px);
+    }
+
+    .btn-discord-copy.copied {
+      background: #3ba55c;
+    }
+
+    .btn-krypt-return {
+      background: rgba(20, 32, 24, 0.8);
+      border: 1px solid var(--board-border);
+      color: var(--parchment);
+      font-family: 'Cinzel', serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-krypt-return:hover {
+      border-color: var(--pumpkin-orange);
+      color: var(--pumpkin-orange);
+    }
+
+    /* Toast */
+    .spooky-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(14, 26, 18, 0.95);
+      border: 1px solid var(--toxic-green);
+      box-shadow: 0 4px 20px var(--toxic-glow);
+      color: var(--parchment);
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      z-index: 200;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .spooky-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay"></div>
+
+  <div class="game-shell">
+    <!-- Header -->
+    <header>
+      <div class="nav-bar">
+        <a href="../../index.html" class="btn-nav" title="Regresar al cementerio">
+          🏛️ Volver a la Krypta
+        </a>
+        <button class="btn-nav" id="soundToggleBtn">
+          🔊 Audio
+        </button>
+      </div>
+      <span class="day-subtitle">DÍA 05 • LA KRYPTA</span>
+      <h1 class="title-banner">BURBUJAS DEL CALDERO</h1>
+    </header>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <!-- Target: Clear all ceiling bubbles -->
+      <div class="hud-stat">
+        <span class="hud-label">Burbujas en Bóveda</span>
+        <span class="hud-val target" id="bubblesLeftDisplay">0 restantes</span>
+      </div>
+      <!-- Score -->
+      <div class="hud-stat right">
+        <span class="hud-label">Puntaje</span>
+        <span class="hud-val" id="scoreDisplay">0</span>
+      </div>
+    </div>
+
+    <!-- Status / Aim Instructions -->
+    <div class="status-banner" id="statusBanner">
+      Apunta y dispara para juntar <strong>3 o más orbes iguales</strong> y reventar la poción.
+    </div>
+
+    <!-- The Cauldron Canvas (320x460) -->
+    <div class="cauldron-arena">
+      <canvas id="bubbleCanvas" width="320" height="460"></canvas>
+    </div>
+
+    <!-- Mobile Aim Tip & Reset Strip -->
+    <div class="controls-strip">
+      <span class="mobile-tip">🎯 Desliza o haz clic para apuntar y soltar para disparar.</span>
+      <button class="btn-spooky-action" id="resetBtn">
+        🔄 Reiniciar
+      </button>
+    </div>
+  </div>
+
+  <!-- VICTORY MODAL -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box">
+      <h2 class="modal-title victory">¡CALDERO PURIFICADO!</h2>
+      <p style="font-size:0.9rem; color:var(--parchment); line-height: 1.4;">
+        Has reventado todos los orbes de la bóveda y disuelto el maleficio de la bruja.
+      </p>
+
+      <div class="word-box-outer">
+        <span class="word-box-label">Palabra Clave Secreta del Día 05:</span>
+        <div class="secret-word-display" id="secretWordDisplay">CALDERO-DE-OJOS</div>
+        <p style="font-size:0.75rem; color:var(--text-muted);">
+          Envía este código en Discord para registrar tu victoria del día.
+        </p>
+      </div>
+
+      <div class="discord-btn-box">
+        <!-- COPIAR PARA DISCORD CON SPOILERS "||" -->
+        <button class="btn-discord-copy" id="copyDiscordBtn" onclick="copyDiscordMessage()">
+          📋 Copiar para Discord
+        </button>
+        <a href="../../index.html" class="btn-krypt-return">
+          🏛️ Volver a la Krypta
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEFEAT MODAL -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box">
+      <h2 class="modal-title defeat">DESBORDE DE LA POCIÓN</h2>
+      <p style="font-size:0.9rem; color:var(--parchment); line-height: 1.4;">
+        Los orbes alcanzaron el límite del caldero y el brebaje hirviente te atrapó.
+      </p>
+      <div style="font-size: 2.2rem; margin: 4px 0;">🔮</div>
+      <button class="btn-spooky-action" style="width:100%; justify-content:center;" onclick="restartGame()">
+        🔄 Intentar el Disparo de Nuevo
+      </button>
+      <a href="../../index.html" class="btn-krypt-return" style="margin-top:4px;">
+        🏛️ Volver a la Krypta
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="spooky-toast" id="toast">Copiado al portapapeles</div>
+
+  <script>
+    /* ==========================================================================
+       SYNTHESIZER SOUND ENGINE (WEB AUDIO API)
+       ========================================================================== */
+    class BubbleAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playShoot() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.12);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+
+      playBounce() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(450, now);
+        osc.frequency.exponentialRampToValueAtTime(250, now + 0.05);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      }
+
+      playPop() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(840, now + 0.12);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.14);
+      }
+
+      playDropCluster() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [380, 320, 260, 200];
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.05);
+          gain.gain.setValueAtTime(0.18, now + i * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.18);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.05);
+          osc.stop(now + i * 0.05 + 0.18);
+        });
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
+        notes.forEach((freq, i) => {
+          const now = this.ctx.currentTime + (i * 0.12);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.6);
+        });
+      }
+
+      playLoss() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.9);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.9);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.9);
+      }
+    }
+
+    const sound = new BubbleAudio();
+
+    /* ==========================================================================
+       PUZZLE BOBBLE HEX GRID ENGINE
+       ========================================================================== */
+    const canvas = document.getElementById('bubbleCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const BUBBLE_RADIUS = 18;
+    const BUBBLE_DIAMETER = BUBBLE_RADIUS * 2;
+    const ROW_HEIGHT = Math.floor(BUBBLE_RADIUS * Math.sqrt(3)); // ~31px
+    const MAX_ROWS = 11;
+    const COLS_EVEN = 8;
+    const COLS_ODD = 7;
+    const DEADLINE_Y = 380; // If bubbles reach here: loss
+    const CANNON_X = canvas.width / 2;
+    const CANNON_Y = 425;
+    const SECRET_WORD = "CALDERO-DE-OJOS";
+
+    // 5 Arcane Colors with Emojis / Glyphs
+    const BUBBLE_TYPES = [
+      { id: 0, color: '#ff2a4b', glow: 'rgba(255, 42, 75, 0.6)', icon: '🩸' },   // Red Blood Eye
+      { id: 1, color: '#39ff14', glow: 'rgba(57, 255, 20, 0.6)', icon: '🌿' },   // Toxic Green Slime
+      { id: 2, color: '#c042ff', glow: 'rgba(192, 66, 255, 0.6)', icon: '🔮' },  // Purple Nether Orb
+      { id: 3, color: '#ffaa00', glow: 'rgba(255, 170, 0, 0.6)', icon: '🔥' },   // Orange Sulfur
+      { id: 4, color: '#00e5ff', glow: 'rgba(0, 229, 255, 0.6)', icon: '💧' }    // Spectral Blue Tear
+    ];
+
+    let grid = [];
+    let currentShooterBubble = null;
+    let nextShooterBubble = null;
+    let flyingBubble = null;
+    let aimAngle = -Math.PI / 2; // Straight up
+    let isAiming = false;
+
+    let score = 0;
+    let isGameRunning = true;
+    let isGameOver = false;
+
+    // DOM Elements
+    const bubblesLeftDisplay = document.getElementById('bubblesLeftDisplay');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    /* Initialize Hex Grid with 4 starter rows */
+    function initGrid() {
+      grid = [];
+      const initialFilledRows = 4;
+
+      for (let r = 0; r < MAX_ROWS; r++) {
+        const colsInRow = (r % 2 === 0) ? COLS_EVEN : COLS_ODD;
+        const rowArr = [];
+        for (let c = 0; c < colsInRow; c++) {
+          if (r < initialFilledRows) {
+            // Fill with random bubble type
+            const randType = Math.floor(Math.random() * BUBBLE_TYPES.length);
+            rowArr.push(randType);
+          } else {
+            rowArr.push(-1); // Empty slot
+          }
+        }
+        grid.push(rowArr);
+      }
+    }
+
+    function getBubbleCoords(r, c) {
+      const isOdd = (r % 2 === 1);
+      const xOffset = isOdd ? (BUBBLE_RADIUS + BUBBLE_RADIUS) : BUBBLE_RADIUS;
+      const x = xOffset + (c * BUBBLE_DIAMETER);
+      const y = BUBBLE_RADIUS + 4 + (r * ROW_HEIGHT);
+      return { x, y };
+    }
+
+    /* Get Active Colors present in the grid to only generate matching shooter bubbles */
+    function getPresentColors() {
+      const set = new Set();
+      grid.forEach(row => {
+        row.forEach(val => {
+          if (val !== -1) set.add(val);
+        });
+      });
+      return Array.from(set);
+    }
+
+    function getRandomColorFromGrid() {
+      const present = getPresentColors();
+      if (present.length === 0) return 0;
+      return present[Math.floor(Math.random() * present.length)];
+    }
+
+    /* Start / Reset Game */
+    function startNewGame() {
+      initGrid();
+      score = 0;
+      isGameOver = false;
+      isGameRunning = true;
+      flyingBubble = null;
+      aimAngle = -Math.PI / 2;
+
+      currentShooterBubble = getRandomColorFromGrid();
+      nextShooterBubble = getRandomColorFromGrid();
+
+      updateHUD();
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+    }
+
+    function restartGame() {
+      startNewGame();
+    }
+
+    resetBtn.addEventListener('click', startNewGame);
+
+    /* Main Canvas Drawing Loop */
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Draw Ceiling Stone Border
+      ctx.fillStyle = '#17271e';
+      ctx.fillRect(0, 0, canvas.width, 6);
+
+      // 2. Draw Danger Deadline
+      ctx.strokeStyle = 'rgba(255, 42, 75, 0.4)';
+      ctx.setLineDash([6, 6]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, DEADLINE_Y);
+      ctx.lineTo(canvas.width, DEADLINE_Y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 3. Draw Grid Bubbles
+      for (let r = 0; r < MAX_ROWS; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+          const typeId = grid[r][c];
+          if (typeId !== -1) {
+            const { x, y } = getBubbleCoords(r, c);
+            drawSingleBubble(x, y, typeId);
+          }
+        }
+      }
+
+      // 4. Draw Flying Bubble (if shot)
+      if (flyingBubble) {
+        drawSingleBubble(flyingBubble.x, flyingBubble.y, flyingBubble.type);
+      }
+
+      // 5. Draw Aiming Line (when aiming or stationary)
+      if (!flyingBubble && isGameRunning && !isGameOver) {
+        drawAimTrajectory();
+      }
+
+      // 6. Draw Cauldron & Cannon Base
+      drawCauldronBase();
+
+      requestAnimationFrame(draw);
+    }
+
+    function drawSingleBubble(x, y, typeId) {
+      const bType = BUBBLE_TYPES[typeId] || BUBBLE_TYPES[0];
+
+      ctx.save();
+      // Outer Glow
+      ctx.shadowColor = bType.glow;
+      ctx.shadowBlur = 10;
+
+      // Radial Sphere Gradient
+      const grad = ctx.createRadialGradient(x - 5, y - 5, 2, x, y, BUBBLE_RADIUS);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.35, bType.color);
+      grad.addColorStop(1, '#081109');
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, BUBBLE_RADIUS - 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner Icon Glyph
+      ctx.shadowBlur = 0;
+      ctx.font = '13px Montserrat';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(bType.icon, x, y + 1);
+
+      ctx.restore();
+    }
+
+    function drawCauldronBase() {
+      // Iron Cauldron pot at bottom center
+      ctx.save();
+      ctx.fillStyle = '#101c15';
+      ctx.strokeStyle = '#2e4435';
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+      ctx.arc(CANNON_X, CANNON_Y + 12, 34, Math.PI, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Green witch cauldron brew glow
+      ctx.fillStyle = '#39ff14';
+      ctx.shadowColor = 'rgba(57, 255, 20, 0.8)';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.ellipse(CANNON_X, CANNON_Y + 12, 28, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Ready Bubble on Cannon
+      if (currentShooterBubble !== null && !flyingBubble && !isGameOver) {
+        drawSingleBubble(CANNON_X, CANNON_Y - 4, currentShooterBubble);
+      }
+
+      // Next Bubble Preview (Left side of cauldron)
+      if (nextShooterBubble !== null && !isGameOver) {
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.font = '9px Cinzel';
+        ctx.fillText('SIG:', 26, CANNON_Y - 14);
+        drawSingleBubble(28, CANNON_Y + 8, nextShooterBubble);
+      }
+    }
+
+    /* Trajectory Aiming Line with Wall Bounce */
+    function drawAimTrajectory() {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(57, 255, 20, 0.45)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 6]);
+
+      let curX = CANNON_X;
+      let curY = CANNON_Y - 4;
+      let vx = Math.cos(aimAngle);
+      let vy = Math.sin(aimAngle);
+
+      ctx.beginPath();
+      ctx.moveTo(curX, curY);
+
+      // Trace line bouncing off side walls
+      let maxDist = 380;
+      let traveled = 0;
+
+      while (traveled < maxDist && curY > 30) {
+        curX += vx * 12;
+        curY += vy * 12;
+        traveled += 12;
+
+        if (curX <= BUBBLE_RADIUS) {
+          curX = BUBBLE_RADIUS;
+          vx = -vx;
+          ctx.lineTo(curX, curY);
+        } else if (curX >= canvas.width - BUBBLE_RADIUS) {
+          curX = canvas.width - BUBBLE_RADIUS;
+          vx = -vx;
+          ctx.lineTo(curX, curY);
+        }
+      }
+
+      ctx.lineTo(curX, curY);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    /* Shooting & Flying Physics Loop */
+    function shootBubble() {
+      if (flyingBubble || !isGameRunning || isGameOver) return;
+
+      sound.init();
+      sound.playShoot();
+
+      const speed = 15;
+      flyingBubble = {
+        x: CANNON_X,
+        y: CANNON_Y - 4,
+        vx: Math.cos(aimAngle) * speed,
+        vy: Math.sin(aimAngle) * speed,
+        type: currentShooterBubble
+      };
+
+      currentShooterBubble = nextShooterBubble;
+      nextShooterBubble = getRandomColorFromGrid();
+
+      // Launch physics step
+      stepFlyingBubble();
+    }
+
+    function stepFlyingBubble() {
+      if (!flyingBubble) return;
+
+      flyingBubble.x += flyingBubble.vx;
+      flyingBubble.y += flyingBubble.vy;
+
+      // Wall bounce
+      if (flyingBubble.x <= BUBBLE_RADIUS) {
+        flyingBubble.x = BUBBLE_RADIUS;
+        flyingBubble.vx = -flyingBubble.vx;
+        sound.playBounce();
+      } else if (flyingBubble.x >= canvas.width - BUBBLE_RADIUS) {
+        flyingBubble.x = canvas.width - BUBBLE_RADIUS;
+        flyingBubble.vx = -flyingBubble.vx;
+        sound.playBounce();
+      }
+
+      // Ceiling collision
+      if (flyingBubble.y <= BUBBLE_RADIUS + 4) {
+        snapFlyingBubbleToGrid();
+        return;
+      }
+
+      // Check collision with existing bubbles
+      if (checkBubbleCollision(flyingBubble.x, flyingBubble.y)) {
+        snapFlyingBubbleToGrid();
+        return;
+      }
+
+      requestAnimationFrame(stepFlyingBubble);
+    }
+
+    function checkBubbleCollision(x, y) {
+      for (let r = 0; r < MAX_ROWS; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+          if (grid[r][c] !== -1) {
+            const coords = getBubbleCoords(r, c);
+            const dist = Math.hypot(x - coords.x, y - coords.y);
+            if (dist < BUBBLE_DIAMETER - 4) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    /* Snap shot bubble into closest available hex slot */
+    function snapFlyingBubbleToGrid() {
+      if (!flyingBubble) return;
+
+      let closestR = 0;
+      let closestC = 0;
+      let minDist = 999999;
+
+      for (let r = 0; r < MAX_ROWS; r++) {
+        const cols = (r % 2 === 0) ? COLS_EVEN : COLS_ODD;
+        for (let c = 0; c < cols; c++) {
+          if (grid[r][c] === -1) {
+            const coords = getBubbleCoords(r, c);
+            const dist = Math.hypot(flyingBubble.x - coords.x, flyingBubble.y - coords.y);
+            if (dist < minDist) {
+              minDist = dist;
+              closestR = r;
+              closestC = c;
+            }
+          }
+        }
+      }
+
+      grid[closestR][closestC] = flyingBubble.type;
+      const landedType = flyingBubble.type;
+      flyingBubble = null;
+
+      // Handle matching
+      handleMatches(closestR, closestC, landedType);
+    }
+
+    /* Hexagonal Neighbors Helper */
+    function getNeighbors(r, c) {
+      const neighbors = [];
+      const isOdd = (r % 2 === 1);
+
+      const deltas = isOdd ? [
+        { dr: 0, dc: -1 }, { dr: 0, dc: 1 },
+        { dr: -1, dc: 0 }, { dr: -1, dc: 1 },
+        { dr: 1, dc: 0 },  { dr: 1, dc: 1 }
+      ] : [
+        { dr: 0, dc: -1 }, { dr: 0, dc: 1 },
+        { dr: -1, dc: -1 }, { dr: -1, dc: 0 },
+        { dr: 1, dc: -1 },  { dr: 1, dc: 0 }
+      ];
+
+      deltas.forEach(({ dr, dc }) => {
+        const nr = r + dr;
+        const nc = c + dc;
+        if (nr >= 0 && nr < MAX_ROWS) {
+          const maxCols = (nr % 2 === 0) ? COLS_EVEN : COLS_ODD;
+          if (nc >= 0 && nc < maxCols) {
+            neighbors.push({ r: nr, c: nc });
+          }
+        }
+      });
+
+      return neighbors;
+    }
+
+    /* Match 3+ BFS flood fill */
+    function handleMatches(startR, startC, targetType) {
+      const matched = [];
+      const visited = new Set();
+      const queue = [{ r: startR, c: startC }];
+      visited.add(`${startR},${startC}`);
+
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        matched.push(curr);
+
+        const nbrs = getNeighbors(curr.r, curr.c);
+        nbrs.forEach(({ r, c }) => {
+          const key = `${r},${c}`;
+          if (!visited.has(key) && grid[r][c] === targetType) {
+            visited.add(key);
+            queue.push({ r, c });
+          }
+        });
+      }
+
+      if (matched.length >= 3) {
+        sound.playPop();
+        // Pop matched bubbles
+        matched.forEach(({ r, c }) => {
+          grid[r][c] = -1;
+        });
+
+        score += matched.length * 100;
+
+        // Check for floating orphan bubbles
+        const droppedCluster = removeFloatingOrphans();
+        if (droppedCluster > 0) {
+          sound.playDropCluster();
+          score += droppedCluster * 200;
+        }
+
+        updateHUD();
+      }
+
+      // Check End Conditions
+      checkGameEnd();
+    }
+
+    /* Disconnected bubbles falling logic */
+    function removeFloatingOrphans() {
+      // BFS starting from ceiling (row 0)
+      const connectedToCeiling = new Set();
+      const queue = [];
+
+      for (let c = 0; c < COLS_EVEN; c++) {
+        if (grid[0][c] !== -1) {
+          connectedToCeiling.add(`0,${c}`);
+          queue.push({ r: 0, c });
+        }
+      }
+
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        const nbrs = getNeighbors(curr.r, curr.c);
+        nbrs.forEach(({ r, c }) => {
+          const key = `${r},${c}`;
+          if (!connectedToCeiling.has(key) && grid[r][c] !== -1) {
+            connectedToCeiling.add(key);
+            queue.push({ r, c });
+          }
+        });
+      }
+
+      // Any bubble not connected to ceiling falls!
+      let droppedCount = 0;
+      for (let r = 0; r < MAX_ROWS; r++) {
+        const cols = (r % 2 === 0) ? COLS_EVEN : COLS_ODD;
+        for (let c = 0; c < cols; c++) {
+          if (grid[r][c] !== -1 && !connectedToCeiling.has(`${r},${c}`)) {
+            grid[r][c] = -1;
+            droppedCount++;
+          }
+        }
+      }
+
+      return droppedCount;
+    }
+
+    function checkGameEnd() {
+      // 1. Victory: No more bubbles in grid!
+      let totalBubblesLeft = 0;
+      let lowestY = 0;
+
+      for (let r = 0; r < MAX_ROWS; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+          if (grid[r][c] !== -1) {
+            totalBubblesLeft++;
+            const coords = getBubbleCoords(r, c);
+            if (coords.y > lowestY) lowestY = coords.y;
+          }
+        }
+      }
+
+      updateHUD(totalBubblesLeft);
+
+      if (totalBubblesLeft === 0) {
+        isGameOver = true;
+        isGameRunning = false;
+        sound.playVictory();
+        try {
+          localStorage.setItem('krypt_day_05_cleared', 'true');
+        } catch(e){}
+        setTimeout(() => victoryModal.classList.add('active'), 400);
+        return;
+      }
+
+      // 2. Defeat: Bubbles cross deadline
+      if (lowestY >= DEADLINE_Y - BUBBLE_RADIUS) {
+        isGameOver = true;
+        isGameRunning = false;
+        sound.playLoss();
+        setTimeout(() => defeatModal.classList.add('active'), 400);
+      }
+    }
+
+    function updateHUD(bubblesCount = null) {
+      if (bubblesCount === null) {
+        let count = 0;
+        grid.forEach(row => row.forEach(val => { if (val !== -1) count++; }));
+        bubblesLeftDisplay.textContent = `${count} restantes`;
+      } else {
+        bubblesLeftDisplay.textContent = `${bubblesCount} restantes`;
+      }
+      scoreDisplay.textContent = score;
+    }
+
+    /* Mouse & Touch Aiming */
+    function updateAimTarget(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const targetX = (clientX - rect.left) * scaleX;
+      const targetY = (clientY - rect.top) * scaleY;
+
+      const dx = targetX - CANNON_X;
+      const dy = targetY - (CANNON_Y - 4);
+      let angle = Math.atan2(dy, dx);
+
+      // Clamp angle so user cannot shoot downwards
+      const minAngle = -Math.PI + 0.18; // ~170 deg left
+      const maxAngle = -0.18;            // ~10 deg right
+
+      if (angle > 0) {
+        angle = (dx < 0) ? minAngle : maxAngle;
+      } else {
+        angle = Math.max(minAngle, Math.min(maxAngle, angle));
+      }
+
+      aimAngle = angle;
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+      updateAimTarget(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('click', (e) => {
+      updateAimTarget(e.clientX, e.clientY);
+      shootBubble();
+    });
+
+    /* Touch Controls for Mobile */
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (e.touches.length > 0) {
+        isAiming = true;
+        updateAimTarget(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (isAiming && e.touches.length > 0) {
+        updateAimTarget(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (isAiming) {
+        isAiming = false;
+        shootBubble();
+      }
+    }, { passive: false });
+
+    /* Keyboard Aiming (Arrow Keys & Space to shoot) */
+    window.addEventListener('keydown', (e) => {
+      if (!isGameRunning || isGameOver) return;
+      if (e.key === 'ArrowLeft') {
+        aimAngle = Math.max(-Math.PI + 0.18, aimAngle - 0.08);
+      } else if (e.key === 'ArrowRight') {
+        aimAngle = Math.min(-0.18, aimAngle + 0.08);
+      } else if (e.key === ' ' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        shootBubble();
+      }
+    });
+
+    /* ==========================================================================
+       DISCORD MESSAGE GENERATOR WITH SPOILER SYNTAX "||"
+       ========================================================================== */
+    function copyDiscordMessage() {
+      const discordText = `🎃 ¡He superado el Día 05 en La Krypta! Código: ||${SECRET_WORD}||`;
+
+      navigator.clipboard.writeText(discordText).then(() => {
+        copyDiscordBtn.innerHTML = '✓ ¡Copiado con Spoiler!';
+        copyDiscordBtn.classList.add('copied');
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.innerHTML = '📋 Copiar para Discord';
+          copyDiscordBtn.classList.remove('copied');
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = discordText;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.innerHTML = '✓ ¡Copiado con Spoiler!';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+      });
+    }
+
+    /* Toast Helper */
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    /* Audio Toggle */
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    /* Init */
+    startNewGame();
+    draw();
+  </script>
+</body>
+</html>

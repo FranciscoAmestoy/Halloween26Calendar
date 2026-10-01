@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 08: Cazador de Sombras - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #050806;
+      --board-border: #2e4435;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --spectral-blue: #00e5ff;
+      --spectral-glow: rgba(0, 229, 255, 0.55);
+
+      /* Minesweeper Numbers */
+      --num-1: #00e5ff;
+      --num-2: #39ff14;
+      --num-3: #ff7518;
+      --num-4: #c042ff;
+      --num-5: #ff2a4b;
+      --num-6: #ffe600;
+      --num-7: #ff55c2;
+      --num-8: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(35, 60, 45, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 85%, rgba(15, 28, 20, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 16px 12px;
+    }
+
+    /* Ambient fog and scanlines */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.25;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.2) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: var(--toxic-green);
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 6px;
+    }
+
+    .day-badge {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: var(--pumpkin-orange);
+      background: rgba(255, 117, 24, 0.12);
+      border: 1px solid var(--pumpkin-orange);
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+
+    .audio-btn {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-family: 'Montserrat', sans-serif;
+      transition: all 0.2s;
+    }
+
+    .audio-btn:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+    }
+
+    /* Title */
+    .title-banner {
+      text-align: center;
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 1.95rem;
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 12px var(--pumpkin-glow), 2px 2px 0px #000;
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .title-banner p {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    /* HUD Bar: Mines Left, Reset Gargoyle, Timer */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 22, 17, 0.88);
+      border: 1px solid #273a2e;
+      border-radius: 10px;
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud-counter-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 60px;
+    }
+
+    .hud-counter-label {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .hud-counter-val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.2rem;
+      font-weight: 900;
+    }
+
+    .val-mines {
+      color: var(--blood-red);
+      text-shadow: 0 0 8px var(--blood-glow);
+    }
+
+    .val-timer {
+      color: var(--spectral-blue);
+      text-shadow: 0 0 8px var(--spectral-glow);
+    }
+
+    /* Center Mascot Button (Retro Minesweeper Face) */
+    .mascot-btn {
+      background: linear-gradient(145deg, #24352a 0%, #152219 100%);
+      border: 2px solid #37533f;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+      transition: all 0.15s ease;
+    }
+
+    .mascot-btn:hover {
+      border-color: var(--pumpkin-orange);
+      transform: scale(1.08);
+      box-shadow: 0 0 12px var(--pumpkin-glow);
+    }
+
+    .mascot-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* Mode Switcher for Mobile / Touch: Dig vs Flag */
+    .mode-switch-box {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 9px;
+      border-radius: 8px;
+      background: rgba(18, 28, 22, 0.8);
+      border: 1px solid #2e4435;
+      color: var(--text-muted);
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, rgba(255, 117, 24, 0.2) 0%, rgba(20, 32, 24, 0.9) 100%);
+      border-color: var(--pumpkin-orange);
+      color: var(--parchment);
+      box-shadow: 0 0 12px var(--pumpkin-glow);
+    }
+
+    .mode-btn.flag.active {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.2) 0%, rgba(20, 32, 24, 0.9) 100%);
+      border-color: var(--spectral-blue);
+      box-shadow: 0 0 12px var(--spectral-glow);
+    }
+
+    /* Minesweeper 9x9 Grid Arena */
+    .cemetery-arena {
+      background: #090e0b;
+      border: 3px solid #26382b;
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.9),
+        inset 0 0 20px rgba(0, 0, 0, 0.8);
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      grid-template-rows: repeat(9, 1fr);
+      gap: 4px;
+      width: 100%;
+      max-width: 380px;
+      aspect-ratio: 1 / 1;
+      touch-action: manipulation;
+    }
+
+    @media (max-width: 400px) {
+      .cemetery-arena {
+        gap: 3px;
+        padding: 5px;
+      }
+    }
+
+    /* Individual Crypt Slab (Cell) */
+    .grave-cell {
+      position: relative;
+      background: linear-gradient(135deg, #24352a 0%, #152219 100%);
+      border: 1px solid #374f3d;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cinzel', serif;
+      font-weight: 900;
+      font-size: 1.15rem;
+      cursor: pointer;
+      box-shadow: 
+        inset 0 1px 1px rgba(255, 255, 255, 0.08),
+        0 2px 4px rgba(0, 0, 0, 0.6);
+      transition: all 0.12s ease;
+    }
+
+    @media (max-width: 400px) {
+      .grave-cell {
+        font-size: 0.95rem;
+        border-radius: 4px;
+      }
+    }
+
+    /* Cell Hover */
+    .grave-cell:hover:not(.revealed) {
+      border-color: var(--toxic-green);
+      background: #2a4032;
+    }
+
+    /* Revealed Safe Cell */
+    .grave-cell.revealed {
+      background: #0f1612;
+      border: 1px solid #1c2720;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.8);
+      cursor: default;
+    }
+
+    /* Number colors */
+    .grave-cell.num-1 { color: var(--num-1); text-shadow: 0 0 5px rgba(0, 229, 255, 0.5); }
+    .grave-cell.num-2 { color: var(--num-2); text-shadow: 0 0 5px rgba(57, 255, 20, 0.5); }
+    .grave-cell.num-3 { color: var(--num-3); text-shadow: 0 0 5px rgba(255, 117, 24, 0.5); }
+    .grave-cell.num-4 { color: var(--num-4); text-shadow: 0 0 5px rgba(192, 66, 255, 0.5); }
+    .grave-cell.num-5 { color: var(--num-5); text-shadow: 0 0 5px rgba(255, 42, 75, 0.5); }
+    .grave-cell.num-6 { color: var(--num-6); }
+    .grave-cell.num-7 { color: var(--num-7); }
+    .grave-cell.num-8 { color: var(--num-8); }
+
+    /* Flagged Cell */
+    .grave-cell.flagged {
+      background: linear-gradient(135deg, #1c2e22 0%, #101c14 100%);
+      border-color: var(--spectral-blue);
+      box-shadow: 0 0 8px rgba(0, 229, 255, 0.3);
+    }
+
+    /* Detonated Mine */
+    .grave-cell.exploded {
+      background: #4a1017 !important;
+      border-color: var(--blood-red) !important;
+      box-shadow: 0 0 15px var(--blood-glow) !important;
+      animation: explodeFlash 0.5s ease;
+    }
+
+    @keyframes explodeFlash {
+      0% { transform: scale(1.2); filter: brightness(2); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+
+    /* Unexploded Mine revealed at game over */
+    .grave-cell.revealed-mine {
+      background: #2b1317;
+      border-color: #63232c;
+    }
+
+    /* False Flag at game over */
+    .grave-cell.false-flag {
+      background: #2b1d12;
+      text-decoration: line-through;
+      color: var(--blood-red);
+    }
+
+    /* Modals (Victory / Defeat) */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 8, 6, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: linear-gradient(180deg, #1b261e 0%, #101612 100%);
+      border: 2px solid var(--toxic-green);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 440px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 25px var(--toxic-glow);
+      transform: scale(0.92);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-card.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 25px var(--blood-glow);
+    }
+
+    .modal-emblem {
+      font-size: 3.2rem;
+      margin-bottom: 6px;
+    }
+
+    .modal-card h2 {
+      font-family: 'Creepster', cursive;
+      font-size: 2.2rem;
+      color: var(--toxic-green);
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+      text-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .modal-card.defeat h2 {
+      color: var(--blood-red);
+      text-shadow: 0 0 10px var(--blood-glow);
+    }
+
+    .modal-flavor {
+      font-family: 'MedievalSharp', cursive;
+      color: #b5c7bb;
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+      line-height: 1.35;
+    }
+
+    /* Discord Secret Code Box */
+    .discord-code-box {
+      background: rgba(10, 16, 12, 0.9);
+      border: 1px dashed var(--pumpkin-orange);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .discord-code-title {
+      font-size: 0.72rem;
+      color: var(--pumpkin-orange);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .discord-code-val {
+      font-family: 'Courier New', monospace;
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: var(--parchment);
+      letter-spacing: 3px;
+      background: #000;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: inline-block;
+      border: 1px solid #3d2a1b;
+      margin-bottom: 8px;
+    }
+
+    .btn-discord-copy {
+      width: 100%;
+      background: #5865F2;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+    }
+
+    .btn-discord-copy:hover {
+      background: #4752c4;
+      transform: translateY(-2px);
+    }
+
+    .btn-discord-copy.copied {
+      background: #23a55a;
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .btn-restart {
+      background: linear-gradient(180deg, #2b3d30 0%, #1c2b20 100%);
+      border: 1px solid var(--toxic-green);
+      color: var(--parchment);
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-restart:hover {
+      background: var(--toxic-green);
+      color: #000;
+      box-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .btn-hub {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 8px;
+      display: inline-block;
+      transition: color 0.2s;
+    }
+
+    .btn-hub:hover {
+      color: var(--pumpkin-orange);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      background: rgba(14, 22, 17, 0.95);
+      border: 1px solid var(--toxic-green);
+      color: var(--parchment);
+      padding: 9px 18px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 200;
+    }
+
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>🏛️</span>
+        <span>Volver a la Krypta</span>
+      </a>
+      <div class="header-badges">
+        <span class="day-badge">DÍA 08</span>
+        <button id="soundToggleBtn" class="audio-btn">🔊 Audio</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <h1>CAZADOR DE SOMBRAS</h1>
+      <p>El Cementerio de Minas • Desentierra las 71 tumbas seguras</p>
+    </div>
+
+    <!-- HUD: Mines counter, Gargoyle mascot button, Timer -->
+    <div class="hud-bar">
+      <div class="hud-counter-box">
+        <span class="hud-counter-label">Almas</span>
+        <span class="hud-counter-val val-mines" id="minesDisplay">10</span>
+      </div>
+
+      <button class="mascot-btn" id="mascotBtn" title="Reiniciar profanación">🎃</button>
+
+      <div class="hud-counter-box">
+        <span class="hud-counter-label">Tiempo</span>
+        <span class="hud-counter-val val-timer" id="timerDisplay">000</span>
+      </div>
+    </div>
+
+    <!-- Mode Switcher (Mobile/Desktop helper) -->
+    <div class="mode-switch-box">
+      <button class="mode-btn active" id="modeDigBtn">
+        <span>⛏️</span>
+        <span>Cavar Tumba (Clic)</span>
+      </button>
+      <button class="mode-btn flag" id="modeFlagBtn">
+        <span>🕯️</span>
+        <span>Marcar Alma (Vela)</span>
+      </button>
+    </div>
+
+    <!-- 9x9 Cemetery Arena -->
+    <div class="cemetery-arena" id="arena">
+      <!-- 81 tiles dynamically injected -->
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-overlay" id="victoryModal">
+    <div class="modal-card">
+      <div class="modal-emblem">👑</div>
+      <h2>¡CEMENTERIO PURIFICADO!</h2>
+      <p class="modal-flavor">Has desenterrado todas las losas sagradas sin despertar la furia de las 10 almas malditas.</p>
+
+      <div class="discord-code-box">
+        <div class="discord-code-title">Palabra Clave para Discord:</div>
+        <div class="discord-code-val">ALMA-SEPULTADA</div>
+        <button class="btn-discord-copy" id="copyDiscordBtn">
+          <span>📋</span>
+          <span>Copiar para Discord</span>
+        </button>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-restart" id="btnRestartVictory">🔄 Jugar de Nuevo</button>
+        <a href="../../index.html" class="btn-hub">🏛️ Volver a la Krypta</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="modal-overlay" id="defeatModal">
+    <div class="modal-card defeat">
+      <div class="modal-emblem">💥</div>
+      <h2>ALMA DESPERTADA</h2>
+      <p class="modal-flavor">Tu pala quebró el sello de un alma en pena. Su furia espectral ha arrasado con el cementerio.</p>
+
+      <div class="modal-actions">
+        <button class="btn-restart" id="btnRestartDefeat">🩸 Intentar Nuevamente</button>
+        <a href="../../index.html" class="btn-hub">🏛️ Escapar a la Krypta</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ==========================================================================
+       SYNTHESIZED AUDIO (Web Audio API)
+       ========================================================================== */
+    class MinesAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playDig() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(70, now + 0.08);
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+
+      playFlag() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(580, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+
+      playUnflag() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(750, now);
+        osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.1);
+      }
+
+      playCascade() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const notes = [330, 440, 550, 660];
+        notes.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + (idx * 0.04);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.09, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.18);
+        });
+      }
+
+      playExplosion() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.6);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.65);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.65);
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+        notes.forEach((freq, i) => {
+          const now = this.ctx.currentTime + (i * 0.1);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.5);
+        });
+      }
+    }
+
+    const sound = new MinesAudio();
+
+    /* ==========================================================================
+       GAME ENGINE & STATE
+       ========================================================================== */
+    const ROWS = 9;
+    const COLS = 9;
+    const TOTAL_MINES = 10;
+    const TOTAL_SAFE = (ROWS * COLS) - TOTAL_MINES; // 71
+    const SECRET_KEYWORD = "ALMA-SEPULTADA";
+
+    let grid = [];
+    let isFirstClick = true;
+    let isGameOver = false;
+    let revealedCount = 0;
+    let flagCount = 0;
+    let secondsElapsed = 0;
+    let timerInterval = null;
+    let currentMode = 'dig'; // 'dig' or 'flag'
+
+    /* DOM elements */
+    const arena = document.getElementById('arena');
+    const minesDisplay = document.getElementById('minesDisplay');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const mascotBtn = document.getElementById('mascotBtn');
+    const modeDigBtn = document.getElementById('modeDigBtn');
+    const modeFlagBtn = document.getElementById('modeFlagBtn');
+    const vignette = document.getElementById('vignette');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+
+    /* ==========================================================================
+       SETUP & RESET
+       ========================================================================== */
+    function initGame() {
+      // Clear timers
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+
+      // Reset state
+      isFirstClick = true;
+      isGameOver = false;
+      revealedCount = 0;
+      flagCount = 0;
+      secondsElapsed = 0;
+
+      // UI
+      timerDisplay.textContent = '000';
+      minesDisplay.textContent = TOTAL_MINES;
+      mascotBtn.textContent = '🎃';
+      vignette.classList.remove('danger');
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+
+      // Initialize empty grid structure
+      grid = [];
+      for (let r = 0; r < ROWS; r++) {
+        const row = [];
+        for (let c = 0; c < COLS; c++) {
+          row.push({
+            r,
+            c,
+            isMine: false,
+            isRevealed: false,
+            isFlagged: false,
+            neighborMines: 0,
+            element: null
+          });
+        }
+        grid.push(row);
+      }
+
+      renderBoard();
+    }
+
+    /* Render HTML buttons */
+    function renderBoard() {
+      arena.innerHTML = '';
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const cell = grid[r][c];
+          const btn = document.createElement('div');
+          btn.className = 'grave-cell';
+          btn.dataset.r = r;
+          btn.dataset.c = c;
+          cell.element = btn;
+
+          // Desktop right-click: Toggle flag
+          btn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (isGameOver) return;
+            toggleFlag(cell);
+          });
+
+          // Mobile / Desktop click (dig or flag according to mode)
+          let longPressTimer = null;
+          let isLongPress = false;
+
+          btn.addEventListener('pointerdown', (e) => {
+            if (isGameOver || cell.isRevealed) return;
+            mascotBtn.textContent = '😮';
+
+            // Long press detection for flagging
+            isLongPress = false;
+            longPressTimer = setTimeout(() => {
+              isLongPress = true;
+              toggleFlag(cell);
+              if (navigator.vibrate) navigator.vibrate(40);
+            }, 420);
+          });
+
+          btn.addEventListener('pointerup', (e) => {
+            if (longPressTimer) clearTimeout(longPressTimer);
+            if (!isGameOver) mascotBtn.textContent = '🎃';
+            if (isLongPress) return; // handled by long press
+
+            if (currentMode === 'dig') {
+              digCell(cell);
+            } else {
+              toggleFlag(cell);
+            }
+          });
+
+          btn.addEventListener('pointerleave', () => {
+            if (longPressTimer) clearTimeout(longPressTimer);
+            if (!isGameOver) mascotBtn.textContent = '🎃';
+          });
+
+          arena.appendChild(btn);
+        }
+      }
+    }
+
+    /* Start timer on first move */
+    function startTimer() {
+      if (timerInterval) return;
+      timerInterval = setInterval(() => {
+        secondsElapsed++;
+        if (secondsElapsed > 999) secondsElapsed = 999;
+        timerDisplay.textContent = String(secondsElapsed).padStart(3, '0');
+      }, 1000);
+    }
+
+    /* ==========================================================================
+       MINE GENERATION (Guaranteed First Click Safety)
+       ========================================================================== */
+    function generateMines(firstR, firstC) {
+      let minesPlaced = 0;
+
+      // Safe zone around first click (3x3 area)
+      while (minesPlaced < TOTAL_MINES) {
+        const randR = Math.floor(Math.random() * ROWS);
+        const randC = Math.floor(Math.random() * COLS);
+
+        const isAroundFirst = Math.abs(randR - firstR) <= 1 && Math.abs(randC - firstC) <= 1;
+
+        if (!grid[randR][randC].isMine && !isAroundFirst) {
+          grid[randR][randC].isMine = true;
+          minesPlaced++;
+        }
+      }
+
+      // Calculate neighbor counts
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (!grid[r][c].isMine) {
+            let count = 0;
+            for (let dr = -1; dr <= 1; dr++) {
+              for (let dc = -1; dc <= 1; dc++) {
+                const nr = r + dr;
+                const nc = c + dc;
+                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+                  if (grid[nr][nc].isMine) count++;
+                }
+              }
+            }
+            grid[r][c].neighborMines = count;
+          }
+        }
+      }
+    }
+
+    /* ==========================================================================
+       CELL ACTIONS: DIG & FLAG
+       ========================================================================== */
+    function digCell(cell) {
+      if (isGameOver || cell.isRevealed || cell.isFlagged) return;
+
+      if (isFirstClick) {
+        isFirstClick = false;
+        generateMines(cell.r, cell.c);
+        startTimer();
+      }
+
+      // Check if stepped on a mine!
+      if (cell.isMine) {
+        handleMineExplosion(cell);
+        return;
+      }
+
+      // Safe dig
+      sound.playDig();
+      revealCell(cell);
+
+      // Check victory
+      if (revealedCount === TOTAL_SAFE) {
+        handleVictory();
+      }
+    }
+
+    function revealCell(cell) {
+      if (cell.isRevealed || cell.isFlagged) return;
+
+      cell.isRevealed = true;
+      revealedCount++;
+      cell.element.classList.add('revealed');
+
+      if (cell.neighborMines > 0) {
+        cell.element.textContent = cell.neighborMines;
+        cell.element.classList.add(`num-${cell.neighborMines}`);
+      } else {
+        // Zero neighbor mines: Cascade Flood Fill
+        cell.element.textContent = '';
+        sound.playCascade();
+
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = cell.r + dr;
+            const nc = cell.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              const neighbor = grid[nr][nc];
+              if (!neighbor.isRevealed && !neighbor.isFlagged) {
+                revealCell(neighbor);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function toggleFlag(cell) {
+      if (isGameOver || cell.isRevealed) return;
+
+      if (!cell.isFlagged) {
+        cell.isFlagged = true;
+        flagCount++;
+        cell.element.classList.add('flagged');
+        cell.element.textContent = '🕯️';
+        sound.playFlag();
+      } else {
+        cell.isFlagged = false;
+        flagCount--;
+        cell.element.classList.remove('flagged');
+        cell.element.textContent = '';
+        sound.playUnflag();
+      }
+
+      minesDisplay.textContent = Math.max(0, TOTAL_MINES - flagCount);
+    }
+
+    /* ==========================================================================
+       VICTORY & DEFEAT
+       ========================================================================== */
+    function handleMineExplosion(triggerCell) {
+      isGameOver = true;
+      if (timerInterval) clearInterval(timerInterval);
+
+      mascotBtn.textContent = '💀';
+      sound.playExplosion();
+      vignette.classList.add('danger');
+
+      triggerCell.element.classList.add('exploded');
+      triggerCell.element.textContent = '💥';
+
+      // Reveal all other mines
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const item = grid[r][c];
+          if (item !== triggerCell) {
+            if (item.isMine && !item.isFlagged) {
+              item.element.classList.add('revealed', 'revealed-mine');
+              item.element.textContent = '💀';
+            } else if (!item.isMine && item.isFlagged) {
+              item.element.classList.add('false-flag');
+              item.element.textContent = '❌';
+            }
+          }
+        }
+      }
+
+      setTimeout(() => {
+        defeatModal.classList.add('active');
+      }, 700);
+    }
+
+    function handleVictory() {
+      isGameOver = true;
+      if (timerInterval) clearInterval(timerInterval);
+
+      mascotBtn.textContent = '👑';
+      sound.playVictory();
+
+      // Flag all remaining unflagged mines nicely
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const item = grid[r][c];
+          if (item.isMine && !item.isFlagged) {
+            item.element.classList.add('flagged');
+            item.element.textContent = '🕯️';
+          }
+        }
+      }
+      minesDisplay.textContent = '0';
+
+      try {
+        localStorage.setItem('krypt_day_08_cleared', 'true');
+      } catch (e) {}
+
+      setTimeout(() => {
+        victoryModal.classList.add('active');
+      }, 500);
+    }
+
+    /* ==========================================================================
+       MODE SWITCHER (DIG vs FLAG)
+       ========================================================================== */
+    modeDigBtn.addEventListener('click', () => {
+      currentMode = 'dig';
+      modeDigBtn.classList.add('active');
+      modeFlagBtn.classList.remove('active');
+      showToast("⛏️ Modo Excavador activado (Toca para cavar)");
+    });
+
+    modeFlagBtn.addEventListener('click', () => {
+      currentMode = 'flag';
+      modeFlagBtn.classList.add('active');
+      modeDigBtn.classList.remove('active');
+      showToast("🕯️ Modo Sello activado (Toca para marcar almas)");
+    });
+
+    mascotBtn.addEventListener('click', () => {
+      sound.init();
+      initGame();
+      showToast("🔄 Cementerio restaurado");
+    });
+
+    document.getElementById('btnRestartVictory').addEventListener('click', initGame);
+    document.getElementById('btnRestartDefeat').addEventListener('click', initGame);
+
+    /* Discord Copy */
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 08 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    /* Audio & Toast Helpers */
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // Start
+    initGame();
+  </script>
+</body>
+</html>

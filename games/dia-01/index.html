@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 01: El Ojo del Nigromante - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #050806;
+      --altar-base: #111a14;
+      --altar-border: #2e4235;
+      --parchment: #ece2ce;
+      --text-muted: #85998d;
+
+      /* 4 Rune Colors */
+      --rune-red: #ff2a4b;
+      --rune-red-glow: rgba(255, 42, 75, 0.6);
+      --rune-green: #39ff14;
+      --rune-green-glow: rgba(57, 255, 20, 0.6);
+      --rune-purple: #b537f2;
+      --rune-purple-glow: rgba(181, 55, 242, 0.6);
+      --rune-orange: #ff8800;
+      --rune-orange-glow: rgba(255, 136, 0, 0.6);
+
+      --gold: #ffaa00;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 20%, rgba(35, 60, 45, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 80%, rgba(15, 28, 20, 0.6) 0%, transparent 70%);
+      padding: 12px 16px 20px 16px;
+    }
+
+    /* Ambient fog and subtle scanline overlay */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.35;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.85);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 120px rgba(255, 42, 75, 0.7);
+    }
+
+    /* Main Container */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-nav {
+      background: rgba(17, 26, 20, 0.85);
+      border: 1px solid var(--altar-border);
+      color: var(--parchment);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-nav:hover {
+      border-color: var(--rune-green);
+      color: var(--rune-green);
+      box-shadow: 0 0 10px var(--rune-green-glow);
+    }
+
+    .title-banner {
+      font-family: 'Creepster', cursive;
+      font-size: clamp(2.1rem, 6vw, 3rem);
+      letter-spacing: 3px;
+      color: var(--rune-orange);
+      text-shadow: 0 0 16px var(--rune-orange-glow), 2px 2px 0px #000;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .day-subtitle {
+      font-family: 'Cinzel', serif;
+      font-size: 0.82rem;
+      letter-spacing: 3px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* HUD Bar: Round & Souls/Lives */
+    .hud-bar {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      background: rgba(17, 26, 20, 0.88);
+      border: 1px solid var(--altar-border);
+      border-radius: 12px;
+      padding: 10px 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hud-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .hud-val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--parchment);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .souls-container {
+      display: flex;
+      gap: 6px;
+    }
+
+    .soul-icon {
+      font-size: 1.1rem;
+      color: var(--rune-red);
+      filter: drop-shadow(0 0 6px var(--rune-red-glow));
+      transition: all 0.3s;
+    }
+
+    .soul-icon.lost {
+      filter: grayscale(1) opacity(0.3);
+    }
+
+    /* Status Instruction Banner */
+    .status-banner {
+      width: 100%;
+      text-align: center;
+      background: rgba(8, 14, 10, 0.6);
+      border: 1px dashed var(--altar-border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: 'MedievalSharp', cursive;
+      font-size: 1rem;
+      color: #b7cbbf;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.3s;
+    }
+
+    .status-banner.watch {
+      color: var(--gold);
+      border-color: var(--gold);
+      text-shadow: 0 0 8px rgba(255, 170, 0, 0.5);
+    }
+
+    .status-banner.play {
+      color: var(--rune-green);
+      border-color: var(--rune-green);
+      text-shadow: 0 0 8px var(--rune-green-glow);
+    }
+
+    /* ==========================================================================
+       THE NECROMANCER'S ALTAR & RUNIC CIRCLE
+       ========================================================================== */
+    .altar-circle {
+      position: relative;
+      width: min(340px, 86vw);
+      height: min(340px, 86vw);
+      margin: 8px auto;
+      border-radius: 50%;
+      background: radial-gradient(circle, #101c14 0%, #070d09 70%, #030504 100%);
+      border: 4px solid var(--altar-border);
+      box-shadow: 
+        0 0 35px rgba(0, 0, 0, 0.9), 
+        inset 0 0 30px rgba(0, 0, 0, 0.8),
+        0 0 15px rgba(46, 66, 53, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Engraved Pentagram watermark in background */
+    .pentagram-svg {
+      position: absolute;
+      width: 80%;
+      height: 80%;
+      opacity: 0.12;
+      pointer-events: none;
+      animation: slowSpin 60s infinite linear;
+    }
+
+    @keyframes slowSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 4 Runes positioned as 4 quadrants / stone buttons */
+    .rune-btn {
+      position: absolute;
+      width: 44%;
+      height: 44%;
+      background: #142119;
+      border: 3px solid #283a2d;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease-out;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.6);
+      z-index: 5;
+    }
+
+    .rune-btn:active {
+      transform: scale(0.96);
+    }
+
+    .rune-btn.disabled {
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* Quadrant positions */
+    .rune-top {
+      top: 10px;
+      left: 28%;
+      border-top-left-radius: 50px;
+      border-top-right-radius: 50px;
+      border-color: #551d26;
+    }
+
+    .rune-bottom {
+      bottom: 10px;
+      left: 28%;
+      border-bottom-left-radius: 50px;
+      border-bottom-right-radius: 50px;
+      border-color: #1a4220;
+    }
+
+    .rune-left {
+      left: 10px;
+      top: 28%;
+      border-top-left-radius: 50px;
+      border-bottom-left-radius: 50px;
+      border-color: #3b1b4f;
+    }
+
+    .rune-right {
+      right: 10px;
+      top: 28%;
+      border-top-right-radius: 50px;
+      border-bottom-right-radius: 50px;
+      border-color: #4d2d0b;
+    }
+
+    /* Rune Glyphs & Keylabels */
+    .rune-symbol {
+      font-size: 2.1rem;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px #000);
+      transition: all 0.15s;
+    }
+
+    .rune-name {
+      font-family: 'Cinzel', serif;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 3px;
+      color: var(--text-muted);
+    }
+
+    .rune-key {
+      font-size: 0.62rem;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-top: 2px;
+      color: var(--text-muted);
+    }
+
+    /* ACTIVE / LIT STATES (WHEN ACTIVATED OR CLICKED) */
+    .rune-top.active {
+      background: var(--rune-red);
+      border-color: #fff;
+      box-shadow: 0 0 35px var(--rune-red-glow), inset 0 0 15px #fff;
+      transform: scale(1.05);
+    }
+
+    .rune-bottom.active {
+      background: var(--rune-green);
+      border-color: #fff;
+      box-shadow: 0 0 35px var(--rune-green-glow), inset 0 0 15px #fff;
+      transform: scale(1.05);
+    }
+
+    .rune-left.active {
+      background: var(--rune-purple);
+      border-color: #fff;
+      box-shadow: 0 0 35px var(--rune-purple-glow), inset 0 0 15px #fff;
+      transform: scale(1.05);
+    }
+
+    .rune-right.active {
+      background: var(--rune-orange);
+      border-color: #fff;
+      box-shadow: 0 0 35px var(--rune-orange-glow), inset 0 0 15px #fff;
+      transform: scale(1.05);
+    }
+
+    .rune-top.active .rune-name,
+    .rune-bottom.active .rune-name,
+    .rune-left.active .rune-name,
+    .rune-right.active .rune-name {
+      color: #000;
+      font-weight: 900;
+    }
+
+    /* Central Eye of the Necromancer */
+    .central-eye-orb {
+      position: absolute;
+      width: 78px;
+      height: 78px;
+      background: #080f0a;
+      border: 3px solid #3c5443;
+      border-radius: 50%;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.95);
+      pointer-events: none;
+      transition: all 0.3s;
+    }
+
+    .eye-graphic {
+      width: 54px;
+      height: 34px;
+      background: #fff8e8;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 6px #7a2000;
+      transition: transform 0.2s, background 0.3s;
+    }
+
+    .eye-iris {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ff2a4b 0%, #a8001e 70%, #000 100%);
+      box-shadow: 0 0 8px #ff2a4b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease-out;
+    }
+
+    .eye-pupil {
+      width: 6px;
+      height: 16px;
+      border-radius: 50%;
+      background: #000;
+    }
+
+    /* Eye reactions */
+    .central-eye-orb.casting {
+      border-color: var(--rune-green);
+      box-shadow: 0 0 25px var(--rune-green-glow);
+    }
+
+    .central-eye-orb.casting .eye-iris {
+      background: radial-gradient(circle, #39ff14 0%, #166e06 70%, #000 100%);
+      box-shadow: 0 0 12px var(--rune-green-glow);
+    }
+
+    .central-eye-orb.angered {
+      border-color: var(--rune-red);
+      box-shadow: 0 0 30px var(--rune-red-glow);
+      animation: shakeEye 0.4s ease;
+    }
+
+    @keyframes shakeEye {
+      0%, 100% { transform: translate(0, 0); }
+      20%, 60% { transform: translate(-4px, 2px); }
+      40%, 80% { transform: translate(4px, -2px); }
+    }
+
+    /* Start Button */
+    .start-btn-box {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    .btn-spooky-action {
+      background: linear-gradient(180deg, var(--rune-orange) 0%, #b84d07 100%);
+      border: none;
+      color: #000;
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      font-weight: 900;
+      padding: 12px 28px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 18px var(--rune-orange-glow);
+      transition: all 0.2s;
+    }
+
+    .btn-spooky-action:hover {
+      filter: brightness(1.15);
+      transform: translateY(-2px);
+    }
+
+    /* ==========================================================================
+       MODALS: VICTORY & GAME OVER
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 8, 6, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(180deg, #15241b 0%, #0a130e 100%);
+      border: 2px solid var(--altar-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      padding: 26px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.95);
+      transform: scale(0.92);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-align: center;
+    }
+
+    .modal-backdrop.active .modal-box {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: clamp(2.2rem, 6vw, 2.8rem);
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .modal-title.victory {
+      color: var(--rune-green);
+      text-shadow: 0 0 16px var(--rune-green-glow);
+    }
+
+    .modal-title.defeat {
+      color: var(--rune-red);
+      text-shadow: 0 0 16px var(--rune-red-glow);
+    }
+
+    /* Word Box */
+    .word-box-outer {
+      background: rgba(8, 14, 10, 0.75);
+      border: 2px dashed var(--rune-green);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .word-box-label {
+      font-size: 0.72rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    .secret-word-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.8rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: var(--rune-green);
+      text-shadow: 0 0 12px var(--rune-green-glow);
+    }
+
+    .discord-btn-box {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-discord-copy {
+      background: #5865f2;
+      border: none;
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(88, 101, 242, 0.5);
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-discord-copy:hover {
+      background: #4752c4;
+      transform: translateY(-2px);
+    }
+
+    .btn-discord-copy.copied {
+      background: #3ba55c;
+    }
+
+    .btn-krypt-return {
+      background: rgba(20, 32, 24, 0.8);
+      border: 1px solid var(--altar-border);
+      color: var(--parchment);
+      font-family: 'Cinzel', serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-krypt-return:hover {
+      border-color: var(--rune-orange);
+      color: var(--rune-orange);
+    }
+
+    /* Toast */
+    .spooky-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(14, 26, 18, 0.95);
+      border: 1px solid var(--rune-green);
+      box-shadow: 0 4px 20px var(--rune-green-glow);
+      color: var(--parchment);
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      z-index: 200;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .spooky-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <div class="game-shell">
+    <!-- Header -->
+    <header>
+      <div class="nav-bar">
+        <a href="../../index.html" class="btn-nav" title="Regresar al cementerio">
+          🏛️ Volver a la Krypta
+        </a>
+        <button class="btn-nav" id="soundToggleBtn">
+          🔊 Audio
+        </button>
+      </div>
+      <span class="day-subtitle">DÍA 01 • LA KRYPTA</span>
+      <h1 class="title-banner">EL OJO DEL NIGROMANTE</h1>
+    </header>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <!-- Round Progress -->
+      <div class="hud-stat">
+        <span class="hud-label">Ronda Arcana</span>
+        <span class="hud-val" id="roundDisplay">0 / 5</span>
+      </div>
+      <!-- Lives / Souls -->
+      <div class="hud-stat" style="align-items: flex-end;">
+        <span class="hud-label">Vidas del Alma</span>
+        <div class="souls-container" id="soulsContainer">
+          <span class="soul-icon" id="soul-1">☠</span>
+          <span class="soul-icon" id="soul-2">☠</span>
+          <span class="soul-icon" id="soul-3">☠</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions / Status -->
+    <div class="status-banner" id="statusBanner">
+      Presiona "Despertar al Nigromante" para iniciar el ritual.
+    </div>
+
+    <!-- Altar / Simon Circle -->
+    <div class="altar-circle">
+      <!-- Rotating Pentagram SVG -->
+      <svg class="pentagram-svg" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#39ff14" stroke-width="1.5"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#39ff14" stroke-width="0.8" stroke-dasharray="2,2"/>
+        <polygon points="50,6 63,40 98,40 70,62 81,95 50,73 19,95 30,62 2,40 37,40" fill="none" stroke="#39ff14" stroke-width="1.2"/>
+      </svg>
+
+      <!-- Rune 1: SANGRE (Top - Red) -->
+      <div class="rune-btn rune-top disabled" id="rune-0" data-index="0">
+        <span class="rune-symbol">🩸</span>
+        <span class="rune-name">Sangre</span>
+        <span class="rune-key">[1 / Q]</span>
+      </div>
+
+      <!-- Rune 2: AVERNO (Left - Purple) -->
+      <div class="rune-btn rune-left disabled" id="rune-1" data-index="1">
+        <span class="rune-symbol">🔮</span>
+        <span class="rune-name">Averno</span>
+        <span class="rune-key">[2 / W]</span>
+      </div>
+
+      <!-- Rune 3: AZUFRE (Right - Orange) -->
+      <div class="rune-btn rune-right disabled" id="rune-2" data-index="2">
+        <span class="rune-symbol">🔥</span>
+        <span class="rune-name">Azufre</span>
+        <span class="rune-key">[3 / E]</span>
+      </div>
+
+      <!-- Rune 4: PANTANO (Bottom - Green) -->
+      <div class="rune-btn rune-bottom disabled" id="rune-3" data-index="3">
+        <span class="rune-symbol">🌿</span>
+        <span class="rune-name">Pantano</span>
+        <span class="rune-key">[4 / R]</span>
+      </div>
+
+      <!-- Central Animated Eye of the Necromancer -->
+      <div class="central-eye-orb" id="centralEye">
+        <div class="eye-graphic">
+          <div class="eye-iris" id="eyeIris">
+            <div class="eye-pupil"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Start / Action Button -->
+    <div class="start-btn-box">
+      <button class="btn-spooky-action" id="startBtn">
+        👁️ Despertar al Nigromante
+      </button>
+    </div>
+  </div>
+
+  <!-- VICTORY MODAL -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box">
+      <h2 class="modal-title victory">¡RITUAL COMPLETADO!</h2>
+      <p style="font-size:0.9rem; color:var(--parchment); line-height: 1.4;">
+        Has resistido las 5 visiones del Nigromante y dominado las runas del pentagrama.
+      </p>
+
+      <div class="word-box-outer">
+        <span class="word-box-label">Palabra Clave Secreta del Día 01:</span>
+        <div class="secret-word-display" id="secretWordDisplay">OJO-DE-OBSIDIANA</div>
+        <p style="font-size:0.75rem; color:var(--text-muted);">
+          Envía este código en Discord para registrar tu victoria del día.
+        </p>
+      </div>
+
+      <div class="discord-btn-box">
+        <!-- COPIAR PARA DISCORD CON SPOILERS "||" -->
+        <button class="btn-discord-copy" id="copyDiscordBtn" onclick="copyDiscordMessage()">
+          📋 Copiar para Discord
+        </button>
+        <a href="../../index.html" class="btn-krypt-return">
+          🏛️ Volver a la Krypta
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEFEAT MODAL -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box">
+      <h2 class="modal-title defeat">EL OJO TE HA CONSUMIDO</h2>
+      <p style="font-size:0.9rem; color:var(--parchment); line-height: 1.4;">
+        Tus almas se han extinguido ante el poder de la nigromancia.
+      </p>
+      <div style="font-size: 2.2rem; margin: 6px 0;">💀</div>
+      <p style="font-size:0.8rem; color:var(--text-muted);">
+        Puedes purificar tu espíritu e intentarlo de nuevo todas las veces que desees.
+      </p>
+      <button class="btn-spooky-action" style="width:100%; justify-content:center;" onclick="restartGame()">
+        🔄 Intentar el Ritual de Nuevo
+      </button>
+      <a href="../../index.html" class="btn-krypt-return" style="margin-top:4px;">
+        🏛️ Volver a la Krypta
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="spooky-toast" id="toast">Copiado al portapapeles</div>
+
+  <script>
+    /* ==========================================================================
+       SYNTHESIZER SOUND ENGINE (WEB AUDIO API - ZERO LAG / ZERO DEPENDENCIES)
+       ========================================================================== */
+    class ArcaneAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        // 4 Harmonic Frequencies for the 4 Runes (Minor Pentatonic Vibe)
+        this.runeFrequencies = [261.63, 311.13, 392.00, 466.16]; // C4, Eb4, G4, Bb4
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playRuneTone(index) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const freq = this.runeFrequencies[index] || 300;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const subOsc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        // Organ/Bell tone: sine + triangle sub
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        subOsc.type = 'triangle';
+        subOsc.frequency.setValueAtTime(freq * 2, now);
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+        osc.connect(gain);
+        subOsc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        subOsc.start(now);
+        osc.stop(now + 0.45);
+        subOsc.stop(now + 0.45);
+      }
+
+      playError() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.4);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.4);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.4);
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
+        notes.forEach((freq, i) => {
+          const now = this.ctx.currentTime + (i * 0.12);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.6);
+        });
+      }
+    }
+
+    const sound = new ArcaneAudio();
+
+    /* ==========================================================================
+       GAME STATE & SIMON SAYS ENGINE
+       ========================================================================== */
+    const TOTAL_ROUNDS = 5;       // 5 rounds to conquer the Necromancer
+    const MAX_LIVES = 3;          // 3 souls/lives allowed
+    const SECRET_WORD = "OJO-DE-OBSIDIANA"; // Day 01 Secret Keyword
+
+    let currentRound = 0;         // 1 to 5
+    let livesRemaining = MAX_LIVES;
+    let sequence = [];
+    let playerStep = 0;
+    let isShowingSequence = false;
+    let isGameActive = false;
+
+    // DOM Elements
+    const roundDisplay = document.getElementById('roundDisplay');
+    const statusBanner = document.getElementById('statusBanner');
+    const startBtn = document.getElementById('startBtn');
+    const centralEye = document.getElementById('centralEye');
+    const eyeIris = document.getElementById('eyeIris');
+    const vignette = document.getElementById('vignette');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+
+    const runeBtns = [
+      document.getElementById('rune-0'),
+      document.getElementById('rune-1'),
+      document.getElementById('rune-2'),
+      document.getElementById('rune-3')
+    ];
+
+    /* Start Ritual */
+    startBtn.addEventListener('click', () => {
+      sound.init();
+      startGame();
+    });
+
+    function startGame() {
+      currentRound = 0;
+      livesRemaining = MAX_LIVES;
+      sequence = [];
+      isGameActive = true;
+      startBtn.style.display = 'none';
+
+      updateLivesUI();
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      vignette.classList.remove('danger');
+
+      nextRound();
+    }
+
+    function restartGame() {
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      startGame();
+    }
+
+    function nextRound() {
+      currentRound++;
+      roundDisplay.textContent = `${currentRound} / ${TOTAL_ROUNDS}`;
+
+      // In Round 1: start with 3 runes, then add 1 rune each round
+      if (currentRound === 1) {
+        sequence = [
+          Math.floor(Math.random() * 4),
+          Math.floor(Math.random() * 4),
+          Math.floor(Math.random() * 4)
+        ];
+      } else {
+        sequence.push(Math.floor(Math.random() * 4));
+      }
+
+      playSequence();
+    }
+
+    function playSequence() {
+      isShowingSequence = true;
+      disableRunes();
+      statusBanner.className = 'status-banner watch';
+      statusBanner.textContent = '👁️ Observa con atención las visiones del Nigromante...';
+      centralEye.classList.add('casting');
+
+      let delay = 600;
+      const stepDuration = 550;
+
+      sequence.forEach((runeIndex, idx) => {
+        setTimeout(() => {
+          activateRuneVisual(runeIndex, stepDuration - 100);
+          sound.playRuneTone(runeIndex);
+          moveEyeTowards(runeIndex);
+        }, delay);
+        delay += stepDuration;
+      });
+
+      setTimeout(() => {
+        isShowingSequence = false;
+        enableRunes();
+        playerStep = 0;
+        centralEye.classList.remove('casting');
+        resetEyePosition();
+        statusBanner.className = 'status-banner play';
+        statusBanner.textContent = '🔮 ¡Tu turno! Repite la secuencia en el pentagrama.';
+      }, delay + 100);
+    }
+
+    function activateRuneVisual(index, duration = 350) {
+      const btn = runeBtns[index];
+      if (!btn) return;
+      btn.classList.add('active');
+      setTimeout(() => {
+        btn.classList.remove('active');
+      }, duration);
+    }
+
+    function moveEyeTowards(index) {
+      // 0: top, 1: left, 2: right, 3: bottom
+      const offsets = [
+        { x: 0, y: -7 },
+        { x: -9, y: 0 },
+        { x: 9, y: 0 },
+        { x: 0, y: 7 }
+      ];
+      const pos = offsets[index] || { x: 0, y: 0 };
+      eyeIris.style.transform = `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`;
+    }
+
+    function resetEyePosition() {
+      eyeIris.style.transform = `translate(-50%, -50%)`;
+    }
+
+    /* Player Input Handling */
+    runeBtns.forEach((btn, index) => {
+      btn.addEventListener('click', () => {
+        if (isShowingSequence || !isGameActive) return;
+        handlePlayerInput(index);
+      });
+    });
+
+    function handlePlayerInput(runeIndex) {
+      activateRuneVisual(runeIndex, 250);
+      sound.playRuneTone(runeIndex);
+      moveEyeTowards(runeIndex);
+
+      if (runeIndex === sequence[playerStep]) {
+        // Correct step
+        playerStep++;
+        if (playerStep === sequence.length) {
+          // Completed current round sequence!
+          disableRunes();
+          if (currentRound >= TOTAL_ROUNDS) {
+            triggerVictory();
+          } else {
+            statusBanner.className = 'status-banner';
+            statusBanner.textContent = '✨ ¡Correcto! El Nigromante incrementa su poder...';
+            setTimeout(() => {
+              resetEyePosition();
+              nextRound();
+            }, 900);
+          }
+        }
+      } else {
+        // Mistake!
+        handleMistake();
+      }
+    }
+
+    function handleMistake() {
+      disableRunes();
+      sound.playError();
+      centralEye.classList.add('angered');
+      vignette.classList.add('danger');
+
+      livesRemaining--;
+      updateLivesUI();
+
+      setTimeout(() => {
+        centralEye.classList.remove('angered');
+        vignette.classList.remove('danger');
+        resetEyePosition();
+
+        if (livesRemaining <= 0) {
+          triggerDefeat();
+        } else {
+          statusBanner.className = 'status-banner watch';
+          statusBanner.textContent = `⚡ ¡Error! Has perdido 1 alma. Observa la secuencia de nuevo...`;
+          setTimeout(() => {
+            playSequence();
+          }, 1200);
+        }
+      }, 600);
+    }
+
+    function updateLivesUI() {
+      for (let i = 1; i <= MAX_LIVES; i++) {
+        const soul = document.getElementById(`soul-${i}`);
+        if (i <= livesRemaining) {
+          soul.classList.remove('lost');
+        } else {
+          soul.classList.add('lost');
+        }
+      }
+    }
+
+    function enableRunes() {
+      runeBtns.forEach(btn => btn.classList.remove('disabled'));
+    }
+
+    function disableRunes() {
+      runeBtns.forEach(btn => btn.classList.add('disabled'));
+    }
+
+    function triggerVictory() {
+      isGameActive = false;
+      sound.playVictory();
+      statusBanner.className = 'status-banner play';
+      statusBanner.textContent = '🏆 ¡Has vencido al Nigromante!';
+
+      // Store in localStorage that Day 01 was completed
+      try {
+        localStorage.setItem('krypt_day_01_cleared', 'true');
+      } catch(e){}
+
+      setTimeout(() => {
+        victoryModal.classList.add('active');
+      }, 500);
+    }
+
+    function triggerDefeat() {
+      isGameActive = false;
+      defeatModal.classList.add('active');
+    }
+
+    /* ==========================================================================
+       DISCORD MESSAGE GENERATOR WITH SPOILER SYNTAX "||"
+       ========================================================================== */
+    function copyDiscordMessage() {
+      // User request: Encerrar la palabra en "||" para que se mande como spoiler en Discord
+      const discordText = `🎃 ¡He superado el Día 01 en La Krypta! Código: ||${SECRET_WORD}||`;
+
+      navigator.clipboard.writeText(discordText).then(() => {
+        copyDiscordBtn.innerHTML = '✓ ¡Copiado con Spoiler!';
+        copyDiscordBtn.classList.add('copied');
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.innerHTML = '📋 Copiar para Discord';
+          copyDiscordBtn.classList.remove('copied');
+        }, 2500);
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = discordText;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.innerHTML = '✓ ¡Copiado con Spoiler!';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+      });
+    }
+
+    /* Toast Notification Helper */
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    /* Keyboard Controls (Desktop [1,2,3,4] or [Q,W,E,R]) */
+    window.addEventListener('keydown', (e) => {
+      if (isShowingSequence || !isGameActive) return;
+
+      const key = e.key.toUpperCase();
+      let index = -1;
+
+      if (key === '1' || key === 'Q') index = 0; // Sangre
+      if (key === '2' || key === 'W') index = 1; // Averno
+      if (key === '3' || key === 'E') index = 2; // Azufre
+      if (key === '4' || key === 'R') index = 3; // Pantano
+
+      if (index !== -1) {
+        handlePlayerInput(index);
+      }
+    });
+
+    /* Audio Toggle */
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+  </script>
+</body>
+</html>

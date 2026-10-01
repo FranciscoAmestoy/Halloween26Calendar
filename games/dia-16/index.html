@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 16: Desliza la Tumba - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --board-bg: #101612;
+      --board-border: #283c2f;
+      --cell-empty: #090e0b;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --spectral-purple: #c042ff;
+      --spectral-glow: rgba(192, 66, 255, 0.55);
+      --spectral-cyan: #00e5ff;
+      --stone-highlight: #45614e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 12%, rgba(35, 60, 45, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 88%, rgba(15, 28, 20, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 16px 12px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.22;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 430px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: var(--toxic-green);
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 6px;
+    }
+
+    .day-badge {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: var(--pumpkin-orange);
+      background: rgba(255, 117, 24, 0.12);
+      border: 1px solid var(--pumpkin-orange);
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+
+    .audio-btn {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-family: 'Montserrat', sans-serif;
+      transition: all 0.2s;
+    }
+
+    .audio-btn:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+    }
+
+    /* Title */
+    .title-banner {
+      text-align: center;
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 1.85rem;
+      color: var(--parchment);
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+      line-height: 1.1;
+    }
+
+    .title-banner p {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    /* HUD Bar (Moves, Timer, Correct Count) */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 20, 16, 0.85);
+      border: 1px solid #283c2f;
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .hud-val {
+      font-family: 'Cinzel', serif;
+      font-weight: 900;
+      color: var(--toxic-green);
+      font-size: 1.05rem;
+      text-shadow: 0 0 6px var(--toxic-glow);
+    }
+
+    .hud-val.alt {
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 6px var(--pumpkin-glow);
+    }
+
+    .hud-val.purple {
+      color: var(--spectral-purple);
+      text-shadow: 0 0 6px var(--spectral-glow);
+    }
+
+    /* Utility Bar */
+    .action-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+    }
+
+    .btn-utility {
+      background: rgba(22, 34, 27, 0.85);
+      border: 1px solid #334e3c;
+      color: var(--parchment);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-utility:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    /* 15-Puzzle Sarcophagus Board (4x4) */
+    .puzzle-board-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      aspect-ratio: 1 / 1;
+      background: var(--board-bg);
+      border: 3px solid var(--board-border);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.9),
+        inset 0 0 30px rgba(0, 0, 0, 0.8);
+      touch-action: none;
+    }
+
+    .puzzle-grid {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .empty-slot {
+      background: var(--cell-empty);
+      border: 1px dashed rgba(40, 60, 46, 0.35);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      opacity: 0.25;
+    }
+
+    /* Stone Slab Tiles */
+    .stone-tile {
+      background: linear-gradient(145deg, #24352b 0%, #15221b 100%);
+      border: 1.5px solid #3d5845;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 
+        0 4px 10px rgba(0, 0, 0, 0.7),
+        inset 0 1px 2px rgba(255, 255, 255, 0.1),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.6);
+      transition: transform 0.12s ease-out, border-color 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stone-tile:hover {
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .stone-tile:active {
+      transform: scale(0.96);
+    }
+
+    /* Correct position glowing state */
+    .stone-tile.correct {
+      border-color: rgba(57, 255, 20, 0.55);
+      box-shadow: 
+        0 4px 10px rgba(0, 0, 0, 0.7),
+        inset 0 0 10px rgba(57, 255, 20, 0.15);
+    }
+
+    .tile-num {
+      font-family: 'Cinzel', serif;
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: var(--parchment);
+      line-height: 1;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .stone-tile.correct .tile-num {
+      color: var(--toxic-green);
+      text-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .tile-roman {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-top: 2px;
+      letter-spacing: 0.5px;
+    }
+
+    .stone-tile.correct .tile-roman {
+      color: #79d288;
+    }
+
+    /* Controls Hint */
+    .controls-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    /* Modals (Victory) */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(5px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-chamber {
+      background: #0f1612;
+      border: 2px solid var(--toxic-green);
+      border-radius: 12px;
+      max-width: 390px;
+      width: 100%;
+      padding: 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 0 40px var(--toxic-glow);
+      position: relative;
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2.1rem;
+      letter-spacing: 2px;
+      color: var(--toxic-green);
+      text-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .modal-text {
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: var(--parchment);
+    }
+
+    .secret-code-box {
+      background: #080c09;
+      border: 1px dashed var(--toxic-green);
+      border-radius: 8px;
+      padding: 10px;
+      margin: 4px 0;
+    }
+
+    .code-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--toxic-green);
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .btn-action {
+      background: linear-gradient(180deg, #1b2820 0%, #101a14 100%);
+      border: 1px solid #2d4535;
+      border-radius: 8px;
+      color: var(--parchment);
+      padding: 11px 16px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      border-color: #7983f5;
+      color: #fff;
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 14px rgba(88, 101, 242, 0.6);
+    }
+
+    .btn-action.discord.copied {
+      background: #23a55a;
+      border-color: #57f287;
+    }
+
+    .btn-action.retry {
+      border-color: var(--pumpkin-orange);
+      color: var(--pumpkin-orange);
+    }
+
+    .btn-action.retry:hover {
+      background: rgba(255, 117, 24, 0.15);
+      box-shadow: 0 0 10px var(--pumpkin-glow);
+    }
+
+    /* Toast */
+    .spooky-toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(40px);
+      background: rgba(14, 20, 16, 0.95);
+      border: 1px solid var(--toxic-green);
+      color: var(--toxic-green);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 0 0 15px var(--toxic-glow);
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 200;
+    }
+
+    .spooky-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>←</span>
+        <span>Krypta</span>
+      </a>
+      <div class="header-badges">
+        <span class="day-badge">DÍA 16 • XVI</span>
+        <button class="audio-btn" id="soundToggleBtn">🔊 Audio</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <h1>Desliza la Tumba</h1>
+      <p>Reordena las 15 losas profanadas del sepulcro del 1 al 15</p>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-box">
+        <span class="hud-label">Movimientos</span>
+        <span class="hud-val" id="movesDisplay">0</span>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Tiempo</span>
+        <span class="hud-val purple" id="timerDisplay">00:00</span>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Encajadas</span>
+        <span class="hud-val alt" id="correctDisplay">0 / 15</span>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn-utility" id="btnSolveTip" title="Ver posición ideal">
+        <span>👁️</span>
+        <span>Pista del Sepulcro</span>
+      </button>
+
+      <button class="btn-utility" id="btnShuffle">
+        <span>🔄</span>
+        <span>Nuevo Mezclado</span>
+      </button>
+    </div>
+
+    <!-- 15-Puzzle Grid -->
+    <div class="puzzle-board-wrap">
+      <div class="puzzle-grid" id="puzzleGrid">
+        <!-- Generated dynamically -->
+      </div>
+    </div>
+
+    <div class="controls-hint">
+      🖱️ <strong>Click / Toca</strong> una losa junto al hueco vacío | 💻 <strong>Flechas / WASD</strong>
+    </div>
+  </div>
+
+  <!-- VICTORY MODAL -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-chamber">
+      <h2 class="modal-title">¡Sepulcro Sellado!</h2>
+      <p class="modal-text">
+        Las 15 losas milenarias han encajado en perfecta armonía. El sello de piedra se ha cerrado conteniendo la maldición del sarcófago.
+      </p>
+
+      <div class="hud-bar" style="margin: 4px 0; background: rgba(8, 12, 10, 0.9);">
+        <div class="hud-box">
+          <span class="hud-label">Movimientos</span>
+          <span class="hud-val" id="finalMovesDisplay">0</span>
+        </div>
+        <div class="hud-box">
+          <span class="hud-label">Tiempo</span>
+          <span class="hud-val purple" id="finalTimeDisplay">00:00</span>
+        </div>
+      </div>
+
+      <div class="secret-code-box">
+        <div class="code-label">Palabra Secreta del Maleficio</div>
+        <div class="code-display" id="secretCode">SEPULCRO-SELLADO</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action retry" id="btnRestartVictory">
+        <span>🔄</span>
+        <span>Rejugar Rompecabezas</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action" style="text-decoration: none;">
+        <span>🏛️</span>
+        <span>Volver al Cementerio</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="spooky-toast" id="toast">¡Maleficio cargado!</div>
+
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO CONTROLLER
+       ========================================================================== */
+    class TombSlideAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Deslizamiento de losa de piedra
+      playSlide() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(65, now + 0.09);
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.09);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+
+      // Losa encajada en su posición correcta
+      playCorrectSnap() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.14);
+      }
+
+      // Victoria al sellar el sepulcro
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [220, 277, 330, 440, 554, 660, 880].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+
+          gain.gain.setValueAtTime(0.22, now + idx * 0.09);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8 + idx * 0.09);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.09);
+          osc.stop(now + 0.8 + idx * 0.09);
+        });
+      }
+    }
+
+    const sound = new TombSlideAudio();
+
+    /* ==========================================================================
+       ROMAN NUMERALS & CONFIG
+       ========================================================================== */
+    const ROMANS = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV"];
+    const SECRET_KEYWORD = "SEPULCRO-SELLADO";
+
+    /* Game State */
+    // 0 represents the empty slot
+    let board = [
+      1, 2, 3, 4,
+      5, 6, 7, 8,
+      9, 10, 11, 12,
+      13, 14, 15, 0
+    ];
+
+    let moves = 0;
+    let secondsElapsed = 0;
+    let timerInterval = null;
+    let isVictory = false;
+
+    /* DOM */
+    const puzzleGrid = document.getElementById('puzzleGrid');
+    const movesDisplay = document.getElementById('movesDisplay');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const correctDisplay = document.getElementById('correctDisplay');
+    const finalMovesDisplay = document.getElementById('finalMovesDisplay');
+    const finalTimeDisplay = document.getElementById('finalTimeDisplay');
+    const victoryModal = document.getElementById('victoryModal');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const btnShuffle = document.getElementById('btnShuffle');
+    const btnSolveTip = document.getElementById('btnSolveTip');
+
+    /* ==========================================================================
+       SETUP & GUARANTEED SOLVABLE RANDOM WALK SHUFFLE
+       ========================================================================== */
+    function initGame() {
+      if (timerInterval) clearInterval(timerInterval);
+
+      moves = 0;
+      secondsElapsed = 0;
+      isVictory = false;
+
+      victoryModal.classList.remove('active');
+      updateHUD();
+
+      // Reset to solved state first
+      board = [
+        1, 2, 3, 4,
+        5, 6, 7, 8,
+        9, 10, 11, 12,
+        13, 14, 15, 0
+      ];
+
+      // Execute a guaranteed-solvable random walk of 36 moves from empty slot
+      executeSolvableWalk(38);
+
+      renderBoard();
+      startTimer();
+    }
+
+    function executeSolvableWalk(steps) {
+      let emptyIdx = board.indexOf(0);
+      let lastMovedIdx = -1;
+
+      for (let s = 0; s < steps; s++) {
+        const neighbors = getAdjacentIndices(emptyIdx);
+        // Avoid immediately undoing previous move for better dispersion
+        const validNeighbors = neighbors.filter(idx => idx !== lastMovedIdx);
+        const chosenIdx = validNeighbors.length > 0 
+          ? validNeighbors[Math.floor(Math.random() * validNeighbors.length)] 
+          : neighbors[Math.floor(Math.random() * neighbors.length)];
+
+        // Swap empty with chosen
+        board[emptyIdx] = board[chosenIdx];
+        board[chosenIdx] = 0;
+        lastMovedIdx = emptyIdx;
+        emptyIdx = chosenIdx;
+      }
+
+      // If accidentally solved after shuffle, do 4 more steps
+      if (isPuzzleSolved()) {
+        executeSolvableWalk(10);
+      }
+    }
+
+    function getAdjacentIndices(idx) {
+      const neighbors = [];
+      const row = Math.floor(idx / 4);
+      const col = idx % 4;
+
+      if (row > 0) neighbors.push(idx - 4); // Up
+      if (row < 3) neighbors.push(idx + 4); // Down
+      if (col > 0) neighbors.push(idx - 1); // Left
+      if (col < 3) neighbors.push(idx + 1); // Right
+
+      return neighbors;
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        if (!isVictory) {
+          secondsElapsed++;
+          const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+          const secs = String(secondsElapsed % 60).padStart(2, '0');
+          timerDisplay.textContent = `${mins}:${secs}`;
+        }
+      }, 1000);
+    }
+
+    function updateHUD() {
+      movesDisplay.textContent = moves;
+      const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+      const secs = String(secondsElapsed % 60).padStart(2, '0');
+      timerDisplay.textContent = `${mins}:${secs}`;
+
+      // Count correctly positioned tiles
+      let correct = 0;
+      for (let i = 0; i < 15; i++) {
+        if (board[i] === i + 1) correct++;
+      }
+      correctDisplay.textContent = `${correct} / 15`;
+    }
+
+    /* ==========================================================================
+       SLIDING LOGIC & INTERACTION
+       ========================================================================== */
+    function handleTileClick(tileIdx) {
+      if (isVictory) return;
+      sound.init();
+
+      const emptyIdx = board.indexOf(0);
+      const tileRow = Math.floor(tileIdx / 4);
+      const tileCol = tileIdx % 4;
+      const emptyRow = Math.floor(emptyIdx / 4);
+      const emptyCol = emptyIdx % 4;
+
+      // Check if tile is directly adjacent to empty
+      const isAdjacent = (Math.abs(tileRow - emptyRow) + Math.abs(tileCol - emptyCol)) === 1;
+
+      if (isAdjacent) {
+        // Single tile swap
+        swapTiles(tileIdx, emptyIdx);
+        moves++;
+        sound.playSlide();
+        checkAndRender();
+      } else if (tileRow === emptyRow || tileCol === emptyCol) {
+        // Multi-tile slide in same row or column (standard modern 15-puzzle feel)
+        slideLine(tileIdx, emptyIdx);
+        moves++;
+        sound.playSlide();
+        checkAndRender();
+      }
+    }
+
+    function swapTiles(i1, i2) {
+      const temp = board[i1];
+      board[i1] = board[i2];
+      board[i2] = temp;
+    }
+
+    function slideLine(tileIdx, emptyIdx) {
+      const tileRow = Math.floor(tileIdx / 4);
+      const tileCol = tileIdx % 4;
+      const emptyRow = Math.floor(emptyIdx / 4);
+      const emptyCol = emptyIdx % 4;
+
+      if (tileRow === emptyRow) {
+        // Horizontal slide
+        const step = tileCol < emptyCol ? 1 : -1;
+        for (let c = emptyCol; c !== tileCol; c -= step) {
+          const curIdx = tileRow * 4 + c;
+          const prevIdx = tileRow * 4 + (c - step);
+          board[curIdx] = board[prevIdx];
+        }
+        board[tileIdx] = 0;
+      } else if (tileCol === emptyCol) {
+        // Vertical slide
+        const step = tileRow < emptyRow ? 1 : -1;
+        for (let r = emptyRow; r !== tileRow; r -= step) {
+          const curIdx = r * 4 + tileCol;
+          const prevIdx = (r - step) * 4 + tileCol;
+          board[curIdx] = board[prevIdx];
+        }
+        board[tileIdx] = 0;
+      }
+    }
+
+    function checkAndRender() {
+      updateHUD();
+      renderBoard();
+
+      if (isPuzzleSolved()) {
+        triggerVictory();
+      }
+    }
+
+    function isPuzzleSolved() {
+      for (let i = 0; i < 15; i++) {
+        if (board[i] !== i + 1) return false;
+      }
+      return board[15] === 0;
+    }
+
+    function triggerVictory() {
+      isVictory = true;
+      if (timerInterval) clearInterval(timerInterval);
+      sound.playVictory();
+
+      finalMovesDisplay.textContent = moves;
+      const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+      const secs = String(secondsElapsed % 60).padStart(2, '0');
+      finalTimeDisplay.textContent = `${mins}:${secs}`;
+
+      try {
+        localStorage.setItem('krypt_day_16_cleared', 'true');
+      } catch(e){}
+
+      setTimeout(() => {
+        victoryModal.classList.add('active');
+      }, 500);
+    }
+
+    /* ==========================================================================
+       RENDERING
+       ========================================================================== */
+    function renderBoard() {
+      puzzleGrid.innerHTML = '';
+
+      board.forEach((val, idx) => {
+        if (val === 0) {
+          // Empty slot
+          const emptyDiv = document.createElement('div');
+          emptyDiv.className = 'empty-slot';
+          emptyDiv.innerHTML = '⚰️';
+          puzzleGrid.appendChild(emptyDiv);
+        } else {
+          // Stone slab tile
+          const tileDiv = document.createElement('div');
+          const isCorrect = (val === idx + 1);
+          tileDiv.className = `stone-tile ${isCorrect ? 'correct' : ''}`;
+
+          tileDiv.innerHTML = `
+            <span class="tile-num">${val}</span>
+            <span class="tile-roman">${ROMANS[val]}</span>
+          `;
+
+          tileDiv.addEventListener('click', () => handleTileClick(idx));
+          puzzleGrid.appendChild(tileDiv);
+        }
+      });
+    }
+
+    /* ==========================================================================
+       CONTROLS (Keyboard, D-Pad, Swipes)
+       ========================================================================== */
+    window.addEventListener('keydown', (e) => {
+      const k = e.key;
+      const emptyIdx = board.indexOf(0);
+      const emptyRow = Math.floor(emptyIdx / 4);
+      const emptyCol = emptyIdx % 4;
+      let targetIdx = -1;
+
+      // Arrow keys move tile INTO empty slot (Inverse of arrow direction)
+      if (k === 'ArrowUp' || k === 'KeyW' || k === 'w' || k === 'W') {
+        e.preventDefault();
+        if (emptyRow < 3) targetIdx = (emptyRow + 1) * 4 + emptyCol; // Move tile below UP
+      } else if (k === 'ArrowDown' || k === 'KeyS' || k === 's' || k === 'S') {
+        e.preventDefault();
+        if (emptyRow > 0) targetIdx = (emptyRow - 1) * 4 + emptyCol; // Move tile above DOWN
+      } else if (k === 'ArrowLeft' || k === 'KeyA' || k === 'a' || k === 'A') {
+        e.preventDefault();
+        if (emptyCol < 3) targetIdx = emptyRow * 4 + (emptyCol + 1); // Move tile right LEFT
+      } else if (k === 'ArrowRight' || k === 'KeyD' || k === 'd' || k === 'D') {
+        e.preventDefault();
+        if (emptyCol > 0) targetIdx = emptyRow * 4 + (emptyCol - 1); // Move tile left RIGHT
+      }
+
+      if (targetIdx !== -1) {
+        handleTileClick(targetIdx);
+      }
+    });
+
+    // Touch Swipe on Puzzle Grid
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    puzzleGrid.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    puzzleGrid.addEventListener('touchend', (e) => {
+      if (e.changedTouches.length > 0) {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        const absX = Math.abs(dx);
+        const absY = Math.abs(dy);
+
+        if (Math.max(absX, absY) > 25) {
+          const emptyIdx = board.indexOf(0);
+          const emptyRow = Math.floor(emptyIdx / 4);
+          const emptyCol = emptyIdx % 4;
+          let targetIdx = -1;
+
+          if (absX > absY) {
+            // Horizontal swipe
+            if (dx > 0 && emptyCol > 0) targetIdx = emptyRow * 4 + (emptyCol - 1); // Swiped right -> tile on left moves right
+            if (dx < 0 && emptyCol < 3) targetIdx = emptyRow * 4 + (emptyCol + 1); // Swiped left -> tile on right moves left
+          } else {
+            // Vertical swipe
+            if (dy > 0 && emptyRow > 0) targetIdx = (emptyRow - 1) * 4 + emptyCol; // Swiped down -> tile on top moves down
+            if (dy < 0 && emptyRow < 3) targetIdx = (emptyRow + 1) * 4 + emptyCol; // Swiped up -> tile below moves up
+          }
+
+          if (targetIdx !== -1) {
+            handleTileClick(targetIdx);
+          }
+        }
+      }
+    }, { passive: true });
+
+    // Buttons
+    btnShuffle.addEventListener('click', () => {
+      sound.init();
+      sound.playSlide();
+      initGame();
+      showToast("🔄 Sepulcro remezclado con solución garantizada.");
+    });
+
+    btnSolveTip.addEventListener('click', () => {
+      sound.init();
+      showToast("💡 Ordena las losas del 1 al 15 de izquierda a derecha y arriba hacia abajo.");
+    });
+
+    document.getElementById('btnRestartVictory').addEventListener('click', initGame);
+
+    /* Discord Copy */
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 16 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    /* Audio Toggle & Toast */
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // Start
+    initGame();
+  </script>
+</body>
+</html>

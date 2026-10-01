@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 11: Rune Match 3 - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #050806;
+      --board-border: #2e4435;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --spectral-blue: #00e5ff;
+      --spectral-glow: rgba(0, 229, 255, 0.55);
+      --mystic-purple: #c042ff;
+      --purple-glow: rgba(192, 66, 255, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(45, 25, 60, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 85%, rgba(15, 28, 20, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 16px 12px;
+    }
+
+    /* Ambient fog and scanlines */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.25;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: var(--toxic-green);
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 6px;
+    }
+
+    .day-badge {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: var(--pumpkin-orange);
+      background: rgba(255, 117, 24, 0.12);
+      border: 1px solid var(--pumpkin-orange);
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+
+    .audio-btn {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-family: 'Montserrat', sans-serif;
+      transition: all 0.2s;
+    }
+
+    .audio-btn:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+    }
+
+    /* Title */
+    .title-banner {
+      text-align: center;
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 1.95rem;
+      color: var(--mystic-purple);
+      text-shadow: 0 0 12px var(--purple-glow), 2px 2px 0px #000;
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .title-banner p {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 22, 17, 0.88);
+      border: 1px solid #273a2e;
+      border-radius: 10px;
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 60px;
+    }
+
+    .hud-label {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .hud-val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.15rem;
+      font-weight: 900;
+    }
+
+    .val-score {
+      color: var(--toxic-green);
+      text-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .val-target {
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 8px var(--pumpkin-glow);
+    }
+
+    .val-moves {
+      color: var(--spectral-blue);
+      text-shadow: 0 0 8px var(--spectral-glow);
+    }
+
+    /* Match 3 Grid Container (7x7) */
+    .grid-frame {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      aspect-ratio: 1 / 1;
+      background: #090e0b;
+      border: 3px solid #283d2e;
+      border-radius: 14px;
+      box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.9),
+        inset 0 0 20px rgba(0, 0, 0, 0.8);
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-template-rows: repeat(7, 1fr);
+      gap: 4px;
+      padding: 8px;
+      touch-action: none;
+    }
+
+    @media (max-width: 400px) {
+      .grid-frame {
+        gap: 3px;
+        padding: 5px;
+      }
+    }
+
+    /* Individual Tile */
+    .rune-tile {
+      position: relative;
+      background: linear-gradient(135deg, #1c2b20 0%, #111a14 100%);
+      border: 1px solid #2f4735;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      cursor: pointer;
+      box-shadow: 
+        inset 0 1px 2px rgba(255, 255, 255, 0.08),
+        0 2px 5px rgba(0, 0, 0, 0.5);
+      transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    @media (max-width: 380px) {
+      .rune-tile {
+        font-size: 1.35rem;
+        border-radius: 6px;
+      }
+    }
+
+    .rune-tile:hover {
+      border-color: var(--toxic-green);
+      background: #25392b;
+    }
+
+    .rune-tile.selected {
+      border-color: var(--spectral-blue);
+      background: #193834;
+      box-shadow: 0 0 14px var(--spectral-glow), inset 0 0 8px rgba(0, 229, 255, 0.4);
+      transform: scale(1.08);
+      z-index: 5;
+      animation: pulseSelect 0.8s infinite alternate;
+    }
+
+    @keyframes pulseSelect {
+      0% { transform: scale(1.05); }
+      100% { transform: scale(1.12); }
+    }
+
+    /* Destroy / Match Pop Animation */
+    .rune-tile.popping {
+      transform: scale(0) rotate(20deg);
+      opacity: 0;
+      transition: transform 0.25s ease-in, opacity 0.25s ease-in;
+    }
+
+    /* Drop In Animation */
+    .rune-tile.dropping {
+      animation: dropDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes dropDown {
+      0% { transform: translateY(-30px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Bomb / Special Aura */
+    .rune-tile.bomb {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 12px var(--blood-glow);
+      animation: pulseBomb 1s infinite alternate;
+    }
+
+    @keyframes pulseBomb {
+      0% { box-shadow: 0 0 6px var(--blood-glow); }
+      100% { box-shadow: 0 0 16px var(--blood-glow); }
+    }
+
+    /* Floating Combo Toast */
+    .combo-banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.7);
+      font-family: 'Cinzel', serif;
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 15px var(--pumpkin-glow), 2px 2px 0px #000;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 20;
+      white-space: nowrap;
+    }
+
+    .combo-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -60%) scale(1.15);
+    }
+
+    /* Instruction / Status */
+    .status-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    /* Modals (Victory / Defeat) */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 8, 6, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: linear-gradient(180deg, #1b261e 0%, #101612 100%);
+      border: 2px solid var(--toxic-green);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 440px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 25px var(--toxic-glow);
+      transform: scale(0.92);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-card.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 25px var(--blood-glow);
+    }
+
+    .modal-emblem {
+      font-size: 3.2rem;
+      margin-bottom: 6px;
+    }
+
+    .modal-card h2 {
+      font-family: 'Creepster', cursive;
+      font-size: 2.2rem;
+      color: var(--toxic-green);
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+      text-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .modal-card.defeat h2 {
+      color: var(--blood-red);
+      text-shadow: 0 0 10px var(--blood-glow);
+    }
+
+    .modal-flavor {
+      font-family: 'MedievalSharp', cursive;
+      color: #b5c7bb;
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+      line-height: 1.35;
+    }
+
+    /* Discord Secret Code Box */
+    .discord-code-box {
+      background: rgba(10, 16, 12, 0.9);
+      border: 1px dashed var(--pumpkin-orange);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .discord-code-title {
+      font-size: 0.72rem;
+      color: var(--pumpkin-orange);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .discord-code-val {
+      font-family: 'Courier New', monospace;
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: var(--parchment);
+      letter-spacing: 3px;
+      background: #000;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: inline-block;
+      border: 1px solid #3d2a1b;
+      margin-bottom: 8px;
+    }
+
+    .btn-discord-copy {
+      width: 100%;
+      background: #5865F2;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+    }
+
+    .btn-discord-copy:hover {
+      background: #4752c4;
+      transform: translateY(-2px);
+    }
+
+    .btn-discord-copy.copied {
+      background: #23a55a;
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .btn-restart {
+      background: linear-gradient(180deg, #2b3d30 0%, #1c2b20 100%);
+      border: 1px solid var(--toxic-green);
+      color: var(--parchment);
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-restart:hover {
+      background: var(--toxic-green);
+      color: #000;
+      box-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .btn-hub {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 8px;
+      display: inline-block;
+      transition: color 0.2s;
+    }
+
+    .btn-hub:hover {
+      color: var(--pumpkin-orange);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      background: rgba(14, 22, 17, 0.95);
+      border: 1px solid var(--toxic-green);
+      color: var(--parchment);
+      padding: 9px 18px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 200;
+    }
+
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>🏛️</span>
+        <span>Volver a la Krypta</span>
+      </a>
+      <div class="header-badges">
+        <span class="day-badge">DÍA 11</span>
+        <button id="soundToggleBtn" class="audio-btn">🔊 Audio</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <h1>RUNE MATCH 3</h1>
+      <p>El Relicario del Nigromante • Alcanza 10,000 puntos</p>
+    </div>
+
+    <!-- HUD -->
+    <div class="hud-bar">
+      <div class="hud-stat">
+        <span class="hud-label">Puntaje</span>
+        <span class="hud-val val-score" id="scoreDisplay">0</span>
+      </div>
+
+      <div class="hud-stat">
+        <span class="hud-label">Meta Victoria</span>
+        <span class="hud-val val-target">10000</span>
+      </div>
+
+      <div class="hud-stat">
+        <span class="hud-label">Movimientos</span>
+        <span class="hud-val val-moves" id="movesDisplay">35</span>
+      </div>
+    </div>
+
+    <!-- 7x7 Grid Frame -->
+    <div class="grid-frame" id="gridFrame">
+      <!-- 49 tiles injected dynamically -->
+      <div class="combo-banner" id="comboBanner">¡CASCADA x2!</div>
+    </div>
+
+    <div class="status-hint">
+      Toca una runa y luego una adyacente para intercambiar, o desliza con el dedo.
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-overlay" id="victoryModal">
+    <div class="modal-card">
+      <div class="modal-emblem">💎</div>
+      <h2>¡RELICARIO PURIFICADO!</h2>
+      <p class="modal-flavor">Has alcanzado los 10,000 puntos de energía y purificado el relicario ancestral.</p>
+
+      <div class="discord-code-box">
+        <div class="discord-code-title">Palabra Clave para Discord:</div>
+        <div class="discord-code-val">RUNA-DE-AZUFRE</div>
+        <button class="btn-discord-copy" id="copyDiscordBtn">
+          <span>📋</span>
+          <span>Copiar para Discord</span>
+        </button>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-restart" id="btnRestartVictory">🔄 Jugar de Nuevo</button>
+        <a href="../../index.html" class="btn-hub">🏛️ Volver a la Krypta</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="modal-overlay" id="defeatModal">
+    <div class="modal-card defeat">
+      <div class="modal-emblem">💀</div>
+      <h2>MOVIMIENTOS AGOTADOS</h2>
+      <p class="modal-flavor">Las runas se han petrificado en la mesa sin alcanzar la energía requerida.</p>
+
+      <div class="modal-actions">
+        <button class="btn-restart" id="btnRestartDefeat">🩸 Intentar Nuevamente</button>
+        <a href="../../index.html" class="btn-hub">🏛️ Escapar a la Krypta</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ==========================================================================
+       SYNTHESIZED AUDIO (Web Audio API)
+       ========================================================================== */
+    class MatchAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playSelect() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(480, now);
+        osc.frequency.exponentialRampToValueAtTime(720, now + 0.05);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+
+      playSwap() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(280, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
+
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+
+      playMatch(multiplier = 1) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const notes = [440, 554.37, 659.25, 880, 1046.50, 1318.51];
+        const baseIdx = Math.min(notes.length - 2, multiplier - 1);
+        const chord = [notes[baseIdx], notes[baseIdx + 1]];
+
+        chord.forEach((freq, i) => {
+          const now = this.ctx.currentTime + (i * 0.04);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.28);
+        });
+      }
+
+      playInvalid() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.linearRampToValueAtTime(90, now + 0.12);
+
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.14);
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const notes = [329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + (idx * 0.1);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.5);
+        });
+      }
+
+      playDefeat() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.6);
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.65);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.65);
+      }
+    }
+
+    const sound = new MatchAudio();
+
+    /* ==========================================================================
+       CONSTANTS & RELICS (5 Distinct Types)
+       ========================================================================== */
+    const GRID_SIZE = 7; // 7x7 = 49 tiles
+    const TARGET_SCORE = 10000;
+    const INITIAL_MOVES = 35; // Generous moves to hit 10000 with cascades
+    const SECRET_KEYWORD = "RUNA-DE-AZUFRE";
+
+    const RELICS = [
+      { id: 0, icon: '👁️', name: 'Ojo' },
+      { id: 1, icon: '🩸', name: 'Sangre' },
+      { id: 2, icon: '🦴', name: 'Hueso' },
+      { id: 3, icon: '🎃', name: 'Calabaza' },
+      { id: 4, icon: '🔮', name: 'Gema' }
+    ];
+
+    /* State */
+    let board = [];
+    let score = 0;
+    let movesLeft = INITIAL_MOVES;
+    let selectedTile = null; // { r, c }
+    let isLocked = false;
+    let isGameOver = false;
+
+    /* DOM */
+    const gridFrame = document.getElementById('gridFrame');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const movesDisplay = document.getElementById('movesDisplay');
+    const comboBanner = document.getElementById('comboBanner');
+    const vignette = document.getElementById('vignette');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+
+    /* ==========================================================================
+       SETUP & RESET
+       ========================================================================== */
+    function initGame() {
+      score = 0;
+      movesLeft = INITIAL_MOVES;
+      selectedTile = null;
+      isLocked = false;
+      isGameOver = false;
+
+      scoreDisplay.textContent = score;
+      movesDisplay.textContent = movesLeft;
+
+      vignette.classList.remove('danger');
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+
+      createInitialBoardWithoutMatches();
+      renderBoard();
+    }
+
+    function createInitialBoardWithoutMatches() {
+      board = [];
+      for (let r = 0; r < GRID_SIZE; r++) {
+        const row = [];
+        for (let c = 0; c < GRID_SIZE; c++) {
+          let relicId;
+          do {
+            relicId = Math.floor(Math.random() * RELICS.length);
+          } while (
+            (c >= 2 && row[c - 1] === relicId && row[c - 2] === relicId) ||
+            (r >= 2 && board[r - 1][c] === relicId && board[r - 2][c] === relicId)
+          );
+          row.push(relicId);
+        }
+        board.push(row);
+      }
+    }
+
+    function renderBoard() {
+      // Clear previous tiles
+      const oldTiles = gridFrame.querySelectorAll('.rune-tile');
+      oldTiles.forEach(t => t.remove());
+
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const relic = RELICS[board[r][c]];
+          const tile = document.createElement('div');
+          tile.className = 'rune-tile';
+          tile.dataset.r = r;
+          tile.dataset.c = c;
+          tile.textContent = relic.icon;
+
+          setupTileInput(tile, r, c);
+          gridFrame.appendChild(tile);
+        }
+      }
+    }
+
+    /* ==========================================================================
+       USER INPUT (Click & Touch Swipes)
+       ========================================================================== */
+    function setupTileInput(element, r, c) {
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      element.addEventListener('pointerdown', (e) => {
+        if (isLocked || isGameOver) return;
+        sound.init();
+        touchStartX = e.clientX;
+        touchStartY = e.clientY;
+
+        if (!selectedTile) {
+          // First select
+          selectedTile = { r, c };
+          element.classList.add('selected');
+          sound.playSelect();
+        } else {
+          // Second click
+          const first = selectedTile;
+          const isAdjacent = Math.abs(first.r - r) + Math.abs(first.c - c) === 1;
+
+          if (first.r === r && first.c === c) {
+            // Deselect
+            element.classList.remove('selected');
+            selectedTile = null;
+          } else if (isAdjacent) {
+            // Swap!
+            const firstEl = getTileElement(first.r, first.c);
+            if (firstEl) firstEl.classList.remove('selected');
+            selectedTile = null;
+            attemptSwap(first.r, first.c, r, c);
+          } else {
+            // Re-select different tile
+            const firstEl = getTileElement(first.r, first.c);
+            if (firstEl) firstEl.classList.remove('selected');
+            selectedTile = { r, c };
+            element.classList.add('selected');
+            sound.playSelect();
+          }
+        }
+      });
+
+      element.addEventListener('pointerup', (e) => {
+        if (isLocked || isGameOver) return;
+        const dx = e.clientX - touchStartX;
+        const dy = e.clientY - touchStartY;
+        const dist = Math.hypot(dx, dy);
+
+        // Swipe detected!
+        if (dist > 25) {
+          const firstEl = getTileElement(r, c);
+          if (firstEl) firstEl.classList.remove('selected');
+          selectedTile = null;
+
+          let targetR = r;
+          let targetC = c;
+
+          if (Math.abs(dx) > Math.abs(dy)) {
+            targetC += dx > 0 ? 1 : -1;
+          } else {
+            targetR += dy > 0 ? 1 : -1;
+          }
+
+          if (targetR >= 0 && targetR < GRID_SIZE && targetC >= 0 && targetC < GRID_SIZE) {
+            attemptSwap(r, c, targetR, targetC);
+          }
+        }
+      });
+    }
+
+    function getTileElement(r, c) {
+      return gridFrame.querySelector(`.rune-tile[data-r="${r}"][data-c="${c}"]`);
+    }
+
+    /* ==========================================================================
+       SWAP & CASCADE MATCH LOGIC
+       ========================================================================== */
+    async function attemptSwap(r1, c1, r2, c2) {
+      isLocked = true;
+      sound.playSwap();
+
+      // Swap in data
+      const temp = board[r1][c1];
+      board[r1][c1] = board[r2][c2];
+      board[r2][c2] = temp;
+
+      // Animate swap visually
+      const el1 = getTileElement(r1, c1);
+      const el2 = getTileElement(r2, c2);
+      if (el1 && el2) {
+        el1.textContent = RELICS[board[r1][c1]].icon;
+        el2.textContent = RELICS[board[r2][c2]].icon;
+      }
+
+      await wait(180);
+
+      // Check for matches
+      const matches = findMatches();
+
+      if (matches.length > 0) {
+        // Valid move! Deduct 1 move
+        movesLeft--;
+        movesDisplay.textContent = movesLeft;
+
+        // Process cascades
+        await processCascades(1);
+
+        // Check Victory / Defeat
+        if (score >= TARGET_SCORE) {
+          handleVictory();
+        } else if (movesLeft <= 0) {
+          handleDefeat();
+        } else {
+          isLocked = false;
+        }
+      } else {
+        // Invalid move! Revert swap
+        sound.playInvalid();
+        const revert = board[r1][c1];
+        board[r1][c1] = board[r2][c2];
+        board[r2][c2] = revert;
+
+        if (el1 && el2) {
+          el1.textContent = RELICS[board[r1][c1]].icon;
+          el2.textContent = RELICS[board[r2][c2]].icon;
+        }
+
+        await wait(160);
+        isLocked = false;
+      }
+    }
+
+    /* Find all horizontal & vertical 3+ matches */
+    function findMatches() {
+      const matchedCoords = new Set();
+
+      // Horizontal
+      for (let r = 0; r < GRID_SIZE; r++) {
+        let matchLength = 1;
+        for (let c = 0; c < GRID_SIZE; c++) {
+          if (c < GRID_SIZE - 1 && board[r][c] === board[r][c + 1] && board[r][c] !== -1) {
+            matchLength++;
+          } else {
+            if (matchLength >= 3) {
+              for (let i = 0; i < matchLength; i++) {
+                matchedCoords.add(`${r},${c - i}`);
+              }
+            }
+            matchLength = 1;
+          }
+        }
+      }
+
+      // Vertical
+      for (let c = 0; c < GRID_SIZE; c++) {
+        let matchLength = 1;
+        for (let r = 0; r < GRID_SIZE; r++) {
+          if (r < GRID_SIZE - 1 && board[r][c] === board[r + 1][c] && board[r][c] !== -1) {
+            matchLength++;
+          } else {
+            if (matchLength >= 3) {
+              for (let i = 0; i < matchLength; i++) {
+                matchedCoords.add(`${r - i},${c}`);
+              }
+            }
+            matchLength = 1;
+          }
+        }
+      }
+
+      return Array.from(matchedCoords).map(str => {
+        const [r, c] = str.split(',').map(Number);
+        return { r, c };
+      });
+    }
+
+    /* Recursive Cascade Processor */
+    async function processCascades(comboMultiplier = 1) {
+      const matches = findMatches();
+      if (matches.length === 0) return;
+
+      // Sound & Combo feedback
+      sound.playMatch(comboMultiplier);
+      if (comboMultiplier > 1) {
+        showComboToast(`¡CASCADA x${comboMultiplier}!`);
+      }
+
+      // Bonus move for big combos
+      if (comboMultiplier >= 3) {
+        movesLeft++;
+        movesDisplay.textContent = movesLeft;
+        showToast("✨ ¡Gran Cascada! +1 Movimiento");
+      }
+
+      // Score calculation (60 pts per relic scaled by combo)
+      const pointsGained = Math.round(matches.length * 60 * comboMultiplier);
+      score += pointsGained;
+      scoreDisplay.textContent = score;
+
+      // Pop / Destroy animation
+      matches.forEach(m => {
+        const el = getTileElement(m.r, m.c);
+        if (el) el.classList.add('popping');
+        board[m.r][m.c] = -1; // marked empty
+      });
+
+      await wait(220);
+
+      // Drop tiles down
+      for (let c = 0; c < GRID_SIZE; c++) {
+        let writeR = GRID_SIZE - 1;
+        for (let r = GRID_SIZE - 1; r >= 0; r--) {
+          if (board[r][c] !== -1) {
+            if (writeR !== r) {
+              board[writeR][c] = board[r][c];
+              board[r][c] = -1;
+            }
+            writeR--;
+          }
+        }
+
+        // Fill top with new random relics
+        for (let r = writeR; r >= 0; r--) {
+          board[r][c] = Math.floor(Math.random() * RELICS.length);
+        }
+      }
+
+      // Re-render board with dropping effect
+      renderBoard();
+      await wait(240);
+
+      // Continue cascade chain!
+      await processCascades(comboMultiplier + 1);
+    }
+
+    function showComboToast(text) {
+      comboBanner.textContent = text;
+      comboBanner.classList.add('show');
+      setTimeout(() => comboBanner.classList.remove('show'), 800);
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /* ==========================================================================
+       VICTORY & DEFEAT
+       ========================================================================== */
+    function handleVictory() {
+      isGameOver = true;
+      sound.playVictory();
+
+      try {
+        localStorage.setItem('krypt_day_11_cleared', 'true');
+      } catch(e){}
+
+      setTimeout(() => {
+        victoryModal.classList.add('active');
+      }, 500);
+    }
+
+    function handleDefeat() {
+      isGameOver = true;
+      sound.playDefeat();
+      vignette.classList.add('danger');
+
+      setTimeout(() => {
+        defeatModal.classList.add('active');
+      }, 500);
+    }
+
+    /* Restarts */
+    document.getElementById('btnRestartVictory').addEventListener('click', initGame);
+    document.getElementById('btnRestartDefeat').addEventListener('click', initGame);
+
+    /* Discord Copy */
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 11 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    /* Audio & Toast Helpers */
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // Start
+    initGame();
+  </script>
+</body>
+</html>

@@ -1,0 +1,2181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 17: El Péndulo de la Muerte - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@700;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #080a09;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.6);
+      --spectral-cyan: #00e5ff;
+      --spectral-cyan-glow: rgba(0, 229, 255, 0.6);
+      --wood-dark: #24140b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(45, 20, 25, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 85%, rgba(15, 28, 20, 0.65) 0%, transparent 75%);
+      padding: 6px 10px 14px 10px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.22;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.hit-flash {
+      box-shadow: inset 0 0 120px rgba(255, 42, 75, 0.95);
+    }
+
+    .vignette-overlay.shield-flash {
+      box-shadow: inset 0 0 120px rgba(0, 229, 255, 0.95);
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: var(--toxic-green);
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .day-badge {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: var(--blood-red);
+      background: rgba(255, 42, 75, 0.12);
+      border: 1px solid var(--blood-red);
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+
+    .audio-btn {
+      background: rgba(20, 32, 25, 0.75);
+      border: 1px solid #283c2f;
+      color: var(--parchment);
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .audio-btn:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+    }
+
+    /* Title */
+    .title-banner {
+      text-align: center;
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 1.8rem;
+      color: var(--blood-red);
+      letter-spacing: 2px;
+      text-shadow: 0 0 12px var(--blood-glow);
+      line-height: 1.1;
+    }
+
+    .title-banner p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 20, 16, 0.92);
+      border: 1px solid #293d31;
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .hud-val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .hud-val.red {
+      color: var(--blood-red);
+      text-shadow: 0 0 8px var(--blood-glow);
+    }
+
+    .hud-val.orange {
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 8px var(--pumpkin-glow);
+    }
+
+    .hud-val.cyan {
+      color: var(--spectral-cyan);
+      text-shadow: 0 0 8px var(--spectral-cyan-glow);
+    }
+
+    /* Time Bar */
+    .time-bar-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .time-bar-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .time-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: #111a14;
+      border: 1px solid #28392d;
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .time-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #ff2a4b, #ff7518, #39ff14);
+      border-radius: 4px;
+      transition: width 0.08s linear;
+      box-shadow: 0 0 8px rgba(57, 255, 20, 0.4);
+    }
+
+    .time-bar-fill.critical {
+      background: #ff2a4b;
+      box-shadow: 0 0 12px var(--blood-glow);
+      animation: pulseCrit 0.4s infinite alternate;
+    }
+
+    @keyframes pulseCrit {
+      from { opacity: 0.8; }
+      to { opacity: 1; }
+    }
+
+    /* Goal Progress Bar */
+    .goal-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .goal-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #111a14;
+      border: 1px solid #28392d;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .goal-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff7518, #39ff14);
+      border-radius: 3px;
+      box-shadow: 0 0 6px var(--toxic-glow);
+      transition: width 0.2s ease-out;
+    }
+
+    /* Canvas Arena */
+    .arena-container {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      background: #090e0b;
+      border: 2px solid #283d30;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.8),
+        inset 0 0 40px rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      touch-action: manipulation;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    /* Big Touch Action Buttons */
+    .controls-panel {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-chop {
+      background: linear-gradient(180deg, #223528 0%, #132219 100%);
+      border: 2px solid #36533f;
+      border-radius: 10px;
+      color: var(--parchment);
+      padding: 14px 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+      transition: all 0.1s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-chop:hover {
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 12px var(--toxic-glow);
+      transform: translateY(-2px);
+    }
+
+    .btn-chop:active {
+      transform: scale(0.96);
+      background: #2f4737;
+    }
+
+    .btn-chop.left {
+      border-color: #4a6753;
+    }
+
+    .btn-chop.right {
+      border-color: #4a6753;
+    }
+
+    .chop-icon {
+      font-size: 1.4rem;
+    }
+
+    .chop-hint {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    /* Modal Victory / Defeat Overlays */
+    .overlay-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 8, 6, 0.88);
+      backdrop-filter: blur(5px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .overlay-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(180deg, #131c16 0%, #0b110d 100%);
+      border: 2px solid #2f4738;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 380px;
+      padding: 22px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.9);
+      position: relative;
+    }
+
+    .modal-box.victory {
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 30px var(--toxic-glow);
+    }
+
+    .modal-box.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 30px var(--blood-glow);
+    }
+
+    .modal-icon {
+      font-size: 3rem;
+      line-height: 1;
+      animation: floatIcon 2.5s ease-in-out infinite;
+    }
+
+    @keyframes floatIcon {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2rem;
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .modal-title.victory {
+      color: var(--toxic-green);
+      text-shadow: 0 0 14px var(--toxic-glow);
+    }
+
+    .modal-title.defeat {
+      color: var(--blood-red);
+      text-shadow: 0 0 14px var(--blood-glow);
+    }
+
+    .modal-desc {
+      font-size: 0.85rem;
+      color: var(--parchment);
+      line-height: 1.4;
+    }
+
+    .secret-scroll {
+      width: 100%;
+      background: rgba(20, 32, 24, 0.7);
+      border: 1px dashed var(--toxic-green);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .scroll-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    .code-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--toxic-green);
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .modal-stats {
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      background: rgba(10, 16, 12, 0.6);
+      border-radius: 6px;
+      padding: 8px;
+      border: 1px solid #1f2f24;
+    }
+
+    .modal-stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-label {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .stat-val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .btn-action {
+      background: linear-gradient(180deg, #1e2e23 0%, #121e16 100%);
+      border: 1px solid #2e4737;
+      border-radius: 8px;
+      color: var(--parchment);
+      padding: 11px 16px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      border-color: #7983f5;
+      color: #fff;
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 14px rgba(88, 101, 242, 0.6);
+    }
+
+    .btn-action.discord.copied {
+      background: #23a55a;
+      border-color: #57f287;
+    }
+
+    .btn-action.retry {
+      border-color: var(--blood-red);
+      color: var(--blood-red);
+    }
+
+    .btn-action.retry:hover {
+      background: rgba(255, 42, 75, 0.15);
+      box-shadow: 0 0 10px var(--blood-glow);
+    }
+
+    .btn-action.infinite {
+      border-color: var(--pumpkin-orange);
+      color: var(--pumpkin-orange);
+    }
+
+    .btn-action.infinite:hover {
+      background: rgba(255, 117, 24, 0.15);
+      box-shadow: 0 0 10px var(--pumpkin-glow);
+    }
+
+    /* Bat Swarm Splash Screen Overlay */
+    .bat-swarm-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 50%, rgba(35, 10, 48, 0.95) 0%, rgba(8, 4, 14, 0.98) 100%);
+      backdrop-filter: blur(8px);
+      z-index: 150;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      overflow: hidden;
+    }
+
+    .bat-swarm-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+      animation: swarmShake 0.18s infinite;
+    }
+
+    @keyframes swarmShake {
+      0% { transform: translate(1px, 1px) rotate(0deg); }
+      20% { transform: translate(-2px, 0px) rotate(-0.5deg); }
+      40% { transform: translate(2px, -1px) rotate(0.5deg); }
+      60% { transform: translate(-1px, 2px) rotate(0deg); }
+      80% { transform: translate(1px, -2px) rotate(0.5deg); }
+      100% { transform: translate(1px, 1px) rotate(0deg); }
+    }
+
+    .swarm-bats-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .flying-bat-icon {
+      position: absolute;
+      font-size: 2.3rem;
+      user-select: none;
+      animation: batSwoop 1.4s ease-in-out infinite alternate;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+
+    @keyframes batSwoop {
+      0% { transform: translateY(-16px) scale(0.9) rotate(-12deg); }
+      100% { transform: translateY(16px) scale(1.15) rotate(12deg); }
+    }
+
+    .swarm-content {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+      max-width: 360px;
+      width: 100%;
+    }
+
+    .swarm-title {
+      font-family: 'Creepster', cursive;
+      font-size: 1.9rem;
+      color: #ff3860;
+      text-shadow: 0 0 16px rgba(255, 56, 96, 0.8), 0 0 25px #c042ff;
+      line-height: 1.1;
+      letter-spacing: 1px;
+    }
+
+    .swarm-subtitle {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #ffde59;
+      text-shadow: 0 0 10px rgba(255, 222, 89, 0.6);
+      line-height: 1.3;
+    }
+
+    .swarm-mash-btn {
+      background: linear-gradient(180deg, #ff2a4b 0%, #99001e 100%);
+      border: 3px solid #ff758c;
+      border-radius: 50%;
+      width: 135px;
+      height: 135px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 900;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(255, 42, 75, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.4);
+      transition: transform 0.05s ease;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .swarm-mash-btn:active {
+      transform: scale(0.90);
+      box-shadow: 0 0 45px rgba(255, 42, 75, 1);
+    }
+
+    .swarm-mash-btn span.emoji {
+      font-size: 2.2rem;
+      line-height: 1;
+    }
+
+    .swarm-counter-box {
+      background: rgba(18, 9, 26, 0.9);
+      border: 1px solid #c042ff;
+      border-radius: 8px;
+      padding: 8px 14px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 0 12px rgba(192, 66, 255, 0.35);
+    }
+
+    .swarm-progress-bg {
+      width: 100%;
+      height: 12px;
+      background: #190e24;
+      border: 1px solid #7d2ae8;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .swarm-progress-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #39ff14, #ffde59, #ff2a4b);
+      transition: width 0.08s linear;
+    }
+
+    .swarm-time-left {
+      font-size: 0.78rem;
+      color: #ece2ce;
+      font-weight: 700;
+    }
+
+    /* Toast */
+    .spooky-toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(40px);
+      background: rgba(14, 20, 16, 0.95);
+      border: 1px solid var(--toxic-green);
+      color: var(--toxic-green);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 0 0 15px var(--toxic-glow);
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 200;
+    }
+
+    .spooky-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>←</span>
+        <span>Krypta</span>
+      </a>
+      <div class="header-badges">
+        <span class="day-badge">DÍA 17 • XVII</span>
+        <button class="audio-btn" id="soundToggleBtn">🔊 Audio</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <h1>El Péndulo de la Muerte</h1>
+      <p>Tala el Roble Maldito mientras esquivas las guadañas afiladas</p>
+    </div>
+
+    <!-- HUD -->
+    <div class="hud-bar">
+      <div class="hud-box">
+        <span class="hud-label">Cortes</span>
+        <span class="hud-val red" id="scoreDisplay">0</span>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Récord</span>
+        <span class="hud-val orange" id="bestDisplay">0</span>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Escudo</span>
+        <span class="hud-val cyan" id="shieldDisplay">🛡️ 1/1</span>
+      </div>
+    </div>
+
+    <!-- Time Gauge -->
+    <div class="time-bar-wrap">
+      <div class="time-bar-label-row">
+        <span>Reloj de Arena Espectral</span>
+        <span id="timePercent">100%</span>
+      </div>
+      <div class="time-bar-bg">
+        <div class="time-bar-fill" id="timeBarFill"></div>
+      </div>
+    </div>
+
+    <!-- Goal Progress (Target: 50 Cuts) -->
+    <div class="goal-wrap">
+      <div class="time-bar-label-row">
+        <span>Meta de Victoria: 50 Cortes</span>
+        <span id="goalPercent">0 / 50</span>
+      </div>
+      <div class="goal-bar-bg">
+        <div class="goal-bar-fill" id="goalBarFill"></div>
+      </div>
+    </div>
+
+    <!-- Canvas Game Arena -->
+    <div class="arena-container">
+      <canvas id="gameCanvas" width="400" height="520"></canvas>
+    </div>
+
+    <!-- Dual Touch / Mouse Chopping Controls -->
+    <div class="controls-panel">
+      <button class="btn-chop left" id="btnChopLeft">
+        <span class="chop-icon">🪓</span>
+        <span>TALAR IZQUIERDA</span>
+        <span class="chop-hint">[A] o [←]</span>
+      </button>
+      <button class="btn-chop right" id="btnChopRight">
+        <span class="chop-icon">🪓</span>
+        <span>TALAR DERECHA</span>
+        <span class="chop-hint">[D] o [→]</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="overlay-modal" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">⚰️</div>
+      <h2 class="modal-title victory">¡Roble Cercenado!</h2>
+      <p class="modal-desc">Has talado 50 fragmentos del árbol maldito esquivando cada una de las guadañas de la Parca.</p>
+      
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display" id="secretCodeDisplay">PENDULO-MORTAL</div>
+      </div>
+
+      <div class="modal-stats">
+        <div class="modal-stat-item">
+          <span class="stat-label">Cortes</span>
+          <span class="stat-val" id="vicScore">50</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="stat-label">Récord</span>
+          <span class="stat-val" id="vicBest">50</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="stat-label">Tiempo</span>
+          <span class="stat-val" id="vicTime">0s</span>
+        </div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action infinite" id="btnInfiniteMode">
+        <span>♾️</span>
+        <span>Continuar en Modo Infinito</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action">
+        <span>🏛️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="overlay-modal" id="defeatModal">
+    <div class="modal-box defeat">
+      <div class="modal-icon">💀</div>
+      <h2 class="modal-title defeat">¡Cercenado!</h2>
+      <p class="modal-desc" id="defeatReason">Una guadaña ensangrentada ha cortado tu hilo mortal.</p>
+
+      <div class="modal-stats">
+        <div class="modal-stat-item">
+          <span class="stat-label">Cortes</span>
+          <span class="stat-val" id="defScore">0</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="stat-label">Récord</span>
+          <span class="stat-val" id="defBest">0</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="stat-label">Meta</span>
+          <span class="stat-val">50</span>
+        </div>
+      </div>
+
+      <button class="btn-action retry" id="btnRetryDefeat">
+        <span>🔄</span>
+        <span>Reintentar al Instante [Espacio]</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action">
+        <span>🏛️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Bat Swarm Splash Screen Overlay -->
+  <div class="bat-swarm-overlay" id="batSwarmOverlay">
+    <div class="swarm-bats-container" id="swarmBatsContainer"></div>
+    <div class="swarm-content">
+      <div style="font-size: 3.5rem; line-height: 1;">🦇</div>
+      <h2 class="swarm-title">¡Te ataca una bandada de murciélagos!</h2>
+      <p class="swarm-subtitle">¡Presiona rápidamente para espantarlos!</p>
+      
+      <button class="swarm-mash-btn" id="btnSwarmMash">
+        <span class="emoji">🪓</span>
+        <span>¡ESPANTAR!</span>
+      </button>
+
+      <div class="swarm-counter-box">
+        <div class="swarm-time-left" id="swarmCountText">Murciélagos restantes: 10</div>
+        <div class="swarm-progress-bg">
+          <div class="swarm-progress-fill" id="swarmProgressFill"></div>
+        </div>
+      </div>
+      <div style="font-size: 0.72rem; color: var(--text-muted);">
+        Toca el botón o pulsa cualquier tecla frenéticamente
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="spooky-toast" id="toast"></div>
+
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO API (Sin archivos externos)
+       ========================================================================== */
+    class SpookyAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playChop() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        // 1. Thud / Impact osc
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140 + Math.random() * 30, now);
+        osc.frequency.exponentialRampToValueAtTime(35, now + 0.09);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.09);
+
+        // 2. Wood crack noise
+        const bufferSize = this.ctx.sampleRate * 0.05;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1800;
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.3, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+
+      playScytheWhoosh() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(500, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.12);
+
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+
+      playShieldBreak() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Glass / spectral chime break
+        [784, 987, 1318].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.03);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.5, now + 0.35 + idx * 0.03);
+
+          gain.gain.setValueAtTime(0.25, now + idx * 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35 + idx * 0.03);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.03);
+          osc.stop(now + 0.4);
+        });
+      }
+
+      playDeath() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Metallic blade slash + dark tomb impact
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.4);
+
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      }
+
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const notes = [392, 493.88, 587.33, 783.99, 987.77];
+        const now = this.ctx.currentTime;
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.12);
+          gain.gain.setValueAtTime(0.3, now + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.12);
+          osc.stop(now + i * 0.12 + 0.45);
+        });
+      }
+
+      playBatScreech() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(1700 + Math.random() * 400, now);
+        osc.frequency.exponentialRampToValueAtTime(750, now + 0.09);
+
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+
+      playSwarmCleared() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.07);
+          gain.gain.setValueAtTime(0.25, now + i * 0.07);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.07);
+          osc.stop(now + i * 0.07 + 0.35);
+        });
+      }
+    }
+
+    const sound = new SpookyAudio();
+
+    /* ==========================================================================
+       GAME CONSTANTS & STATE
+       ========================================================================== */
+    const SECRET_KEYWORD = "PENDULO-MORTAL";
+    const VICTORY_GOAL = 50;
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Canvas layout dimensions
+    const C_WIDTH = 400;
+    const C_HEIGHT = 520;
+    const TRUNK_X = C_WIDTH / 2;
+    const TRUNK_WIDTH = 70;
+    const SEGMENT_HEIGHT = 65;
+    const GROUND_Y = 440;
+    const PLAYER_Y = 410;
+    const PLAYER_OFFSET_X = 85; // Distance from trunk center to player
+
+    // Game state
+    let state = 'READY'; // READY, PLAYING, WON, DEAD
+    let infiniteMode = false;
+    let score = 0;
+    let bestScore = parseInt(localStorage.getItem('krypt_day_17_best') || '0', 10);
+    let playerSide = 'left'; // 'left' or 'right'
+    let isChopping = false;
+    let chopAnimTimer = 0;
+    let shield = 1; // 1 shield absorb
+    let invulnerableTimer = 0; // ms after shield break
+
+    // Time bar
+    let timeLeft = 100; // 0 to 100%
+    let timeDrainRate = 14; // % per second base
+    let timeBonusPerChop = 8.5; // % added per cut
+
+    // Tree segments stack: index 0 is at bottom (stump), index 1 is at player head level
+    // { branch: null | 'left' | 'right', yOffset: 0 }
+    let segments = [];
+    const VISIBLE_SEGMENTS = 8;
+
+    // Flying chopped logs
+    let flyingLogs = [];
+
+    // Blood and wood splinter particles
+    let particles = [];
+
+    // Floating combat texts
+    let floatTexts = [];
+
+    // Timer tracking
+    let startTime = 0;
+    let totalGameTime = 0;
+    let lastTime = 0;
+
+    /* DOM elements */
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const bestDisplay = document.getElementById('bestDisplay');
+    const shieldDisplay = document.getElementById('shieldDisplay');
+    const timeBarFill = document.getElementById('timeBarFill');
+    const timePercent = document.getElementById('timePercent');
+    const goalBarFill = document.getElementById('goalBarFill');
+    const goalPercent = document.getElementById('goalPercent');
+    const vignette = document.getElementById('vignette');
+
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const defeatReason = document.getElementById('defeatReason');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    const btnInfiniteMode = document.getElementById('btnInfiniteMode');
+    const btnRetryDefeat = document.getElementById('btnRetryDefeat');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+
+    bestDisplay.textContent = bestScore;
+
+    /* ==========================================================================
+       INITIALIZATION & SEGMENT GENERATION
+       ========================================================================== */
+    function initGame() {
+      state = 'READY';
+      infiniteMode = false;
+      score = 0;
+      timeLeft = 100;
+      shield = 1;
+      invulnerableTimer = 0;
+      playerSide = 'left';
+      isChopping = false;
+      chopAnimTimer = 0;
+      flyingLogs = [];
+      particles = [];
+      floatTexts = [];
+      startTime = 0;
+      totalGameTime = 0;
+
+      // Reset bat swarm if active
+      if (swarmInterval) clearInterval(swarmInterval);
+      batSwarmActive = false;
+      document.getElementById('batSwarmOverlay').classList.remove('active');
+
+      // Generate initial segments (first 3 segments are always safe without branches)
+      segments = [];
+      for (let i = 0; i < VISIBLE_SEGMENTS; i++) {
+        if (i < 3) {
+          segments.push({ branch: null });
+        } else {
+          segments.push({ branch: generateNextBranch(segments[i - 1]?.branch) });
+        }
+      }
+
+      updateUI();
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      vignette.className = 'vignette-overlay';
+    }
+
+    // Algoritmo para ramas y murciélagos: spawn rate moderado de murciélagos (~20% de las ramas)
+    function generateNextBranch(lastBranch) {
+      // 40% de probabilidad de tronco despejado
+      const roll = Math.random();
+      if (roll < 0.40) return null;
+
+      // Spawn rate moderado de murciélago: 20% de las ramas generadas
+      const isBat = Math.random() < 0.20;
+
+      // Determinar lado evitando trampas imposibles consecutivas
+      let side = 'left';
+      const cleanLast = lastBranch ? lastBranch.replace('bat_', '') : null;
+      if (cleanLast === 'left') {
+        side = Math.random() < 0.65 ? 'left' : 'right';
+      } else if (cleanLast === 'right') {
+        side = Math.random() < 0.65 ? 'right' : 'left';
+      } else {
+        side = Math.random() < 0.5 ? 'left' : 'right';
+      }
+
+      return isBat ? ('bat_' + side) : side;
+    }
+
+    /* ==========================================================================
+       BAT SWARM QUICK-TIME EVENT (MASHING)
+       ========================================================================== */
+    let batSwarmActive = false;
+    let batSwarmMashesLeft = 10;
+    const BAT_SWARM_MASH_TOTAL = 10;
+    let batSwarmTimeRemaining = 4.5;
+    let batSwarmSegment = null;
+    let swarmInterval = null;
+
+    function startBatSwarm(seg) {
+      if (batSwarmActive || state === 'DEAD' || state === 'WON') return;
+      batSwarmActive = true;
+      batSwarmSegment = seg;
+      batSwarmMashesLeft = BAT_SWARM_MASH_TOTAL;
+      batSwarmTimeRemaining = 4.5;
+
+      sound.playBatScreech();
+
+      // Generar murciélagos decorativos revoloteando
+      const container = document.getElementById('swarmBatsContainer');
+      container.innerHTML = '';
+      for (let i = 0; i < 14; i++) {
+        const b = document.createElement('div');
+        b.className = 'flying-bat-icon';
+        b.textContent = '🦇';
+        b.style.left = `${Math.random() * 85 + 5}%`;
+        b.style.top = `${Math.random() * 75 + 10}%`;
+        b.style.animationDelay = `${Math.random() * 1.5}s`;
+        b.style.animationDuration = `${1.2 + Math.random() * 0.8}s`;
+        container.appendChild(b);
+      }
+
+      updateSwarmUI();
+      document.getElementById('batSwarmOverlay').classList.add('active');
+
+      if (swarmInterval) clearInterval(swarmInterval);
+      swarmInterval = setInterval(() => {
+        if (!batSwarmActive) {
+          clearInterval(swarmInterval);
+          return;
+        }
+        batSwarmTimeRemaining -= 0.1;
+        if (batSwarmTimeRemaining <= 0) {
+          clearInterval(swarmInterval);
+          endBatSwarm(false);
+        } else {
+          updateSwarmUI();
+        }
+      }, 100);
+    }
+
+    function mashBatSwarm() {
+      if (!batSwarmActive) return;
+      sound.playBatScreech();
+      batSwarmMashesLeft--;
+
+      // Efecto visual: un murciélago se espanta y sale volando con humo
+      const container = document.getElementById('swarmBatsContainer');
+      if (container.lastChild) {
+        const bat = container.lastChild;
+        bat.style.transform = 'scale(2.2)';
+        bat.style.opacity = '0';
+        setTimeout(() => bat.remove(), 180);
+      }
+
+      vignette.classList.add('hit-flash');
+      setTimeout(() => vignette.classList.remove('hit-flash'), 100);
+
+      updateSwarmUI();
+
+      if (batSwarmMashesLeft <= 0) {
+        endBatSwarm(true);
+      }
+    }
+
+    function updateSwarmUI() {
+      const text = document.getElementById('swarmCountText');
+      const fill = document.getElementById('swarmProgressFill');
+      text.textContent = `Murciélagos restantes: ${batSwarmMashesLeft} (⏳ ${Math.max(0, batSwarmTimeRemaining).toFixed(1)}s)`;
+      const pct = (batSwarmMashesLeft / BAT_SWARM_MASH_TOTAL) * 100;
+      fill.style.width = `${pct}%`;
+    }
+
+    function endBatSwarm(success) {
+      if (swarmInterval) clearInterval(swarmInterval);
+      batSwarmActive = false;
+      document.getElementById('batSwarmOverlay').classList.remove('active');
+
+      if (success) {
+        sound.playSwarmCleared();
+        if (batSwarmSegment) {
+          batSwarmSegment.branch = null; // Despejar murciélago de la rama
+        }
+        timeLeft = Math.min(100, timeLeft + 16); // Bonus de tiempo
+        showToast("🦇 ¡Espantaste a los murciélagos! +16% Tiempo");
+        floatTexts.push({
+          text: "¡BANDADA ESPANTADA! +16% TIEMPO",
+          x: C_WIDTH / 2,
+          y: PLAYER_Y - 50,
+          color: '#39ff14',
+          life: 1.4
+        });
+        updateUI();
+      } else {
+        triggerDeath("¡La bandada de murciélagos te devoró en la oscuridad!");
+      }
+    }
+
+    /* ==========================================================================
+       CHOP ACTION & COLLISION
+       ========================================================================== */
+    function doChop(side) {
+      sound.init();
+
+      if (batSwarmActive) {
+        mashBatSwarm();
+        return;
+      }
+
+      if (state === 'DEAD') {
+        initGame();
+        return;
+      }
+
+      if (state === 'WON' && !infiniteMode) {
+        return;
+      }
+
+      if (state === 'READY') {
+        state = 'PLAYING';
+        startTime = performance.now();
+      }
+
+      playerSide = side;
+      isChopping = true;
+      chopAnimTimer = 0.12; // 120ms animation
+
+      // Segment 0 is at stump level, segment 1 is at player head level
+      const bottomSegment = segments[0];
+
+      // Spawn flying log particle
+      const vx = side === 'left' ? (5.5 + Math.random() * 3) : (-5.5 - Math.random() * 3);
+      flyingLogs.push({
+        x: TRUNK_X,
+        y: GROUND_Y - SEGMENT_HEIGHT / 2,
+        vx: vx,
+        vy: -4.5 - Math.random() * 2.5,
+        rotation: 0,
+        vRot: (side === 'left' ? 0.2 : -0.2),
+        branch: bottomSegment.branch
+      });
+
+      // Spawn wood splinters & blood particles
+      spawnChopParticles(TRUNK_X + (side === 'left' ? -TRUNK_WIDTH / 2 : TRUNK_WIDTH / 2), GROUND_Y - SEGMENT_HEIGHT / 2);
+
+      sound.playChop();
+
+      // Shift segments down
+      segments.shift();
+      const lastBranch = segments[segments.length - 1]?.branch || null;
+      segments.push({ branch: generateNextBranch(lastBranch) });
+
+      // Add score & replenish time
+      score++;
+      if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem('krypt_day_17_best', bestScore);
+        bestDisplay.textContent = bestScore;
+      }
+
+      // Time bonus: gentle scaling
+      timeLeft = Math.min(100, timeLeft + timeBonusPerChop);
+
+      // Check collision with the new segment at player head level (now segments[0])
+      checkCollision();
+
+      // Check victory
+      if (score >= VICTORY_GOAL && state === 'PLAYING' && !infiniteMode) {
+        triggerVictory();
+      }
+
+      updateUI();
+    }
+
+    function checkCollision() {
+      // If player is invulnerable (just broke shield), skip
+      if (invulnerableTimer > 0) return;
+
+      const currentSegment = segments[0];
+      if (!currentSegment) return;
+
+      // Check if it's a BAT on player's side!
+      if (currentSegment.branch === ('bat_' + playerSide)) {
+        startBatSwarm(currentSegment);
+        return;
+      }
+
+      if (currentSegment.branch === playerSide) {
+        // HIT BY SCYTHE!
+        if (shield > 0) {
+          // Shield absorbs!
+          shield = 0;
+          invulnerableTimer = 1.0; // 1 second safety
+          currentSegment.branch = null; // Vaporize the hitting branch
+          sound.playShieldBreak();
+          vignette.classList.add('shield-flash');
+          setTimeout(() => vignette.classList.remove('shield-flash'), 300);
+          showToast("🛡️ ¡Escudo espectral roto! Guadaña repelida.");
+          floatTexts.push({
+            text: "¡ESCUDO ROTO!",
+            x: TRUNK_X + (playerSide === 'left' ? -PLAYER_OFFSET_X : PLAYER_OFFSET_X),
+            y: PLAYER_Y - 40,
+            color: '#00e5ff',
+            life: 1.0
+          });
+        } else {
+          // DEAD
+          triggerDeath("¡Una guadaña ensangrentada ha cortado tu cabeza!");
+        }
+      }
+    }
+
+    function triggerDeath(reason) {
+      state = 'DEAD';
+      sound.playDeath();
+      vignette.classList.add('hit-flash');
+      setTimeout(() => vignette.classList.remove('hit-flash'), 400);
+
+      // Death particles
+      spawnBloodExplosion(TRUNK_X + (playerSide === 'left' ? -PLAYER_OFFSET_X : PLAYER_OFFSET_X), PLAYER_Y);
+
+      defeatReason.textContent = reason;
+      document.getElementById('defScore').textContent = score;
+      document.getElementById('defBest').textContent = bestScore;
+      defeatModal.classList.add('active');
+    }
+
+    function triggerVictory() {
+      state = 'WON';
+      sound.playVictory();
+      localStorage.setItem('krypt_day_17_cleared', 'true');
+
+      // Calculate time
+      const timeSec = Math.round((performance.now() - startTime) / 1000);
+      document.getElementById('vicScore').textContent = score;
+      document.getElementById('vicBest').textContent = bestScore;
+      document.getElementById('vicTime').textContent = `${timeSec}s`;
+
+      victoryModal.classList.add('active');
+    }
+
+    /* ==========================================================================
+       PARTICLES & VISUAL FX
+       ========================================================================== */
+    function spawnChopParticles(x, y) {
+      for (let i = 0; i < 14; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 5;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 2,
+          size: 2 + Math.random() * 3,
+          color: Math.random() < 0.4 ? '#ff2a4b' : '#8b5a2b',
+          alpha: 1,
+          decay: 0.03 + Math.random() * 0.03
+        });
+      }
+    }
+
+    function spawnBloodExplosion(x, y) {
+      for (let i = 0; i < 30; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 3 + Math.random() * 7;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 3,
+          size: 3 + Math.random() * 4,
+          color: '#ff2a4b',
+          alpha: 1,
+          decay: 0.02 + Math.random() * 0.02
+        });
+      }
+    }
+
+    /* ==========================================================================
+       UI UPDATES
+       ========================================================================== */
+    function updateUI() {
+      scoreDisplay.textContent = score;
+      shieldDisplay.textContent = shield > 0 ? "🛡️ 1/1" : "❌ 0/1";
+      if (shield === 0) {
+        shieldDisplay.className = "hud-val red";
+      } else {
+        shieldDisplay.className = "hud-val cyan";
+      }
+
+      // Goal progress
+      const goalClamp = Math.min(score, VICTORY_GOAL);
+      const goalPct = (goalClamp / VICTORY_GOAL) * 100;
+      goalBarFill.style.width = `${goalPct}%`;
+      goalPercent.textContent = `${score} / ${VICTORY_GOAL}`;
+
+      // Time gauge
+      timeBarFill.style.width = `${Math.max(0, timeLeft)}%`;
+      timePercent.textContent = `${Math.round(timeLeft)}%`;
+      if (timeLeft < 25) {
+        timeBarFill.classList.add('critical');
+      } else {
+        timeBarFill.classList.remove('critical');
+      }
+    }
+
+    /* ==========================================================================
+       MAIN LOOP (60 FPS FIXED TIMESTEP)
+       ========================================================================== */
+    function gameLoop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+      lastTime = timestamp;
+
+      // Update Time bar if PLAYING
+      if (state === 'PLAYING' && !batSwarmActive) {
+        // Accelerate time drain gradually as score climbs
+        const currentDrain = timeDrainRate + Math.min(score * 0.22, 28);
+        timeLeft -= currentDrain * dt;
+
+        if (timeLeft <= 0) {
+          timeLeft = 0;
+          triggerDeath("¡El reloj de arena se ha vaciado! La muerte te alcanzó.");
+        }
+        updateUI();
+      }
+
+      // Invulnerability timer
+      if (invulnerableTimer > 0) {
+        invulnerableTimer -= dt;
+      }
+
+      // Chop animation timer
+      if (chopAnimTimer > 0) {
+        chopAnimTimer -= dt;
+        if (chopAnimTimer <= 0) isChopping = false;
+      }
+
+      // Update Flying Logs
+      for (let i = flyingLogs.length - 1; i >= 0; i--) {
+        const log = flyingLogs[i];
+        log.x += log.vx;
+        log.y += log.vy;
+        log.vy += 0.35; // gravity
+        log.rotation += log.vRot;
+
+        if (log.y > C_HEIGHT + 100) {
+          flyingLogs.splice(i, 1);
+        }
+      }
+
+      // Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.2; // gravity
+        p.alpha -= p.decay;
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+
+      // Update Float texts
+      for (let i = floatTexts.length - 1; i >= 0; i--) {
+        const ft = floatTexts[i];
+        ft.y -= 30 * dt;
+        ft.life -= dt;
+        if (ft.life <= 0) {
+          floatTexts.splice(i, 1);
+        }
+      }
+
+      // RENDER
+      render();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* ==========================================================================
+       CANVAS RENDERING
+       ========================================================================== */
+    function render() {
+      ctx.clearRect(0, 0, C_WIDTH, C_HEIGHT);
+
+      // 1. Spooky background & cemetery backdrop
+      renderBackground();
+
+      // 2. Tree Trunk Stack
+      renderTreeStack();
+
+      // 3. Flying Logs
+      renderFlyingLogs();
+
+      // 4. Player Character (Skeleton Undertaker)
+      renderPlayer();
+
+      // 5. Particles
+      renderParticles();
+
+      // 6. Floating texts
+      renderFloatTexts();
+
+      // 7. Start hint overlay if READY
+      if (state === 'READY') {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.fillRect(20, 200, C_WIDTH - 40, 80);
+        ctx.strokeStyle = '#39ff14';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(20, 200, C_WIDTH - 40, 80);
+
+        ctx.fillStyle = '#39ff14';
+        ctx.font = 'bold 18px Montserrat, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('¡PULSA CUALQUIER LADO PARA TALAR!', C_WIDTH / 2, 235);
+
+        ctx.fillStyle = '#ece2ce';
+        ctx.font = '13px Montserrat, sans-serif';
+        ctx.fillText('Esquiva las guadañas que bajan por el tronco', C_WIDTH / 2, 260);
+        ctx.restore();
+      }
+    }
+
+    function renderBackground() {
+      // Dark tomb sky gradient
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, C_HEIGHT);
+      skyGrad.addColorStop(0, '#0a0d0b');
+      skyGrad.addColorStop(0.7, '#111914');
+      skyGrad.addColorStop(1, '#050705');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, C_WIDTH, C_HEIGHT);
+
+      // Distant blood moon
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(C_WIDTH / 2, 85, 38, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 42, 75, 0.2)';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(C_WIDTH / 2, 85, 26, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 80, 100, 0.45)';
+      ctx.fill();
+      ctx.restore();
+
+      // Cemetery floor / dirt
+      ctx.fillStyle = '#16221a';
+      ctx.fillRect(0, GROUND_Y, C_WIDTH, C_HEIGHT - GROUND_Y);
+
+      // Floor highlight line
+      ctx.strokeStyle = '#293d31';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y);
+      ctx.lineTo(C_WIDTH, GROUND_Y);
+      ctx.stroke();
+
+      // Distant tombstones silhouettes
+      ctx.fillStyle = '#0c140f';
+      ctx.fillRect(25, GROUND_Y - 35, 24, 35);
+      ctx.beginPath();
+      ctx.arc(37, GROUND_Y - 35, 12, Math.PI, 0);
+      ctx.fill();
+
+      ctx.fillRect(C_WIDTH - 55, GROUND_Y - 30, 22, 30);
+      ctx.beginPath();
+      ctx.arc(C_WIDTH - 44, GROUND_Y - 30, 11, Math.PI, 0);
+      ctx.fill();
+    }
+
+    function renderTreeStack() {
+      ctx.save();
+
+      // Draw segments from top to bottom
+      for (let i = segments.length - 1; i >= 0; i--) {
+        const seg = segments[i];
+        const segY = GROUND_Y - (i + 1) * SEGMENT_HEIGHT;
+
+        // Draw trunk piece
+        drawTrunkPiece(TRUNK_X - TRUNK_WIDTH / 2, segY, TRUNK_WIDTH, SEGMENT_HEIGHT);
+
+        // Draw scythe or bat if present
+        if (seg.branch === 'left') {
+          drawScythe(TRUNK_X - TRUNK_WIDTH / 2, segY + SEGMENT_HEIGHT / 2, 'left');
+        } else if (seg.branch === 'right') {
+          drawScythe(TRUNK_X + TRUNK_WIDTH / 2, segY + SEGMENT_HEIGHT / 2, 'right');
+        } else if (seg.branch === 'bat_left') {
+          drawBat(TRUNK_X - TRUNK_WIDTH / 2, segY + SEGMENT_HEIGHT / 2, 'left');
+        } else if (seg.branch === 'bat_right') {
+          drawBat(TRUNK_X + TRUNK_WIDTH / 2, segY + SEGMENT_HEIGHT / 2, 'right');
+        }
+      }
+
+      // Root stump
+      ctx.fillStyle = '#1a0f08';
+      ctx.beginPath();
+      ctx.moveTo(TRUNK_X - TRUNK_WIDTH / 2 - 12, GROUND_Y + 12);
+      ctx.lineTo(TRUNK_X - TRUNK_WIDTH / 2, GROUND_Y);
+      ctx.lineTo(TRUNK_X + TRUNK_WIDTH / 2, GROUND_Y);
+      ctx.lineTo(TRUNK_X + TRUNK_WIDTH / 2 + 12, GROUND_Y + 12);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawTrunkPiece(x, y, w, h) {
+      // Wood gradient
+      const woodGrad = ctx.createLinearGradient(x, y, x + w, y);
+      woodGrad.addColorStop(0, '#1c100a');
+      woodGrad.addColorStop(0.3, '#382215');
+      woodGrad.addColorStop(0.7, '#2a1910');
+      woodGrad.addColorStop(1, '#150c07');
+
+      ctx.fillStyle = woodGrad;
+      ctx.fillRect(x, y, w, h);
+
+      // Bark lines & moss
+      ctx.strokeStyle = '#120b07';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x + 18, y);
+      ctx.lineTo(x + 16, y + h);
+      ctx.moveTo(x + 48, y);
+      ctx.lineTo(x + 50, y + h);
+      ctx.stroke();
+
+      // Spectral skull / notch carved in wood
+      ctx.fillStyle = 'rgba(57, 255, 20, 0.25)';
+      ctx.beginPath();
+      ctx.arc(x + w / 2, y + h / 2, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Border outline
+      ctx.strokeStyle = '#0d0704';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, w, h);
+    }
+
+    function drawScythe(originX, originY, side) {
+      ctx.save();
+      const dir = side === 'left' ? -1 : 1;
+
+      // Wooden branch handle extending out
+      ctx.fillStyle = '#2d1a10';
+      ctx.fillRect(dir === -1 ? originX - 70 : originX, originY - 6, 70, 12);
+
+      // Metallic ominous blade / pendulum scythe
+      ctx.beginPath();
+      const bladeTipX = originX + dir * 105;
+      const bladeTipY = originY + 22;
+      const bladeBaseX = originX + dir * 65;
+      const bladeBaseY = originY - 18;
+
+      ctx.moveTo(bladeBaseX, bladeBaseY);
+      ctx.quadraticCurveTo(originX + dir * 90, originY - 8, bladeTipX, bladeTipY);
+      ctx.quadraticCurveTo(originX + dir * 80, originY + 8, bladeBaseX, originY + 12);
+      ctx.closePath();
+
+      // Blade metallic sheen
+      const bladeGrad = ctx.createLinearGradient(bladeBaseX, bladeBaseY, bladeTipX, bladeTipY);
+      bladeGrad.addColorStop(0, '#75887d');
+      bladeGrad.addColorStop(0.5, '#e3efe8');
+      bladeGrad.addColorStop(0.9, '#ff2a4b'); // Bloody sharp tip
+      ctx.fillStyle = bladeGrad;
+      ctx.fill();
+
+      // Blade sharp outline
+      ctx.strokeStyle = '#ff2a4b';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Glowing bloody drip
+      ctx.fillStyle = '#ff2a4b';
+      ctx.beginPath();
+      ctx.arc(bladeTipX, bladeTipY + 2, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawBat(originX, originY, side) {
+      ctx.save();
+      const dir = side === 'left' ? -1 : 1;
+
+      // Rama nudosa de soporte para el murciélago
+      ctx.fillStyle = '#2d1a10';
+      ctx.fillRect(dir === -1 ? originX - 44 : originX, originY - 5, 44, 9);
+      ctx.strokeStyle = '#150c07';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(dir === -1 ? originX - 44 : originX, originY - 5, 44, 9);
+
+      // Posición del murciélago con leve aleteo / balanceo
+      const batX = originX + dir * 32;
+      const batY = originY - 4 + Math.sin(Date.now() * 0.007 + originY) * 3;
+
+      // Resplandor púrpura espectral detrás del murciélago
+      ctx.fillStyle = 'rgba(192, 66, 255, 0.28)';
+      ctx.beginPath();
+      ctx.arc(batX, batY, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Emoji de murciélago
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🦇', batX, batY);
+
+      // Ojos rojos siniestros
+      ctx.fillStyle = '#ff2a4b';
+      ctx.beginPath();
+      ctx.arc(batX - 3, batY - 2, 1.4, 0, Math.PI * 2);
+      ctx.arc(batX + 3, batY - 2, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function renderFlyingLogs() {
+      for (const log of flyingLogs) {
+        ctx.save();
+        ctx.translate(log.x, log.y);
+        ctx.rotate(log.rotation);
+
+        drawTrunkPiece(-TRUNK_WIDTH / 2, -SEGMENT_HEIGHT / 2, TRUNK_WIDTH, SEGMENT_HEIGHT);
+
+        if (log.branch === 'left') {
+          drawScythe(-TRUNK_WIDTH / 2, 0, 'left');
+        } else if (log.branch === 'right') {
+          drawScythe(TRUNK_WIDTH / 2, 0, 'right');
+        } else if (log.branch === 'bat_left') {
+          drawBat(-TRUNK_WIDTH / 2, 0, 'left');
+        } else if (log.branch === 'bat_right') {
+          drawBat(TRUNK_WIDTH / 2, 0, 'right');
+        }
+
+        ctx.restore();
+      }
+    }
+
+    function renderPlayer() {
+      ctx.save();
+      const posX = TRUNK_X + (playerSide === 'left' ? -PLAYER_OFFSET_X : PLAYER_OFFSET_X);
+      const dir = playerSide === 'left' ? 1 : -1; // Face toward trunk
+
+      // Invulnerability flicker
+      if (invulnerableTimer > 0 && Math.floor(invulnerableTimer * 12) % 2 === 0) {
+        ctx.globalAlpha = 0.4;
+      }
+
+      // Spectral shield aura
+      if (shield > 0) {
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.45)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.ellipse(posX, PLAYER_Y - 25, 26, 38, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Player Body: Skeleton Undertaker
+      // Legs
+      ctx.strokeStyle = '#c5d1c8';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(posX - 6, PLAYER_Y);
+      ctx.lineTo(posX - 8, PLAYER_Y + 25);
+      ctx.moveTo(posX + 6, PLAYER_Y);
+      ctx.lineTo(posX + 8, PLAYER_Y + 25);
+      ctx.stroke();
+
+      // Cloak / Robe
+      ctx.fillStyle = '#17221c';
+      ctx.beginPath();
+      ctx.moveTo(posX - 12, PLAYER_Y - 28);
+      ctx.lineTo(posX + 12, PLAYER_Y - 28);
+      ctx.lineTo(posX + 16, PLAYER_Y + 12);
+      ctx.lineTo(posX - 16, PLAYER_Y + 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#283c2f';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Skull Head
+      ctx.fillStyle = '#e8eee9';
+      ctx.beginPath();
+      ctx.arc(posX, PLAYER_Y - 40, 11, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eye sockets (Glowing green)
+      ctx.fillStyle = '#39ff14';
+      ctx.beginPath();
+      ctx.arc(posX + dir * 3, PLAYER_Y - 42, 2.2, 0, Math.PI * 2);
+      ctx.arc(posX + dir * 7, PLAYER_Y - 42, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Axe swing animation
+      ctx.save();
+      ctx.translate(posX + dir * 10, PLAYER_Y - 26);
+      if (isChopping) {
+        ctx.rotate(dir * 0.7); // Swung forward
+      } else {
+        ctx.rotate(dir * -0.4); // Ready pose
+      }
+
+      // Axe Handle
+      ctx.strokeStyle = '#5a3825';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 10);
+      ctx.lineTo(dir * 28, -25);
+      ctx.stroke();
+
+      // Axe Blade
+      ctx.fillStyle = '#9cb3a4';
+      ctx.beginPath();
+      ctx.moveTo(dir * 24, -20);
+      ctx.lineTo(dir * 38, -32);
+      ctx.lineTo(dir * 38, -12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#39ff14';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.restore();
+      ctx.restore();
+    }
+
+    function renderParticles() {
+      for (const p of particles) {
+        ctx.save();
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function renderFloatTexts() {
+      for (const ft of floatTexts) {
+        ctx.save();
+        ctx.font = 'bold 15px Montserrat, sans-serif';
+        ctx.fillStyle = ft.color;
+        ctx.textAlign = 'center';
+        ctx.shadowColor = ft.color;
+        ctx.shadowBlur = 8;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      }
+    }
+
+    /* ==========================================================================
+       USER INPUT HANDLING (KEYBOARD, TOUCH, BUTTONS)
+       ========================================================================== */
+    // Keyboard controls
+    window.addEventListener('keydown', (e) => {
+      if (batSwarmActive) {
+        e.preventDefault();
+        mashBatSwarm();
+        return;
+      }
+
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        doChop('left');
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        doChop('right');
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (state === 'DEAD') {
+          initGame();
+        } else if (state === 'READY') {
+          doChop(playerSide);
+        }
+      }
+    });
+
+    // Big Buttons
+    document.getElementById('btnChopLeft').addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      doChop('left');
+    });
+
+    document.getElementById('btnChopRight').addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      doChop('right');
+    });
+
+    // Direct Canvas Touch / Click
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+
+      if (batSwarmActive) {
+        mashBatSwarm();
+        return;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left) * (C_WIDTH / rect.width);
+      const clickY = (e.clientY - rect.top) * (C_HEIGHT / rect.height);
+
+      // Comprobar si tocó directamente un murciélago en el árbol
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        if (seg.branch === 'bat_left' || seg.branch === 'bat_right') {
+          const segY = GROUND_Y - (i + 1) * SEGMENT_HEIGHT;
+          const dir = seg.branch === 'bat_left' ? -1 : 1;
+          const originX = dir === -1 ? TRUNK_X - TRUNK_WIDTH / 2 : TRUNK_X + TRUNK_WIDTH / 2;
+          const batX = originX + dir * 32;
+          const batY = segY + SEGMENT_HEIGHT / 2;
+          const dist = Math.hypot(clickX - batX, clickY - batY);
+          if (dist < 36) {
+            startBatSwarm(seg);
+            return;
+          }
+        }
+      }
+
+      const clientX = e.clientX - rect.left;
+      const normX = clientX / rect.width;
+
+      if (normX < 0.5) {
+        doChop('left');
+      } else {
+        doChop('right');
+      }
+    });
+
+    // Bat Swarm Mash Event Listeners
+    document.getElementById('btnSwarmMash').addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      mashBatSwarm();
+    });
+
+    document.getElementById('batSwarmOverlay').addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      mashBatSwarm();
+    });
+
+    // Buttons
+    btnRetryDefeat.addEventListener('click', initGame);
+    btnInfiniteMode.addEventListener('click', () => {
+      infiniteMode = true;
+      victoryModal.classList.remove('active');
+      showToast("♾️ ¡Modo Infinito activado! Sigue talando por el récord.");
+    });
+
+    // Copy Discord Spoiler
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 17 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    // Audio Toggle
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    // Toast utility
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // Launch
+    initGame();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

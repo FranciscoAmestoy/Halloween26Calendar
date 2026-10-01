@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 03: Almas en Fila - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #060907;
+      --board-gate: #18221c;
+      --board-border: #33473a;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --gargoyle-purple: #c042ff;
+      --gargoyle-glow: rgba(192, 66, 255, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(35, 60, 45, 0.4) 0%, transparent 65%),
+        radial-gradient(circle at 50% 85%, rgba(15, 28, 20, 0.6) 0%, transparent 70%);
+      padding: 10px 14px 18px 14px;
+    }
+
+    /* Ambient fog and scanlines */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.35;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 580px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .nav-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-nav {
+      background: rgba(17, 26, 20, 0.85);
+      border: 1px solid var(--board-border);
+      color: var(--parchment);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-nav:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+      box-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .day-subtitle {
+      font-family: 'Cinzel', serif;
+      font-size: 0.82rem;
+      letter-spacing: 3px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .title-banner {
+      font-family: 'Creepster', cursive;
+      font-size: clamp(2.1rem, 6vw, 2.9rem);
+      letter-spacing: 3px;
+      color: var(--toxic-green);
+      text-shadow: 0 0 16px var(--toxic-glow), 2px 2px 0px #000;
+      text-align: center;
+      line-height: 1;
+    }
+
+    /* Matchup Bar: Player vs Gargoyle */
+    .matchup-bar {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      background: rgba(17, 26, 20, 0.88);
+      border: 1px solid var(--board-border);
+      border-radius: 12px;
+      padding: 8px 14px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+    }
+
+    .player-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .player-card.right {
+      justify-content: flex-end;
+    }
+
+    .player-avatar-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.8);
+    }
+
+    .player-card.human .player-avatar-badge {
+      background: rgba(57, 255, 20, 0.15);
+      border: 2px solid var(--toxic-green);
+      box-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .player-card.ai .player-avatar-badge {
+      background: rgba(192, 66, 255, 0.15);
+      border: 2px solid var(--gargoyle-purple);
+      box-shadow: 0 0 10px var(--gargoyle-glow);
+    }
+
+    .player-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .player-name {
+      font-family: 'Cinzel', serif;
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--parchment);
+    }
+
+    .player-sub {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .vs-emblem {
+      font-family: 'Creepster', cursive;
+      font-size: 1.4rem;
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 8px var(--pumpkin-glow);
+      padding: 0 10px;
+    }
+
+    /* Turn Status Banner */
+    .turn-banner {
+      width: 100%;
+      text-align: center;
+      background: rgba(8, 14, 10, 0.7);
+      border: 1px dashed var(--board-border);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-family: 'MedievalSharp', cursive;
+      font-size: 0.95rem;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.25s, border-color 0.25s;
+    }
+
+    .turn-banner.human-turn {
+      color: var(--toxic-green);
+      border-color: var(--toxic-green);
+      text-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .turn-banner.ai-turn {
+      color: var(--gargoyle-purple);
+      border-color: var(--gargoyle-purple);
+      text-shadow: 0 0 8px var(--gargoyle-glow);
+    }
+
+    /* ==========================================================================
+       CONNECT 4 WROUGHT-IRON GATE (7 COLUMNS x 6 ROWS)
+       ========================================================================== */
+    .gate-container {
+      position: relative;
+      width: min(440px, 94vw);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    /* Column Hover Indicator Strip (Above gate) */
+    .drop-indicator-strip {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      padding: 0 8px;
+      height: 32px;
+    }
+
+    .indicator-slot {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      opacity: 0;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+
+    .indicator-slot.hovered {
+      opacity: 1;
+      transform: translateY(-2px);
+      filter: drop-shadow(0 0 8px var(--toxic-green));
+    }
+
+    /* The Iron Gate Grid */
+    .connect-grid-board {
+      width: 100%;
+      background: linear-gradient(180deg, #1f2e24 0%, #121c15 100%);
+      border: 4px solid var(--board-border);
+      border-radius: 16px;
+      padding: 10px 8px;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      box-shadow: 
+        0 12px 28px rgba(0, 0, 0, 0.9), 
+        inset 0 0 20px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Column Tap/Click Target */
+    .board-column {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+      position: relative;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+
+    .board-column:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    /* Individual Stone Hollow (Slot) */
+    .board-cell {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      background: #080d09;
+      border: 2px solid #142017;
+      border-radius: 50%;
+      box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Tokens / Skulls */
+    .token {
+      width: 86%;
+      height: 86%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.2rem, 3.8vw, 1.8rem);
+      line-height: 1;
+      position: absolute;
+      animation: dropToken 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    @keyframes dropToken {
+      0% { transform: translateY(-300px); opacity: 0.3; }
+      70% { transform: translateY(6px); }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    .token.human {
+      background: radial-gradient(circle, #39ff14 0%, #156906 75%, #051a02 100%);
+      box-shadow: 0 0 10px var(--toxic-glow), inset 0 2px 4px rgba(255,255,255,0.6);
+      border: 1px solid #73ff57;
+    }
+
+    .token.ai {
+      background: radial-gradient(circle, #c042ff 0%, #680d96 75%, #1d012c 100%);
+      box-shadow: 0 0 10px var(--gargoyle-glow), inset 0 2px 4px rgba(255,255,255,0.6);
+      border: 1px solid #dd8eff;
+    }
+
+    /* Winning token pulse highlight */
+    .token.winning {
+      animation: winPulse 0.8s infinite alternate ease-in-out;
+      border: 2px solid #fff;
+    }
+
+    @keyframes winPulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 12px #fff; }
+      100% { transform: scale(1.12); box-shadow: 0 0 24px #fff, 0 0 35px var(--toxic-green); }
+    }
+
+    /* Keyboard Guide Strip below Gate */
+    .keyboard-guide-strip {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      padding: 4px 8px 0 8px;
+    }
+
+    .key-hint {
+      text-align: center;
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 1px 0;
+    }
+
+    /* Reset / Restart button */
+    .action-row {
+      display: flex;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    .btn-spooky-action {
+      background: linear-gradient(180deg, var(--pumpkin-orange) 0%, #b84d07 100%);
+      border: none;
+      color: #000;
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 900;
+      padding: 10px 22px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px var(--pumpkin-glow);
+      transition: all 0.2s;
+    }
+
+    .btn-spooky-action:hover {
+      filter: brightness(1.15);
+      transform: translateY(-2px);
+    }
+
+    /* ==========================================================================
+       MODALS: VICTORY & DEFEAT
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 8, 6, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(180deg, #15241b 0%, #0a130e 100%);
+      border: 2px solid var(--board-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      padding: 26px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.95);
+      transform: scale(0.92);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-align: center;
+    }
+
+    .modal-backdrop.active .modal-box {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: clamp(2.2rem, 6vw, 2.8rem);
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .modal-title.victory {
+      color: var(--toxic-green);
+      text-shadow: 0 0 16px var(--toxic-glow);
+    }
+
+    .modal-title.defeat {
+      color: var(--gargoyle-purple);
+      text-shadow: 0 0 16px var(--gargoyle-glow);
+    }
+
+    .word-box-outer {
+      background: rgba(8, 14, 10, 0.75);
+      border: 2px dashed var(--toxic-green);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .word-box-label {
+      font-size: 0.72rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    .secret-word-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.8rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: var(--toxic-green);
+      text-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .discord-btn-box {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-discord-copy {
+      background: #5865f2;
+      border: none;
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(88, 101, 242, 0.5);
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-discord-copy:hover {
+      background: #4752c4;
+      transform: translateY(-2px);
+    }
+
+    .btn-discord-copy.copied {
+      background: #3ba55c;
+    }
+
+    .btn-krypt-return {
+      background: rgba(20, 32, 24, 0.8);
+      border: 1px solid var(--board-border);
+      color: var(--parchment);
+      font-family: 'Cinzel', serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-krypt-return:hover {
+      border-color: var(--pumpkin-orange);
+      color: var(--pumpkin-orange);
+    }
+
+    /* Toast */
+    .spooky-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(14, 26, 18, 0.95);
+      border: 1px solid var(--toxic-green);
+      box-shadow: 0 4px 20px var(--toxic-glow);
+      color: var(--parchment);
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      z-index: 200;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .spooky-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay"></div>
+
+  <div class="game-shell">
+    <!-- Header -->
+    <header>
+      <div class="nav-bar">
+        <a href="../../index.html" class="btn-nav" title="Regresar al cementerio">
+          🏛️ Volver a la Krypta
+        </a>
+        <button class="btn-nav" id="soundToggleBtn">
+          🔊 Audio
+        </button>
+      </div>
+      <span class="day-subtitle">DÍA 03 • LA KRYPTA</span>
+      <h1 class="title-banner">ALMAS EN FILA</h1>
+    </header>
+
+    <!-- Matchup Bar: Player vs Gargoyle -->
+    <div class="matchup-bar">
+      <!-- Human Player -->
+      <div class="player-card human">
+        <div class="player-avatar-badge">💀</div>
+        <div class="player-info">
+          <span class="player-name">Tú (Alma Espectral)</span>
+          <span class="player-sub">Ficha Verde</span>
+        </div>
+      </div>
+
+      <!-- VS -->
+      <div class="vs-emblem">VS</div>
+
+      <!-- AI Gargoyle -->
+      <div class="player-card ai right">
+        <div class="player-info" style="align-items: flex-end;">
+          <span class="player-name">La Gárgola</span>
+          <span class="player-sub">Ficha Púrpura</span>
+        </div>
+        <div class="player-avatar-badge">😈</div>
+      </div>
+    </div>
+
+    <!-- Turn Banner -->
+    <div class="turn-banner human-turn" id="turnBanner">
+      🔮 Tu turno: Alinea 4 calaveras en fila (vertical, horizontal o diagonal).
+    </div>
+
+    <!-- The 7x6 Wrought-Iron Gate -->
+    <div class="gate-container">
+      <!-- Hover Indicator Strip (Shows where token will drop) -->
+      <div class="drop-indicator-strip" id="indicatorStrip">
+        <div class="indicator-slot" id="ind-0">💀</div>
+        <div class="indicator-slot" id="ind-1">💀</div>
+        <div class="indicator-slot" id="ind-2">💀</div>
+        <div class="indicator-slot" id="ind-3">💀</div>
+        <div class="indicator-slot" id="ind-4">💀</div>
+        <div class="indicator-slot" id="ind-5">💀</div>
+        <div class="indicator-slot" id="ind-6">💀</div>
+      </div>
+
+      <!-- Connect 4 Board: 7 columns -->
+      <div class="connect-grid-board" id="connectBoard">
+        <!-- 7 columns with 6 cells each generated in JS -->
+      </div>
+
+      <!-- Keyboard Guide Strip [1 to 7] -->
+      <div class="keyboard-guide-strip">
+        <span class="key-hint">[1]</span>
+        <span class="key-hint">[2]</span>
+        <span class="key-hint">[3]</span>
+        <span class="key-hint">[4]</span>
+        <span class="key-hint">[5]</span>
+        <span class="key-hint">[6]</span>
+        <span class="key-hint">[7]</span>
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-row">
+      <button class="btn-spooky-action" id="resetBtn">
+        🔄 Reiniciar Partida
+      </button>
+    </div>
+  </div>
+
+  <!-- VICTORY MODAL -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box">
+      <h2 class="modal-title victory">¡4 EN FILA ALCANZADO!</h2>
+      <p style="font-size:0.9rem; color:var(--parchment); line-height: 1.4;">
+        Has sellado la reja del mausoleo y superado el intelecto de la Gárgola.
+      </p>
+
+      <div class="word-box-outer">
+        <span class="word-box-label">Palabra Clave Secreta del Día 03:</span>
+        <div class="secret-word-display" id="secretWordDisplay">CRANEO-ESPECTRAL</div>
+        <p style="font-size:0.75rem; color:var(--text-muted);">
+          Envía este código en Discord para registrar tu victoria del día.
+        </p>
+      </div>
+
+      <div class="discord-btn-box">
+        <!-- COPIAR PARA DISCORD CON SPOILERS "||" -->
+        <button class="btn-discord-copy" id="copyDiscordBtn" onclick="copyDiscordMessage()">
+          📋 Copiar para Discord
+        </button>
+        <a href="../../index.html" class="btn-krypt-return">
+          🏛️ Volver a la Krypta
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEFEAT MODAL -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box">
+      <h2 class="modal-title defeat" id="defeatTitle">LA GÁRGOLA HA TRIUNFADO</h2>
+      <p id="defeatDesc" style="font-size:0.9rem; color:var(--parchment); line-height: 1.4;">
+        La entidad enemiga completó 4 almas oscuras en fila antes que tú.
+      </p>
+      <div style="font-size: 2.2rem; margin: 4px 0;">😈</div>
+      <button class="btn-spooky-action" style="width:100%; justify-content:center;" onclick="restartGame()">
+        🔄 Desafiar a la Gárgola de Nuevo
+      </button>
+      <a href="../../index.html" class="btn-krypt-return" style="margin-top:4px;">
+        🏛️ Volver a la Krypta
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="spooky-toast" id="toast">Copiado al portapapeles</div>
+
+  <script>
+    /* ==========================================================================
+       SYNTHESIZER SOUND ENGINE (WEB AUDIO API)
+       ========================================================================== */
+    class ConnectAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playDrop(isHuman) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = isHuman ? 'sine' : 'triangle';
+        const startFreq = isHuman ? 420 : 220;
+        const endFreq = isHuman ? 180 : 90;
+
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.15);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      }
+
+      playWin() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
+        notes.forEach((freq, i) => {
+          const now = this.ctx.currentTime + (i * 0.12);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.22, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.6);
+        });
+      }
+
+      playLoss() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(35, now + 0.8);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.8);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.8);
+      }
+    }
+
+    const sound = new ConnectAudio();
+
+    /* ==========================================================================
+       CONNECT 4 ENGINE (7 COLUMNS x 6 ROWS)
+       ========================================================================== */
+    const COLS = 7;
+    const ROWS = 6;
+    const HUMAN = 1;
+    const AI = 2;
+    const SECRET_WORD = "CRANEO-ESPECTRAL";
+
+    // Board representation: board[col][row] (row 0 is bottom, row 5 is top)
+    let board = [];
+    let isHumanTurn = true;
+    let isGameOver = false;
+
+    // DOM Elements
+    const connectBoard = document.getElementById('connectBoard');
+    const turnBanner = document.getElementById('turnBanner');
+    const indicatorStrip = document.getElementById('indicatorStrip');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const defeatTitle = document.getElementById('defeatTitle');
+    const defeatDesc = document.getElementById('defeatDesc');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    /* Build HTML Board Structure */
+    function initBoardDOM() {
+      connectBoard.innerHTML = '';
+      for (let col = 0; col < COLS; col++) {
+        const colEl = document.createElement('div');
+        colEl.className = 'board-column';
+        colEl.id = `col-${col}`;
+        colEl.dataset.col = col;
+
+        // 6 cells per column (from row 5 top down to row 0 bottom)
+        for (let row = ROWS - 1; row >= 0; row--) {
+          const cellEl = document.createElement('div');
+          cellEl.className = 'board-cell';
+          cellEl.id = `cell-${col}-${row}`;
+          colEl.appendChild(cellEl);
+        }
+
+        // Hover events for indicator
+        colEl.addEventListener('mouseenter', () => highlightIndicator(col, true));
+        colEl.addEventListener('mouseleave', () => highlightIndicator(col, false));
+
+        // Click to drop token
+        colEl.addEventListener('click', () => {
+          if (!isHumanTurn || isGameOver) return;
+          playerMove(col);
+        });
+
+        connectBoard.appendChild(colEl);
+      }
+    }
+
+    function highlightIndicator(col, show) {
+      if (!isHumanTurn || isGameOver) return;
+      const ind = document.getElementById(`ind-${col}`);
+      if (!ind) return;
+      if (show) {
+        ind.classList.add('hovered');
+      } else {
+        ind.classList.remove('hovered');
+      }
+    }
+
+    /* Start / Reset Game */
+    function startNewGame() {
+      board = Array.from({ length: COLS }, () => Array(ROWS).fill(0));
+      isHumanTurn = true;
+      isGameOver = false;
+
+      // Clear DOM tokens
+      for (let c = 0; c < COLS; c++) {
+        for (let r = 0; r < ROWS; r++) {
+          const cell = document.getElementById(`cell-${c}-${r}`);
+          cell.innerHTML = '';
+        }
+      }
+
+      turnBanner.className = 'turn-banner human-turn';
+      turnBanner.innerHTML = '🔮 Tu turno: Alinea 4 calaveras en fila (vertical, horizontal o diagonal).';
+
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+    }
+
+    function restartGame() {
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      startNewGame();
+    }
+
+    resetBtn.addEventListener('click', startNewGame);
+
+    /* Player Move */
+    function playerMove(col) {
+      const openRow = getLowestEmptyRow(col);
+      if (openRow === -1) return; // Column full!
+
+      sound.init();
+      makeMove(col, openRow, HUMAN);
+
+      const winningLine = checkWin(HUMAN);
+      if (winningLine) {
+        handleGameOver(HUMAN, winningLine);
+        return;
+      }
+
+      if (isBoardFull()) {
+        handleGameOver(0);
+        return;
+      }
+
+      // Pass turn to AI Gargoyle
+      isHumanTurn = false;
+      highlightIndicator(col, false);
+      turnBanner.className = 'turn-banner ai-turn';
+      turnBanner.innerHTML = '😈 La Gárgola está meditando su jugada mortal...';
+
+      setTimeout(aiMove, 650);
+    }
+
+    function getLowestEmptyRow(col) {
+      for (let r = 0; r < ROWS; r++) {
+        if (board[col][r] === 0) return r;
+      }
+      return -1;
+    }
+
+    function makeMove(col, row, player) {
+      board[col][row] = player;
+      sound.playDrop(player === HUMAN);
+
+      const cell = document.getElementById(`cell-${col}-${row}`);
+      const token = document.createElement('div');
+      token.className = `token ${player === HUMAN ? 'human' : 'ai'}`;
+      token.id = `token-${col}-${row}`;
+      token.textContent = (player === HUMAN) ? '💀' : '😈';
+      cell.appendChild(token);
+    }
+
+    /* AI Gargoyle Logic */
+    function aiMove() {
+      if (isGameOver) return;
+
+      // 1. Can AI win immediately on this turn?
+      for (let c = 0; c < COLS; c++) {
+        const r = getLowestEmptyRow(c);
+        if (r !== -1) {
+          board[c][r] = AI;
+          if (checkWin(AI)) {
+            board[c][r] = 0;
+            executeAIMove(c, r);
+            return;
+          }
+          board[c][r] = 0;
+        }
+      }
+
+      // 2. Can Human win immediately on next turn? Block it!
+      for (let c = 0; c < COLS; c++) {
+        const r = getLowestEmptyRow(c);
+        if (r !== -1) {
+          board[c][r] = HUMAN;
+          if (checkWin(HUMAN)) {
+            board[c][r] = 0;
+            executeAIMove(c, r);
+            return;
+          }
+          board[c][r] = 0;
+        }
+      }
+
+      // 3. Strategic heuristic: prioritize columns closer to the center [3, 2, 4, 1, 5, 0, 6]
+      const preferredCols = [3, 2, 4, 1, 5, 0, 6];
+      const validCols = preferredCols.filter(c => getLowestEmptyRow(c) !== -1);
+
+      // Avoid moves that hand the human an immediate win above the AI's move
+      const safeCols = validCols.filter(c => {
+        const r = getLowestEmptyRow(c);
+        if (r + 1 < ROWS) {
+          board[c][r] = AI;
+          board[c][r+1] = HUMAN;
+          const humanWins = checkWin(HUMAN);
+          board[c][r+1] = 0;
+          board[c][r] = 0;
+          return !humanWins;
+        }
+        return true;
+      });
+
+      const chosenCol = (safeCols.length > 0) ? safeCols[0] : validCols[0];
+      const chosenRow = getLowestEmptyRow(chosenCol);
+
+      executeAIMove(chosenCol, chosenRow);
+    }
+
+    function executeAIMove(col, row) {
+      makeMove(col, row, AI);
+
+      const winningLine = checkWin(AI);
+      if (winningLine) {
+        handleGameOver(AI, winningLine);
+        return;
+      }
+
+      if (isBoardFull()) {
+        handleGameOver(0);
+        return;
+      }
+
+      // Return turn to Human
+      isHumanTurn = true;
+      turnBanner.className = 'turn-banner human-turn';
+      turnBanner.innerHTML = '🔮 Tu turno: Coloca una calavera en la reja.';
+    }
+
+    function isBoardFull() {
+      for (let c = 0; c < COLS; c++) {
+        if (board[c][ROWS - 1] === 0) return false;
+      }
+      return true;
+    }
+
+    /* Win Detection (Horizontal, Vertical, Diagonal / and \) */
+    function checkWin(player) {
+      // Horizontal
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c <= COLS - 4; c++) {
+          if (board[c][r] === player && board[c+1][r] === player && board[c+2][r] === player && board[c+3][r] === player) {
+            return [[c, r], [c+1, r], [c+2, r], [c+3, r]];
+          }
+        }
+      }
+
+      // Vertical
+      for (let c = 0; c < COLS; c++) {
+        for (let r = 0; r <= ROWS - 4; r++) {
+          if (board[c][r] === player && board[c][r+1] === player && board[c][r+2] === player && board[c][r+3] === player) {
+            return [[c, r], [c, r+1], [c, r+2], [c, r+3]];
+          }
+        }
+      }
+
+      // Diagonal Up-Right (/)
+      for (let c = 0; c <= COLS - 4; c++) {
+        for (let r = 0; r <= ROWS - 4; r++) {
+          if (board[c][r] === player && board[c+1][r+1] === player && board[c+2][r+2] === player && board[c+3][r+3] === player) {
+            return [[c, r], [c+1, r+1], [c+2, r+2], [c+3, r+3]];
+          }
+        }
+      }
+
+      // Diagonal Down-Right (\)
+      for (let c = 0; c <= COLS - 4; c++) {
+        for (let r = 3; r < ROWS; r++) {
+          if (board[c][r] === player && board[c+1][r-1] === player && board[c+2][r-2] === player && board[c+3][r-3] === player) {
+            return [[c, r], [c+1, r-1], [c+2, r-2], [c+3, r-3]];
+          }
+        }
+      }
+
+      return null;
+    }
+
+    function handleGameOver(winner, line = []) {
+      isGameOver = true;
+
+      // Highlight winning 4 tokens
+      if (line && line.length === 4) {
+        line.forEach(([c, r]) => {
+          const tok = document.getElementById(`token-${c}-${r}`);
+          if (tok) tok.classList.add('winning');
+        });
+      }
+
+      if (winner === HUMAN) {
+        sound.playWin();
+        try {
+          localStorage.setItem('krypt_day_03_cleared', 'true');
+        } catch(e){}
+
+        turnBanner.className = 'turn-banner human-turn';
+        turnBanner.innerHTML = '🏆 ¡Victoria! Has conectado 4 almas en la reja.';
+        setTimeout(() => victoryModal.classList.add('active'), 500);
+      } else if (winner === AI) {
+        sound.playLoss();
+        turnBanner.className = 'turn-banner ai-turn';
+        turnBanner.innerHTML = '💀 La Gárgola ha ganado la partida.';
+        defeatTitle.textContent = "LA GÁRGOLA HA TRIUNFADO";
+        defeatDesc.textContent = "La entidad enemiga completó 4 almas oscuras en fila antes que tú.";
+        setTimeout(() => defeatModal.classList.add('active'), 500);
+      } else {
+        // Draw / Tie
+        sound.playLoss();
+        turnBanner.className = 'turn-banner';
+        turnBanner.innerHTML = '⚖️ Empate: La reja está sellada sin vencedor.';
+        defeatTitle.textContent = "EMPATE EN EL MAUSOLEO";
+        defeatDesc.textContent = "Todas las cavidades se han llenado sin que ninguna fuerza impusiera 4 almas.";
+        setTimeout(() => defeatModal.classList.add('active'), 500);
+      }
+    }
+
+    /* Keyboard Controls [1 to 7] */
+    window.addEventListener('keydown', (e) => {
+      if (!isHumanTurn || isGameOver) return;
+      const key = e.key;
+      const colNum = parseInt(key, 10);
+      if (colNum >= 1 && colNum <= 7) {
+        playerMove(colNum - 1);
+      }
+    });
+
+    /* ==========================================================================
+       DISCORD MESSAGE GENERATOR WITH SPOILER SYNTAX "||"
+       ========================================================================== */
+    function copyDiscordMessage() {
+      // User requirement: Encerrar la palabra en "||" para spoiler en Discord
+      const discordText = `🎃 ¡He superado el Día 03 en La Krypta! Código: ||${SECRET_WORD}||`;
+
+      navigator.clipboard.writeText(discordText).then(() => {
+        copyDiscordBtn.innerHTML = '✓ ¡Copiado con Spoiler!';
+        copyDiscordBtn.classList.add('copied');
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.innerHTML = '📋 Copiar para Discord';
+          copyDiscordBtn.classList.remove('copied');
+        }, 2500);
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = discordText;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.innerHTML = '✓ ¡Copiado con Spoiler!';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+      });
+    }
+
+    /* Toast Helper */
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    /* Sound Toggle */
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    /* Init */
+    initBoardDOM();
+    startNewGame();
+  </script>
+</body>
+</html>

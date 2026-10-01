@@ -1,0 +1,2488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 21: Defensa del Bastión - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --board-border: #283c2f;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --spectral-purple: #c042ff;
+      --spectral-glow: rgba(192, 66, 255, 0.55);
+      --spectral-cyan: #00e5ff;
+      --spectral-cyan-glow: rgba(0, 229, 255, 0.55);
+      --moon-gold: #ffd24d;
+      --moon-glow: rgba(255, 210, 77, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 12%, rgba(45, 20, 60, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 88%, rgba(15, 30, 22, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 14px 12px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.18;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: #fff;
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--spectral-cyan);
+      box-shadow: 0 0 10px var(--spectral-cyan-glow);
+      color: #fff;
+    }
+
+    /* Titles */
+    .title-banner {
+      text-align: center;
+    }
+
+    .curse-day {
+      font-size: 0.72rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--spectral-cyan);
+      font-weight: 800;
+      text-shadow: 0 0 8px var(--spectral-cyan-glow);
+    }
+
+    .curse-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.45rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #fff;
+      text-shadow: 0 0 12px var(--pumpkin-glow);
+      margin-top: -2px;
+    }
+
+    .curse-subtitle {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 22, 17, 0.85);
+      border: 1px solid #283c2f;
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .hud-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .hud-value {
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .hud-value.health {
+      color: var(--blood-red);
+      text-shadow: 0 0 8px var(--blood-glow);
+    }
+
+    .hud-value.currency {
+      color: var(--toxic-green);
+      text-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .hud-value.wave {
+      color: var(--moon-gold);
+      text-shadow: 0 0 8px var(--moon-glow);
+    }
+
+    .btn-speed {
+      background: #192720;
+      border: 1px solid #365040;
+      color: var(--parchment);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-speed.fast {
+      background: #254432;
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    /* Canvas Arena */
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      background: #0d1410;
+      border: 2px solid var(--board-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.85), inset 0 0 30px rgba(0, 0, 0, 0.6);
+      touch-action: none;
+      cursor: pointer;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* Start / Overlay */
+    .arena-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7, 10, 8, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 20px;
+      text-align: center;
+      gap: 12px;
+      z-index: 20;
+      transition: opacity 0.25s ease;
+    }
+
+    .arena-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .overlay-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2.1rem;
+      letter-spacing: 2px;
+      color: var(--toxic-green);
+      text-shadow: 0 0 14px var(--toxic-glow);
+    }
+
+    .overlay-desc {
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: var(--parchment);
+      max-width: 320px;
+    }
+
+    .tower-preview-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(15, 25, 20, 0.85);
+      border: 1px solid #283c2f;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .preview-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .preview-item span.icon {
+      font-size: 1.3rem;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #1c683b, #0f4024);
+      color: #fff;
+      border: 1px solid var(--toxic-green);
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 0 15px var(--toxic-glow);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 22px var(--toxic-glow);
+      background: linear-gradient(135deg, #24844c, #145530);
+    }
+
+    /* Wave & Action Bar */
+    .action-bar {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-wave {
+      flex: 1;
+      padding: 8px 12px;
+      background: linear-gradient(135deg, #872517, #541108);
+      border: 1px solid var(--pumpkin-orange);
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Cinzel', serif;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 0 10px var(--pumpkin-glow);
+      transition: all 0.2s ease;
+    }
+
+    .btn-wave:hover:not(:disabled) {
+      background: linear-gradient(135deg, #a8301e, #6e170b);
+      box-shadow: 0 0 16px var(--pumpkin-glow);
+    }
+
+    .btn-wave:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+      border-color: #444;
+    }
+
+    /* Tower Build / Upgrade Tray */
+    .tower-tray {
+      width: 100%;
+      background: rgba(14, 22, 17, 0.92);
+      border: 1px solid #2d4535;
+      border-radius: 10px;
+      padding: 8px;
+      display: flex;
+      justify-content: space-around;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    }
+
+    .tower-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: #131d16;
+      border: 1px solid #2d4234;
+      border-radius: 8px;
+      padding: 6px 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .tower-card:hover {
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 10px var(--toxic-glow);
+      background: #17271c;
+    }
+
+    .tower-card.selected {
+      border-color: var(--spectral-cyan);
+      box-shadow: 0 0 12px var(--spectral-cyan-glow);
+      background: #19312b;
+    }
+
+    .tower-card.disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      border-color: #26332a;
+    }
+
+    .tower-card-icon {
+      font-size: 1.4rem;
+    }
+
+    .tower-card-name {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .tower-card-cost {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--toxic-green);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    /* Selected Pedestal Inspector (Upgrade / Sell) */
+    .inspector-panel {
+      display: none;
+      width: 100%;
+      background: rgba(18, 28, 22, 0.95);
+      border: 1px solid var(--spectral-cyan);
+      border-radius: 10px;
+      padding: 8px 12px;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 0 14px var(--spectral-cyan-glow);
+      animation: fadeIn 0.2s ease;
+    }
+
+    .inspector-panel.active {
+      display: flex;
+    }
+
+    .inspector-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .inspector-name {
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .inspector-stats {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .inspector-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-upgrade {
+      background: linear-gradient(135deg, #1c5236, #103622);
+      border: 1px solid var(--toxic-green);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-upgrade:hover:not(:disabled) {
+      box-shadow: 0 0 10px var(--toxic-glow);
+      background: linear-gradient(135deg, #246a44, #14432a);
+    }
+
+    .btn-upgrade:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: #444;
+    }
+
+    .btn-sell {
+      background: rgba(80, 20, 25, 0.7);
+      border: 1px solid var(--blood-red);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-sell:hover {
+      background: rgba(120, 25, 35, 0.9);
+      box-shadow: 0 0 10px var(--blood-glow);
+    }
+
+    .btn-close-inspect {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    .btn-close-inspect:hover {
+      color: #fff;
+    }
+
+    /* Modal Dialogs */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 16px;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 380px;
+      background: #0f1612;
+      border: 2px solid #32503d;
+      border-radius: 12px;
+      padding: 22px 18px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.9);
+      position: relative;
+      animation: modalPop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .modal-box.victory {
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 30px var(--moon-glow);
+    }
+
+    .modal-box.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 30px var(--blood-glow);
+    }
+
+    @keyframes modalPop {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-icon {
+      font-size: 2.4rem;
+      filter: drop-shadow(0 0 10px var(--moon-gold));
+    }
+
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .modal-desc {
+      font-size: 0.82rem;
+      color: var(--parchment);
+      line-height: 1.45;
+    }
+
+    /* Secret Parchment Scroll */
+    .secret-scroll {
+      width: 100%;
+      background: linear-gradient(180deg, #1b281f 0%, #111a14 100%);
+      border: 1px dashed var(--toxic-green);
+      border-radius: 8px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scroll-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--toxic-green);
+      font-weight: 800;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', monospace;
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #fff;
+      text-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 16px rgba(88, 101, 242, 0.7);
+    }
+
+    .btn-action.discord.copied {
+      background: #23a55a;
+    }
+
+    .btn-action.advance {
+      background: linear-gradient(135deg, #274b35, #142a1e);
+      color: var(--parchment);
+      border: 1px solid #3e684d;
+    }
+
+    .btn-action.advance:hover {
+      border-color: var(--toxic-green);
+      color: #fff;
+    }
+
+    .btn-action.retry {
+      background: linear-gradient(135deg, #7a1d2e, #47101a);
+      color: #fff;
+      border: 1px solid var(--blood-red);
+      box-shadow: 0 0 14px var(--blood-glow);
+    }
+
+    .btn-action.retry:hover {
+      background: linear-gradient(135deg, #962539, #5e1623);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #142017;
+      border: 1px solid var(--toxic-green);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      box-shadow: 0 0 16px var(--toxic-glow);
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient FX -->
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <!-- Main Shell -->
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>⚰️</span>
+        <span>Cementerio</span>
+      </a>
+
+      <div class="header-controls">
+        <button class="btn-icon" id="soundToggleBtn">🔊 Audio</button>
+        <button class="btn-icon" id="restartBtn">🔄 Reiniciar</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <div class="curse-day">Día XXI • Maleficio de Asedio</div>
+      <h1 class="curse-title">Defensa del Bastión</h1>
+      <div class="curse-subtitle">Erige torres sagradas para repeler la horda que marcha a la Cripta</div>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-item">
+        <span class="hud-label">Bastión</span>
+        <span class="hud-value health" id="healthDisplay">❤️ 10</span>
+      </div>
+
+      <div class="hud-item">
+        <span class="hud-label">Ectoplasma</span>
+        <span class="hud-value currency" id="currencyDisplay">🧪 120</span>
+      </div>
+
+      <div class="hud-item">
+        <span class="hud-label">Oleada</span>
+        <span class="hud-value wave" id="waveDisplay">1 / 4</span>
+      </div>
+
+      <div class="hud-item">
+        <span class="hud-label">Velocidad</span>
+        <button class="btn-speed" id="btnSpeedToggle">▶ 1x</button>
+      </div>
+    </div>
+
+    <!-- Canvas Wrapper -->
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="gameCanvas" width="420" height="540"></canvas>
+
+      <!-- Overlay Start -->
+      <div class="arena-overlay" id="startOverlay">
+        <h2 class="overlay-title">DEFENSA DEL BASTIÓN</h2>
+        <p class="overlay-desc">
+          Las hordas del camposanto avanzan por el sendero hacia las puertas de la Cripta Sagrada. 
+          Toca los pedestales rúnicos para construir guardianes místicos.
+        </p>
+
+        <div class="tower-preview-row">
+          <div class="preview-item">
+            <span class="icon">🗿</span>
+            <strong>Gárgola</strong>
+            <span>Fuego rápido</span>
+          </div>
+          <div class="preview-item">
+            <span class="icon">⚡</span>
+            <strong>Obelisco</strong>
+            <span>Rayo y Frío</span>
+          </div>
+          <div class="preview-item">
+            <span class="icon">🎃</span>
+            <strong>Catapulta</strong>
+            <span>Explosión de área</span>
+          </div>
+        </div>
+
+        <button class="btn-start" id="btnStartGame">
+          <span>⚔️</span>
+          <span>Defender la Cripta</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Action Bar (Next Wave) -->
+    <div class="action-bar">
+      <button class="btn-wave" id="btnNextWave">
+        <span>⚔️</span>
+        <span id="waveBtnText">Iniciar Oleada 1</span>
+      </button>
+    </div>
+
+    <!-- Tower Build Tray -->
+    <div class="tower-tray" id="towerBuildTray">
+      <div class="tower-card" data-tower="gargoyle" id="cardGargoyle">
+        <span class="tower-card-icon">🗿</span>
+        <span class="tower-card-name">Gárgola</span>
+        <span class="tower-card-cost">🧪 60</span>
+      </div>
+      <div class="tower-card" data-tower="obelisk" id="cardObelisk">
+        <span class="tower-card-icon">⚡</span>
+        <span class="tower-card-name">Obelisco</span>
+        <span class="tower-card-cost">🧪 80</span>
+      </div>
+      <div class="tower-card" data-tower="catapult" id="cardCatapult">
+        <span class="tower-card-icon">🎃</span>
+        <span class="tower-card-name">Catapulta</span>
+        <span class="tower-card-cost">🧪 100</span>
+      </div>
+    </div>
+
+    <!-- Selected Tower Inspector Panel -->
+    <div class="inspector-panel" id="inspectorPanel">
+      <div class="inspector-info">
+        <span class="inspector-name" id="inspectName">Gárgola (Niv. 1)</span>
+        <span class="inspector-stats" id="inspectStats">Daño: 15 • Alcance: 110</span>
+      </div>
+      <div class="inspector-actions">
+        <button class="btn-upgrade" id="btnUpgrade">
+          <span>⭐</span>
+          <span id="upgradeCostText">Mejorar (🧪 50)</span>
+        </button>
+        <button class="btn-sell" id="btnSell">
+          <span>♻️</span>
+          <span id="sellValueText">+40</span>
+        </button>
+        <button class="btn-close-inspect" id="btnCloseInspect">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">🏰✨</div>
+      <h2 class="modal-title">¡El Bastión Resiste!</h2>
+      <p class="modal-desc">
+        Has aniquilado al Señor de la Cripta y a sus legiones. La Puerta Sagrada permanece sellada ante las fuerzas de la noche.
+      </p>
+
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display">GUARDIAN-ETERNO</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action advance" id="btnContinueEndless">
+        <span>♾️</span>
+        <span>Continuar Asedio Infinito</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box defeat">
+      <div class="modal-icon">⚰️💥</div>
+      <h2 class="modal-title">¡El Bastión ha Caído!</h2>
+      <p class="modal-desc">
+        Los no-muertos rompieron los cerrojos de la Cripta Sagrada y profanaron los sepulcros ancestrales.
+      </p>
+
+      <button class="btn-action retry" id="btnRetry">
+        <span>🔄</span>
+        <span>Reintentar Asedio</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Huir al Cementerio</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Script Engine -->
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO CONTROLLER
+       ========================================================================== */
+    class TDAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playFireball() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(480, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.12);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.13);
+      }
+
+      playLightning() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800 + Math.random() * 200, now);
+        osc.frequency.linearRampToValueAtTime(300, now + 0.08);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+
+      playPumpkinBomb() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Low boom
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(35, now + 0.28);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.29);
+      }
+
+      playEnemyHit() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.05);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+
+      playEnemyDeath() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const freqs = [380, 290, 180];
+        freqs.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now + i * 0.03);
+          gain.gain.setValueAtTime(0.12, now + i * 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.03 + 0.1);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.03);
+          osc.stop(now + i * 0.03 + 0.11);
+        });
+      }
+
+      playGateDamaged() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(90, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+        gain.gain.setValueAtTime(0.38, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.36);
+      }
+
+      playBuild() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const freqs = [320, 480, 640];
+        freqs.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + i * 0.04);
+          gain.gain.setValueAtTime(0.15, now + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.12);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.13);
+        });
+      }
+
+      playUpgrade() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const freqs = [440, 554.37, 659.25, 880];
+        freqs.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now + i * 0.05);
+          gain.gain.setValueAtTime(0.16, now + i * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.18);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.05);
+          osc.stop(now + i * 0.05 + 0.2);
+        });
+      }
+
+      playWaveClear() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99];
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + i * 0.08);
+          gain.gain.setValueAtTime(0.18, now + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.08);
+          osc.stop(now + i * 0.08 + 0.35);
+        });
+      }
+
+      playGrandVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const fanfare = [
+          { f: 523.25, t: 0.0, d: 0.25 },
+          { f: 659.25, t: 0.15, d: 0.25 },
+          { f: 783.99, t: 0.3, d: 0.35 },
+          { f: 1046.50, t: 0.5, d: 0.7 }
+        ];
+        fanfare.forEach(n => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(n.f, now + n.t);
+          gain.gain.setValueAtTime(0.24, now + n.t);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + n.t);
+          osc.stop(now + n.t + n.d + 0.05);
+        });
+      }
+
+      playClick() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.05);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+    }
+
+    const sound = new TDAudio();
+
+    /* ==========================================================================
+       MAP & WAYPOINTS DEFINITION
+       ========================================================================== */
+    // Winding path waypoints through the cemetery into the crypt gate at bottom
+    const WAYPOINTS = [
+      { x: -20, y: 70 },
+      { x: 330, y: 70 },
+      { x: 330, y: 200 },
+      { x: 90,  y: 200 },
+      { x: 90,  y: 350 },
+      { x: 320, y: 350 },
+      { x: 320, y: 520 } // Crypt Gate
+    ];
+
+    // Pedestals located strategically on curves and straight lines
+    const PEDESTALS = [
+      { id: 0, x: 190, y: 26,  tower: null },
+      { id: 1, x: 250, y: 135, tower: null },
+      { id: 2, x: 385, y: 140, tower: null },
+      { id: 3, x: 180, y: 140, tower: null },
+      { id: 4, x: 32,  y: 275, tower: null },
+      { id: 5, x: 165, y: 275, tower: null },
+      { id: 6, x: 235, y: 420, tower: null },
+      { id: 7, x: 385, y: 280, tower: null }
+    ];
+
+    /* ==========================================================================
+       TOWERS & ENEMY DATA DEFINITIONS
+       ========================================================================== */
+    const SECRET_KEYWORD = "GUARDIAN-ETERNO";
+    const TOTAL_STORY_WAVES = 4;
+
+    const TOWER_SPECS = {
+      gargoyle: {
+        type: 'gargoyle',
+        name: 'Gárgola de Fuego',
+        icon: '🗿',
+        cost: 60,
+        range: 110,
+        damage: 16,
+        attackSpeed: 0.42, // seconds per shot
+        color: '#ff7518',
+        upgradeCost: 50,
+        upgradeDamage: 30,
+        upgradeRange: 130,
+        upgradeSpeed: 0.32
+      },
+      obelisk: {
+        type: 'obelisk',
+        name: 'Obelisco Arcano',
+        icon: '⚡',
+        cost: 80,
+        range: 90,
+        damage: 10,
+        attackSpeed: 0.65, // cooldown increased (was 0.12s)
+        slowRatio: 0.30, // 30% slow (nerfed from 40%)
+        color: '#00e5ff',
+        upgradeCost: 60,
+        upgradeDamage: 18,
+        upgradeRange: 105,
+        upgradeSpeed: 0.55,
+        upgradeSlow: 0.42 // 42% slow (nerfed from 55%)
+      },
+      catapult: {
+        type: 'catapult',
+        name: 'Catapulta de Calabazas',
+        icon: '🎃',
+        cost: 100,
+        range: 155,
+        damage: 42,
+        splashRadius: 50,
+        attackSpeed: 1.6,
+        color: '#ffd24d',
+        upgradeCost: 75,
+        upgradeDamage: 80,
+        upgradeRange: 180,
+        upgradeSplash: 65,
+        upgradeSpeed: 1.3
+      }
+    };
+
+    const ENEMY_SPECS = {
+      skeleton: {
+        type: 'skeleton',
+        name: 'Esqueleto Errante',
+        icon: '💀',
+        maxHp: 65,
+        speed: 1.1,
+        reward: 10,
+        radius: 12,
+        color: '#eae2ce'
+      },
+      zombie: {
+        type: 'zombie',
+        name: 'Zombi de la Fosa',
+        icon: '🧟',
+        maxHp: 160,
+        speed: 0.72,
+        reward: 18,
+        radius: 14,
+        color: '#658d60'
+      },
+      wraith: {
+        type: 'wraith',
+        name: 'Espectro Veloz',
+        icon: '🦇',
+        maxHp: 48,
+        speed: 1.95,
+        reward: 14,
+        radius: 11,
+        color: '#c042ff'
+      },
+      boss: {
+        type: 'boss',
+        name: 'Señor de la Cripta',
+        icon: '👑',
+        maxHp: 750,
+        speed: 0.55,
+        reward: 120,
+        radius: 20,
+        color: '#ff2a4b',
+        isBoss: true
+      }
+    };
+
+    const WAVE_BLUEPRINTS = [
+      // Wave 1: Intro march
+      [
+        { type: 'skeleton', count: 8, delay: 900 }
+      ],
+      // Wave 2: Zombies & Skeletons
+      [
+        { type: 'skeleton', count: 6, delay: 750 },
+        { type: 'zombie', count: 5, delay: 1100 }
+      ],
+      // Wave 3: Wraiths & Tanks
+      [
+        { type: 'zombie', count: 4, delay: 1000 },
+        { type: 'wraith', count: 12, delay: 600 },
+        { type: 'skeleton', count: 6, delay: 650 }
+      ],
+      // Wave 4: Boss Incursion
+      [
+        { type: 'wraith', count: 8, delay: 650 },
+        { type: 'zombie', count: 6, delay: 900 },
+        { type: 'boss', count: 1, delay: 2000 }
+      ]
+    ];
+
+    /* ==========================================================================
+       DOM REFERENCES
+       ========================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startOverlay = document.getElementById('startOverlay');
+    const btnStartGame = document.getElementById('btnStartGame');
+    const healthDisplay = document.getElementById('healthDisplay');
+    const currencyDisplay = document.getElementById('currencyDisplay');
+    const waveDisplay = document.getElementById('waveDisplay');
+    const btnSpeedToggle = document.getElementById('btnSpeedToggle');
+    const btnNextWave = document.getElementById('btnNextWave');
+    const waveBtnText = document.getElementById('waveBtnText');
+    const towerBuildTray = document.getElementById('towerBuildTray');
+    const inspectorPanel = document.getElementById('inspectorPanel');
+    const inspectName = document.getElementById('inspectName');
+    const inspectStats = document.getElementById('inspectStats');
+    const btnUpgrade = document.getElementById('btnUpgrade');
+    const upgradeCostText = document.getElementById('upgradeCostText');
+    const btnSell = document.getElementById('btnSell');
+    const sellValueText = document.getElementById('sellValueText');
+    const btnCloseInspect = document.getElementById('btnCloseInspect');
+    const vignette = document.getElementById('vignette');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    const btnContinueEndless = document.getElementById('btnContinueEndless');
+    const btnRetry = document.getElementById('btnRetry');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const toast = document.getElementById('toast');
+
+    const towerCards = {
+      gargoyle: document.getElementById('cardGargoyle'),
+      obelisk: document.getElementById('cardObelisk'),
+      catapult: document.getElementById('cardCatapult')
+    };
+
+    /* ==========================================================================
+       GAME ENGINE STATE
+       ========================================================================== */
+    let isPlaying = false;
+    let isGameOver = false;
+    let hasWon = false;
+    let isEndless = false;
+
+    let bastionHealth = 10;
+    let ectoplasma = 120;
+    let currentWaveIndex = 0; // 0-indexed (0 to 3)
+    let isWaveActive = false;
+    let gameSpeed = 1.0; // 1.0 or 2.0
+
+    let selectedTowerTypeToBuild = null;
+    let selectedPedestal = null;
+
+    let enemies = [];
+    let projectiles = [];
+    let particles = [];
+    let floatingTexts = [];
+
+    let waveSpawnQueue = [];
+    let lastSpawnTime = 0;
+
+    /* ==========================================================================
+       ENTITY CLASSES
+       ========================================================================== */
+    class Enemy {
+      constructor(spec) {
+        this.spec = spec;
+        this.maxHp = spec.maxHp;
+        this.hp = spec.maxHp;
+        this.baseSpeed = spec.speed;
+        this.speed = spec.speed;
+        this.radius = spec.radius;
+        this.reward = spec.reward;
+        this.color = spec.color;
+        this.icon = spec.icon;
+        this.isBoss = Boolean(spec.isBoss);
+
+        this.wpIndex = 0;
+        this.x = WAYPOINTS[0].x;
+        this.y = WAYPOINTS[0].y;
+        this.isDead = false;
+        this.reachedEnd = false;
+
+        // Slow effect
+        this.slowTimer = 0;
+        this.slowAmount = 0;
+        this.wobble = Math.random() * 10;
+      }
+
+      update(dtFactor) {
+        // Slow degradation
+        if (this.slowTimer > 0) {
+          this.slowTimer -= dtFactor;
+          // Boss has 65% crowd control resistance; normal units have moderate slow
+          const effectiveSlow = this.isBoss ? this.slowAmount * 0.35 : this.slowAmount;
+          // Minimum speed cap: units can never drop below 55% base speed, ensuring they always advance
+          this.speed = Math.max(this.baseSpeed * 0.55, this.baseSpeed * (1 - effectiveSlow));
+        } else {
+          this.speed = this.baseSpeed;
+          this.slowAmount = 0;
+        }
+
+        // Navigate waypoints
+        const targetWp = WAYPOINTS[this.wpIndex + 1];
+        if (!targetWp) {
+          this.reachedEnd = true;
+          return;
+        }
+
+        const dx = targetWp.x - this.x;
+        const dy = targetWp.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        const step = this.speed * 1.5 * gameSpeed * dtFactor;
+
+        if (dist <= step) {
+          this.x = targetWp.x;
+          this.y = targetWp.y;
+          this.wpIndex++;
+          if (this.wpIndex >= WAYPOINTS.length - 1) {
+            this.reachedEnd = true;
+          }
+        } else {
+          this.x += (dx / dist) * step;
+          this.y += (dy / dist) * step;
+        }
+
+        this.wobble += 0.1 * dtFactor;
+      }
+
+      applyDamage(amount) {
+        this.hp -= amount;
+        floatingTexts.push(new FloatingText(`-${Math.round(amount)}`, this.x, this.y - 12, '#fff', 0.85));
+        if (this.hp <= 0 && !this.isDead) {
+          this.isDead = true;
+          sound.playEnemyDeath();
+          addEctoplasma(this.reward);
+          createDeathParticles(this.x, this.y, this.color, this.isBoss ? 35 : 14);
+        } else {
+          sound.playEnemyHit();
+        }
+      }
+
+      applySlow(ratio, duration) {
+        this.slowAmount = Math.max(this.slowAmount, ratio);
+        this.slowTimer = duration;
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+
+        // Ground shadow
+        c.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        c.beginPath();
+        c.ellipse(0, this.radius * 0.75, this.radius * 0.9, this.radius * 0.45, 0, 0, Math.PI * 2);
+        c.fill();
+
+        // Aura if slow / freeze
+        if (this.slowTimer > 0) {
+          c.strokeStyle = 'rgba(0, 229, 255, 0.7)';
+          c.lineWidth = 2.5;
+          c.beginPath();
+          c.arc(0, 0, this.radius + 3, 0, Math.PI * 2);
+          c.stroke();
+        }
+
+        // Boss Dark Glow
+        if (this.isBoss) {
+          c.strokeStyle = 'rgba(255, 42, 75, 0.65)';
+          c.lineWidth = 3;
+          c.beginPath();
+          c.arc(0, 0, this.radius + 4 + Math.sin(this.wobble) * 2, 0, Math.PI * 2);
+          c.stroke();
+        }
+
+        // Draw icon / body
+        c.font = `${Math.round(this.radius * 1.7)}px 'Montserrat'`;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(this.icon, 0, 0);
+
+        // Health Bar above head
+        const barWidth = this.radius * 2.2;
+        const barHeight = 4;
+        const barY = -this.radius - 8;
+        const pct = Math.max(0, this.hp / this.maxHp);
+
+        c.fillStyle = 'rgba(10, 15, 12, 0.85)';
+        c.fillRect(-barWidth / 2, barY, barWidth, barHeight);
+
+        // Color based on HP percentage
+        let hpColor = '#39ff14';
+        if (pct < 0.35) hpColor = '#ff2a4b';
+        else if (pct < 0.7) hpColor = '#ffc107';
+
+        c.fillStyle = hpColor;
+        c.fillRect(-barWidth / 2, barY, barWidth * pct, barHeight);
+        c.strokeStyle = '#1e3024';
+        c.lineWidth = 1;
+        c.strokeRect(-barWidth / 2, barY, barWidth, barHeight);
+
+        c.restore();
+      }
+    }
+
+    class Tower {
+      constructor(spec, pedestal) {
+        this.spec = spec;
+        this.type = spec.type;
+        this.pedestal = pedestal;
+        this.x = pedestal.x;
+        this.y = pedestal.y;
+
+        this.level = 1;
+        this.range = spec.range;
+        this.damage = spec.damage;
+        this.attackSpeed = spec.attackSpeed;
+        this.cooldown = 0;
+        this.currentTarget = null;
+
+        // Upgrade costs
+        this.upgradeCost = spec.upgradeCost;
+        this.sellValue = Math.round(spec.cost * 0.7);
+
+        // Animation / rotation
+        this.angle = 0;
+        this.recoil = 0;
+      }
+
+      upgrade() {
+        if (this.level >= 2) return;
+        this.level = 2;
+        this.damage = this.spec.upgradeDamage;
+        this.range = this.spec.upgradeRange;
+        if (this.spec.upgradeSpeed) this.attackSpeed = this.spec.upgradeSpeed;
+        this.sellValue += Math.round(this.upgradeCost * 0.7);
+        sound.playUpgrade();
+        createExplosionParticles(this.x, this.y, '#ffd24d', 25);
+        floatingTexts.push(new FloatingText("¡MEJORA NV. 2!", this.x, this.y - 20, '#ffd24d', 1.2));
+      }
+
+      update(dtFactor) {
+        if (this.cooldown > 0) {
+          this.cooldown -= (dtFactor / 60) * gameSpeed;
+        }
+
+        // Find closest enemy in range
+        this.currentTarget = this.findTarget();
+
+        if (this.currentTarget) {
+          const dx = this.currentTarget.x - this.x;
+          const dy = this.currentTarget.y - this.y;
+          this.angle = Math.atan2(dy, dx);
+
+          if (this.cooldown <= 0) {
+            this.fire(this.currentTarget);
+            this.cooldown = this.attackSpeed;
+          }
+        }
+      }
+
+      findTarget() {
+        let bestTarget = null;
+        let maxProgress = -1;
+
+        for (const e of enemies) {
+          if (e.isDead || e.reachedEnd) continue;
+          const dist = Math.hypot(e.x - this.x, e.y - this.y);
+          if (dist <= this.range) {
+            // Target furthest along waypoints
+            const progress = e.wpIndex * 1000 + (1000 - Math.hypot(WAYPOINTS[e.wpIndex + 1]?.x - e.x || 0, WAYPOINTS[e.wpIndex + 1]?.y - e.y || 0));
+            if (progress > maxProgress) {
+              maxProgress = progress;
+              bestTarget = e;
+            }
+          }
+        }
+        return bestTarget;
+      }
+
+      fire(target) {
+        if (this.type === 'gargoyle') {
+          sound.playFireball();
+          projectiles.push(new Projectile(this.x, this.y, target, this.damage, 'fireball', this.level));
+        } else if (this.type === 'obelisk') {
+          sound.playLightning();
+          // Instant channeled lightning
+          target.applyDamage(this.damage);
+          const slowRatio = this.level === 2 ? (this.spec.upgradeSlow || 0.42) : (this.spec.slowRatio || 0.30);
+          target.applySlow(slowRatio, 28);
+          // Visual beam particle effect
+          projectiles.push(new BeamEffect(this.x, this.y, target.x, target.y, this.level === 2 ? '#c042ff' : '#00e5ff'));
+        } else if (this.type === 'catapult') {
+          sound.playPumpkinBomb();
+          const splash = this.level === 2 ? this.spec.upgradeSplash : this.spec.splashRadius;
+          projectiles.push(new PumpkinMortar(this.x, this.y, target.x, target.y, this.damage, splash, this.level));
+        }
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+
+        // Tower Base Pedestal
+        c.fillStyle = '#1e2d24';
+        c.beginPath();
+        c.arc(0, 0, 19, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = this.level === 2 ? '#ffd24d' : '#39ff14';
+        c.lineWidth = 2;
+        c.stroke();
+
+        // Level 2 Golden Rune Ring
+        if (this.level === 2) {
+          c.strokeStyle = 'rgba(255, 210, 77, 0.4)';
+          c.lineWidth = 4;
+          c.stroke();
+        }
+
+        // Defender Icon
+        c.font = '22px Montserrat';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(this.spec.icon, 0, -2);
+
+        // Level stars
+        if (this.level === 2) {
+          c.font = '10px Montserrat';
+          c.fillStyle = '#ffd24d';
+          c.fillText('★★', 0, 14);
+        }
+
+        c.restore();
+      }
+    }
+
+    class Projectile {
+      constructor(x, y, target, damage, type, level) {
+        this.x = x;
+        this.y = y;
+        this.target = target;
+        this.damage = damage;
+        this.type = type;
+        this.level = level;
+        this.speed = 9;
+        this.isDone = false;
+      }
+
+      update(dtFactor) {
+        if (!this.target || this.target.isDead) {
+          this.isDone = true;
+          return;
+        }
+
+        const dx = this.target.x - this.x;
+        const dy = this.target.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        const step = this.speed * gameSpeed * dtFactor;
+
+        if (dist <= step) {
+          this.target.applyDamage(this.damage);
+          createExplosionParticles(this.target.x, this.target.y, '#ff7518', 8);
+          this.isDone = true;
+        } else {
+          this.x += (dx / dist) * step;
+          this.y += (dy / dist) * step;
+        }
+      }
+
+      draw(c) {
+        c.save();
+        c.fillStyle = this.level === 2 ? '#ffd24d' : '#ff7518';
+        c.shadowColor = '#ff7518';
+        c.shadowBlur = 8;
+        c.beginPath();
+        c.arc(this.x, this.y, 4, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    class PumpkinMortar {
+      constructor(startX, startY, targetX, targetY, damage, splashRadius, level) {
+        this.startX = startX;
+        this.startY = startY;
+        this.targetX = targetX;
+        this.targetY = targetY;
+        this.x = startX;
+        this.y = startY;
+        this.damage = damage;
+        this.splash = splashRadius;
+        this.level = level;
+        this.progress = 0;
+        this.speed = 0.024;
+        this.isDone = false;
+        this.arcHeight = 65;
+      }
+
+      update(dtFactor) {
+        this.progress += this.speed * gameSpeed * dtFactor;
+        if (this.progress >= 1) {
+          this.explode();
+          this.isDone = true;
+          return;
+        }
+
+        // Parabolic arc
+        this.x = this.startX + (this.targetX - this.startX) * this.progress;
+        const linearY = this.startY + (this.targetY - this.startY) * this.progress;
+        const arc = Math.sin(this.progress * Math.PI) * this.arcHeight;
+        this.y = linearY - arc;
+      }
+
+      explode() {
+        sound.playPumpkinBomb();
+        createExplosionParticles(this.targetX, this.targetY, '#ff7518', 25);
+        createExplosionParticles(this.targetX, this.targetY, '#ffd24d', 15);
+
+        // Damage all enemies in splash
+        for (const e of enemies) {
+          if (e.isDead || e.reachedEnd) continue;
+          const d = Math.hypot(e.x - this.targetX, e.y - this.targetY);
+          if (d <= this.splash) {
+            const falloff = 1 - (d / this.splash) * 0.35;
+            e.applyDamage(this.damage * falloff);
+          }
+        }
+      }
+
+      draw(c) {
+        c.save();
+        // Shadow on ground
+        const groundY = this.startY + (this.targetY - this.startY) * this.progress;
+        c.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        c.beginPath();
+        c.arc(this.x, groundY, 5 * (1 - Math.sin(this.progress * Math.PI) * 0.4), 0, Math.PI * 2);
+        c.fill();
+
+        // Flying Pumpkin
+        c.font = '16px Montserrat';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText('🎃', this.x, this.y);
+        c.restore();
+      }
+    }
+
+    class BeamEffect {
+      constructor(x1, y1, x2, y2, color) {
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+        this.color = color;
+        this.life = 8;
+      }
+
+      update(dtFactor) {
+        this.life -= dtFactor;
+      }
+
+      draw(c) {
+        if (this.life <= 0) return;
+        c.save();
+        c.strokeStyle = this.color;
+        c.lineWidth = 3;
+        c.shadowColor = this.color;
+        c.shadowBlur = 10;
+        c.beginPath();
+        c.moveTo(this.x1, this.y1);
+        c.lineTo(this.x2, this.y2);
+        c.stroke();
+        c.restore();
+      }
+    }
+
+    class Particle {
+      constructor(x, y, color, size, vx, vy, life) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.size = size;
+        this.vx = vx;
+        this.vy = vy;
+        this.maxLife = life;
+        this.life = life;
+      }
+
+      update(dtFactor) {
+        this.x += this.vx * dtFactor;
+        this.y += this.vy * dtFactor;
+        this.life -= dtFactor;
+      }
+
+      draw(c) {
+        if (this.life <= 0) return;
+        const progress = this.life / this.maxLife;
+        c.save();
+        c.globalAlpha = progress;
+        c.fillStyle = this.color;
+        c.beginPath();
+        c.arc(this.x, this.y, this.size * progress, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    class FloatingText {
+      constructor(text, x, y, color, scale = 1.0) {
+        this.text = text;
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.scale = scale;
+        this.alpha = 1.0;
+      }
+
+      update(dtFactor) {
+        this.y -= 1.2 * dtFactor;
+        this.alpha -= 0.03 * dtFactor;
+      }
+
+      draw(c) {
+        if (this.alpha <= 0) return;
+        c.save();
+        c.globalAlpha = this.alpha;
+        c.font = `900 ${Math.round(14 * this.scale)}px 'Cinzel', serif`;
+        c.textAlign = 'center';
+        c.fillStyle = this.color;
+        c.shadowColor = this.color;
+        c.shadowBlur = 6;
+        c.fillText(this.text, this.x, this.y);
+        c.restore();
+      }
+    }
+
+    function createExplosionParticles(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = 1.5 + Math.random() * 4.5;
+        particles.push(new Particle(
+          x, y, color, 2 + Math.random() * 3,
+          Math.cos(angle) * spd,
+          Math.sin(angle) * spd,
+          18 + Math.random() * 15
+        ));
+      }
+    }
+
+    function createDeathParticles(x, y, color, count) {
+      createExplosionParticles(x, y, color, count);
+      // Floating ectoplasma soul wisp
+      particles.push(new Particle(x, y, '#39ff14', 5, 0, -1.2, 35));
+    }
+
+    /* ==========================================================================
+       WAVE SPAWNER ENGINE
+       ========================================================================== */
+    function startNextWave() {
+      if (isWaveActive) return;
+      sound.init();
+      sound.playClick();
+
+      isWaveActive = true;
+      btnNextWave.disabled = true;
+      waveBtnText.textContent = "⚔️ ¡Oleada en curso!";
+
+      let wavePlan;
+      if (currentWaveIndex < WAVE_BLUEPRINTS.length) {
+        wavePlan = WAVE_BLUEPRINTS[currentWaveIndex];
+      } else {
+        // Endless procedural wave generator
+        wavePlan = generateEndlessWave(currentWaveIndex);
+      }
+
+      waveSpawnQueue = [];
+      wavePlan.forEach(group => {
+        for (let i = 0; i < group.count; i++) {
+          waveSpawnQueue.push({
+            type: group.type,
+            delay: group.delay
+          });
+        }
+      });
+
+      showToast(`⚠️ ¡Comienza la Oleada ${currentWaveIndex + 1}!`);
+      spawnNextInQueue();
+      updateHUD();
+    }
+
+    function generateEndlessWave(idx) {
+      const extraSkels = 8 + idx * 3;
+      const extraZombies = 5 + idx * 2;
+      const extraWraiths = 6 + idx * 2;
+      return [
+        { type: 'skeleton', count: extraSkels, delay: 600 },
+        { type: 'zombie', count: extraZombies, delay: 800 },
+        { type: 'wraith', count: extraWraiths, delay: 500 },
+        { type: 'boss', count: Math.floor(idx / 3) + 1, delay: 2500 }
+      ];
+    }
+
+    function spawnNextInQueue() {
+      if (!isWaveActive || isGameOver) return;
+
+      if (waveSpawnQueue.length === 0) {
+        // Wait for all spawned enemies to die or reach end
+        checkWaveClearCondition();
+        return;
+      }
+
+      const item = waveSpawnQueue.shift();
+      const spec = ENEMY_SPECS[item.type];
+      enemies.push(new Enemy(spec));
+
+      setTimeout(spawnNextInQueue, item.delay / gameSpeed);
+    }
+
+    function checkWaveClearCondition() {
+      const checkInterval = setInterval(() => {
+        if (!isWaveActive || isGameOver) {
+          clearInterval(checkInterval);
+          return;
+        }
+
+        if (enemies.length === 0 && waveSpawnQueue.length === 0) {
+          clearInterval(checkInterval);
+          handleWaveCleared();
+        }
+      }, 500);
+    }
+
+    function handleWaveCleared() {
+      isWaveActive = false;
+      sound.playWaveClear();
+      currentWaveIndex++;
+
+      // Check Victory Condition
+      if (!hasWon && currentWaveIndex >= TOTAL_STORY_WAVES) {
+        hasWon = true;
+        sound.playGrandVictory();
+        localStorage.setItem('krypt_day_21_cleared', 'true');
+        showToast("🌟 ¡BASTIÓN PURIFICADO! Has superado el Día XXI.");
+        setTimeout(() => {
+          victoryModal.classList.add('active');
+        }, 800);
+      } else {
+        showToast(`✨ ¡Oleada ${currentWaveIndex} rechazada! Recompensa: +40 Ectoplasma`);
+        addEctoplasma(40);
+        btnNextWave.disabled = false;
+        waveBtnText.textContent = `Iniciar Oleada ${currentWaveIndex + 1}`;
+      }
+
+      updateHUD();
+    }
+
+    /* ==========================================================================
+       CURRENCY, HEALTH & BUILDING LOGIC
+       ========================================================================== */
+    function addEctoplasma(amount) {
+      ectoplasma += amount;
+      updateHUD();
+    }
+
+    function damageBastion(amount = 1) {
+      bastionHealth = Math.max(0, bastionHealth - amount);
+      sound.playGateDamaged();
+      vignette.classList.add('danger');
+      setTimeout(() => vignette.classList.remove('danger'), 350);
+      updateHUD();
+
+      if (bastionHealth <= 0) {
+        handleGameOver();
+      }
+    }
+
+    function handleGameOver() {
+      isGameOver = true;
+      isPlaying = false;
+      defeatModal.classList.add('active');
+    }
+
+    function selectTowerToBuild(typeKey) {
+      sound.init();
+      sound.playClick();
+      if (selectedTowerTypeToBuild === typeKey) {
+        selectedTowerTypeToBuild = null;
+      } else {
+        selectedTowerTypeToBuild = typeKey;
+        closeInspector();
+      }
+      updateBuildTrayUI();
+    }
+
+    function buildTowerAtPedestal(pedestal, spec) {
+      if (ectoplasma < spec.cost) {
+        showToast("⚠️ Ectoplasma insuficiente para construir este defensor.");
+        return;
+      }
+
+      ectoplasma -= spec.cost;
+      const tower = new Tower(spec, pedestal);
+      pedestal.tower = tower;
+      sound.playBuild();
+      createExplosionParticles(pedestal.x, pedestal.y, spec.color, 18);
+      showToast(`✓ ${spec.name} erigida.`);
+
+      selectedTowerTypeToBuild = null;
+      updateBuildTrayUI();
+      inspectPedestal(pedestal);
+      updateHUD();
+    }
+
+    function inspectPedestal(pedestal) {
+      selectedPedestal = pedestal;
+      if (!pedestal.tower) {
+        closeInspector();
+        return;
+      }
+
+      const t = pedestal.tower;
+      inspectName.textContent = `${t.spec.name} (Niv. ${t.level})`;
+      inspectStats.textContent = `Daño: ${t.damage} • Alcance: ${t.range}`;
+
+      if (t.level >= 2) {
+        btnUpgrade.disabled = true;
+        upgradeCostText.textContent = "Nivel Máx.";
+      } else {
+        btnUpgrade.disabled = ectoplasma < t.upgradeCost;
+        upgradeCostText.textContent = `Mejorar (🧪 ${t.upgradeCost})`;
+      }
+
+      sellValueText.textContent = `+${t.sellValue}`;
+      inspectorPanel.classList.add('active');
+      towerBuildTray.style.display = 'none';
+    }
+
+    function closeInspector() {
+      selectedPedestal = null;
+      inspectorPanel.classList.remove('active');
+      towerBuildTray.style.display = 'flex';
+    }
+
+    btnUpgrade.addEventListener('click', () => {
+      if (!selectedPedestal || !selectedPedestal.tower) return;
+      const t = selectedPedestal.tower;
+      if (t.level >= 2 || ectoplasma < t.upgradeCost) return;
+
+      ectoplasma -= t.upgradeCost;
+      t.upgrade();
+      inspectPedestal(selectedPedestal);
+      updateHUD();
+    });
+
+    btnSell.addEventListener('click', () => {
+      if (!selectedPedestal || !selectedPedestal.tower) return;
+      const t = selectedPedestal.tower;
+      addEctoplasma(t.sellValue);
+      sound.playClick();
+      createExplosionParticles(t.x, t.y, '#eae2ce', 12);
+      showToast(`♻️ Defensor vendido por +${t.sellValue} Ectoplasma.`);
+      selectedPedestal.tower = null;
+      closeInspector();
+      updateHUD();
+    });
+
+    btnCloseInspect.addEventListener('click', () => {
+      closeInspector();
+    });
+
+    /* ==========================================================================
+       CANVAS INPUT & CLICK HANDLING
+       ========================================================================== */
+    function getCanvasCoordinates(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      let cx = e.clientX;
+      let cy = e.clientY;
+      if (e.touches && e.touches.length > 0) {
+        cx = e.touches[0].clientX;
+        cy = e.touches[0].clientY;
+      }
+
+      return {
+        x: (cx - rect.left) * scaleX,
+        y: (cy - rect.top) * scaleY
+      };
+    }
+
+    function onCanvasClick(e) {
+      sound.init();
+      const pos = getCanvasCoordinates(e);
+
+      // Check if user tapped a pedestal
+      for (const p of PEDESTALS) {
+        const dist = Math.hypot(p.x - pos.x, p.y - pos.y);
+        if (dist <= 26) {
+          handlePedestalClick(p);
+          return;
+        }
+      }
+
+      // Tapped elsewhere on map -> deselect inspector & build card
+      if (selectedPedestal) {
+        closeInspector();
+      }
+      if (selectedTowerTypeToBuild) {
+        selectedTowerTypeToBuild = null;
+        updateBuildTrayUI();
+      }
+    }
+
+    function handlePedestalClick(pedestal) {
+      if (pedestal.tower) {
+        // Inspect existing tower
+        inspectPedestal(pedestal);
+      } else {
+        // Empty pedestal
+        if (selectedTowerTypeToBuild) {
+          const spec = TOWER_SPECS[selectedTowerTypeToBuild];
+          buildTowerAtPedestal(pedestal, spec);
+        } else {
+          showToast("💡 Selecciona una torre abajo para erigirla en este pedestal.");
+          closeInspector();
+        }
+      }
+    }
+
+    canvas.addEventListener('click', onCanvasClick);
+
+    /* ==========================================================================
+       MAIN RENDER & DRAWING LOOP
+       ========================================================================== */
+    let lastTimestamp = performance.now();
+
+    function gameLoop(now) {
+      const dt = Math.min(32, now - lastTimestamp);
+      lastTimestamp = now;
+      const dtFactor = dt / 16.666;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Draw Map & Cobblestone Path
+      drawMapBackground(ctx);
+
+      // 2. Draw Pedestals & Range circles
+      drawPedestals(ctx);
+
+      // 3. Update & Draw Towers
+      for (const p of PEDESTALS) {
+        if (p.tower) {
+          p.tower.update(dtFactor);
+          p.tower.draw(ctx);
+        }
+      }
+
+      // 4. Update & Draw Enemies
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        e.update(dtFactor);
+        e.draw(ctx);
+
+        if (e.reachedEnd) {
+          damageBastion(e.isBoss ? 3 : 1);
+          enemies.splice(i, 1);
+        } else if (e.isDead) {
+          enemies.splice(i, 1);
+        }
+      }
+
+      // 5. Update & Draw Projectiles & Effects
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        const pr = projectiles[i];
+        pr.update(dtFactor);
+        pr.draw(ctx);
+        if (pr.isDone || (pr.life !== undefined && pr.life <= 0)) {
+          projectiles.splice(i, 1);
+        }
+      }
+
+      // 6. Update & Draw Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.update(dtFactor);
+        pt.draw(ctx);
+        if (pt.life <= 0) particles.splice(i, 1);
+      }
+
+      // 7. Update & Draw Floating Text
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.update(dtFactor);
+        ft.draw(ctx);
+        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function drawMapBackground(c) {
+      // Grass / soil ground
+      c.fillStyle = '#0b130e';
+      c.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Cobblestone Road Base
+      c.strokeStyle = '#202d24';
+      c.lineWidth = 36;
+      c.lineCap = 'round';
+      c.lineJoin = 'round';
+
+      c.beginPath();
+      c.moveTo(WAYPOINTS[0].x, WAYPOINTS[0].y);
+      for (let i = 1; i < WAYPOINTS.length; i++) {
+        c.lineTo(WAYPOINTS[i].x, WAYPOINTS[i].y);
+      }
+      c.stroke();
+
+      // Road Inner Stones
+      c.strokeStyle = '#2b3d31';
+      c.lineWidth = 26;
+      c.stroke();
+
+      // Road center dashed dirt track
+      c.strokeStyle = 'rgba(70, 95, 80, 0.4)';
+      c.lineWidth = 2;
+      c.setLineDash([8, 12]);
+      c.stroke();
+      c.setLineDash([]);
+
+      // Crypt Gate at bottom (Destination)
+      const gateX = 320;
+      const gateY = 520;
+
+      // Gate Arch
+      c.fillStyle = '#16221a';
+      c.fillRect(gateX - 32, gateY - 14, 64, 34);
+      c.strokeStyle = '#3e5c46';
+      c.lineWidth = 3;
+      c.strokeRect(gateX - 32, gateY - 14, 64, 34);
+
+      // Gate Iron Portcullis Bars
+      c.strokeStyle = '#859a8d';
+      c.lineWidth = 2;
+      for (let gx = gateX - 24; gx <= gateX + 24; gx += 8) {
+        c.beginPath();
+        c.moveTo(gx, gateY - 14);
+        c.lineTo(gx, gateY + 20);
+        c.stroke();
+      }
+
+      // Torches next to gate
+      c.font = '16px Montserrat';
+      c.textAlign = 'center';
+      c.fillText('🔥', gateX - 38, gateY);
+      c.fillText('🔥', gateX + 38, gateY);
+    }
+
+    function drawPedestals(c) {
+      for (const p of PEDESTALS) {
+        // Pedestal base stone
+        c.save();
+        c.translate(p.x, p.y);
+
+        if (!p.tower) {
+          // Empty Rune Circle
+          c.fillStyle = '#121a15';
+          c.beginPath();
+          c.arc(0, 0, 16, 0, Math.PI * 2);
+          c.fill();
+          c.strokeStyle = (selectedTowerTypeToBuild) ? '#39ff14' : '#283c2f';
+          c.lineWidth = 2;
+          if (selectedTowerTypeToBuild) {
+            c.setLineDash([4, 4]);
+          }
+          c.stroke();
+
+          // Rune symbol
+          c.fillStyle = selectedTowerTypeToBuild ? '#39ff14' : '#334c3c';
+          c.font = '12px Montserrat';
+          c.textAlign = 'center';
+          c.textBaseline = 'middle';
+          c.fillText('ᛟ', 0, 0);
+        }
+
+        c.restore();
+
+        // If selected tower or inspected, draw Range Circle
+        if (p === selectedPedestal && p.tower) {
+          c.save();
+          c.strokeStyle = 'rgba(0, 229, 255, 0.7)';
+          c.fillStyle = 'rgba(0, 229, 255, 0.08)';
+          c.lineWidth = 2;
+          c.setLineDash([6, 6]);
+          c.beginPath();
+          c.arc(p.x, p.y, p.tower.range, 0, Math.PI * 2);
+          c.fill();
+          c.stroke();
+          c.restore();
+        }
+      }
+    }
+
+    /* ==========================================================================
+       UI CONTROLLERS & EVENT LISTENERS
+       ========================================================================== */
+    function updateHUD() {
+      healthDisplay.textContent = `❤️ ${bastionHealth}`;
+      currencyDisplay.textContent = `🧪 ${ectoplasma}`;
+      waveDisplay.textContent = `${Math.min(currentWaveIndex + 1, TOTAL_STORY_WAVES)} / ${TOTAL_STORY_WAVES}`;
+
+      // Update card affordability
+      for (const [k, el] of Object.entries(towerCards)) {
+        const cost = TOWER_SPECS[k].cost;
+        el.classList.toggle('disabled', ectoplasma < cost);
+      }
+
+      // Update inspector upgrade button
+      if (selectedPedestal && selectedPedestal.tower) {
+        const t = selectedPedestal.tower;
+        if (t.level < 2) {
+          btnUpgrade.disabled = ectoplasma < t.upgradeCost;
+        }
+      }
+    }
+
+    function updateBuildTrayUI() {
+      for (const [k, el] of Object.entries(towerCards)) {
+        el.classList.toggle('selected', selectedTowerTypeToBuild === k);
+      }
+    }
+
+    // Tower Cards Click
+    for (const [k, el] of Object.entries(towerCards)) {
+      el.addEventListener('click', () => {
+        const cost = TOWER_SPECS[k].cost;
+        if (ectoplasma < cost) {
+          showToast(`⚠️ Requiere 🧪 ${cost} Ectoplasma.`);
+          return;
+        }
+        selectTowerToBuild(k);
+      });
+    }
+
+    // Speed Toggle
+    btnSpeedToggle.addEventListener('click', () => {
+      sound.playClick();
+      if (gameSpeed === 1.0) {
+        gameSpeed = 2.0;
+        btnSpeedToggle.textContent = '⏩ 2x';
+        btnSpeedToggle.classList.add('fast');
+      } else {
+        gameSpeed = 1.0;
+        btnSpeedToggle.textContent = '▶ 1x';
+        btnSpeedToggle.classList.remove('fast');
+      }
+    });
+
+    btnNextWave.addEventListener('click', () => {
+      startNextWave();
+    });
+
+    btnStartGame.addEventListener('click', () => {
+      sound.init();
+      sound.playClick();
+      startOverlay.classList.add('hidden');
+      isPlaying = true;
+      updateHUD();
+    });
+
+    function restartGame() {
+      sound.init();
+      sound.playClick();
+
+      isPlaying = true;
+      isGameOver = false;
+      hasWon = false;
+      isWaveActive = false;
+
+      bastionHealth = 10;
+      ectoplasma = 120;
+      currentWaveIndex = 0;
+      gameSpeed = 1.0;
+      btnSpeedToggle.textContent = '▶ 1x';
+      btnSpeedToggle.classList.remove('fast');
+
+      selectedTowerTypeToBuild = null;
+      selectedPedestal = null;
+
+      enemies = [];
+      projectiles = [];
+      particles = [];
+      floatingTexts = [];
+      waveSpawnQueue = [];
+
+      // Clear pedestals
+      PEDESTALS.forEach(p => p.tower = null);
+
+      startOverlay.classList.add('hidden');
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      closeInspector();
+
+      btnNextWave.disabled = false;
+      waveBtnText.textContent = "Iniciar Oleada 1";
+
+      updateBuildTrayUI();
+      updateHUD();
+      showToast("🔄 Maleficio restablecido. Erige tus defensas.");
+    }
+
+    restartBtn.addEventListener('click', restartGame);
+    btnRetry.addEventListener('click', restartGame);
+
+    btnContinueEndless.addEventListener('click', () => {
+      sound.init();
+      sound.playClick();
+      isEndless = true;
+      victoryModal.classList.remove('active');
+      btnNextWave.disabled = false;
+      waveBtnText.textContent = `Iniciar Oleada ${currentWaveIndex + 1}`;
+      showToast("♾️ Modo Asedio Infinito activado. ¡Protege el Bastión!");
+    });
+
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    // Discord Copy
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 21 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // Start engine loop
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 02: Cripta de las Bestias - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #060907;
+      --stone-base: #151e18;
+      --stone-border: #324538;
+      --stone-highlight: #5b7563;
+      --parchment: #ece2ce;
+      --text-muted: #869b8e;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.45);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --gold: #ffaa00;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(35, 60, 45, 0.4) 0%, transparent 65%),
+        radial-gradient(circle at 50% 85%, rgba(15, 28, 20, 0.6) 0%, transparent 70%);
+      padding: 12px 14px 20px 14px;
+    }
+
+    /* Ambient mist and scanline */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.35;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.85);
+      transition: box-shadow 0.2s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 130px rgba(255, 42, 75, 0.8);
+      animation: dangerFlicker 0.3s ease;
+    }
+
+    @keyframes dangerFlicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 660px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Nav Bar */
+    header {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .nav-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-nav {
+      background: rgba(17, 26, 20, 0.85);
+      border: 1px solid var(--stone-border);
+      color: var(--parchment);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-nav:hover {
+      border-color: var(--pumpkin-orange);
+      color: var(--pumpkin-orange);
+      box-shadow: 0 0 10px var(--pumpkin-glow);
+    }
+
+    .day-subtitle {
+      font-family: 'Cinzel', serif;
+      font-size: 0.82rem;
+      letter-spacing: 3px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .title-banner {
+      font-family: 'Creepster', cursive;
+      font-size: clamp(2.1rem, 6vw, 3rem);
+      letter-spacing: 3px;
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 16px var(--pumpkin-glow), 2px 2px 0px #000;
+      text-align: center;
+      line-height: 1;
+    }
+
+    /* HUD Bar: Score, Target & Time */
+    .hud-bar {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      background: rgba(17, 26, 20, 0.9);
+      border: 1px solid var(--stone-border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hud-stat.center {
+      align-items: center;
+      text-align: center;
+    }
+
+    .hud-stat.right {
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .hud-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .hud-val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--parchment);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .hud-val.time.hurry {
+      color: var(--blood-red);
+      text-shadow: 0 0 10px var(--blood-glow);
+      animation: pulseTime 0.6s infinite alternate;
+    }
+
+    @keyframes pulseTime {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
+    }
+
+    .souls-row {
+      display: flex;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .soul-icon {
+      font-size: 1rem;
+      color: var(--blood-red);
+      filter: drop-shadow(0 0 6px var(--blood-glow));
+      transition: all 0.3s;
+    }
+
+    .soul-icon.lost {
+      filter: grayscale(1) opacity(0.25);
+    }
+
+    /* Progress Goal Bar */
+    .goal-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 2px;
+      position: relative;
+    }
+
+    .goal-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--pumpkin-orange), var(--toxic-green));
+      box-shadow: 0 0 8px var(--toxic-green);
+      transition: width 0.25s ease-out;
+    }
+
+    /* Instructions & Alert Banner */
+    .status-banner {
+      width: 100%;
+      text-align: center;
+      background: rgba(8, 14, 10, 0.7);
+      border: 1px dashed var(--stone-border);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-family: 'MedievalSharp', cursive;
+      font-size: 0.95rem;
+      color: #b7cbbf;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .status-banner strong {
+      color: var(--toxic-green);
+    }
+
+    .status-banner span.warn {
+      color: var(--pumpkin-orange);
+    }
+
+    /* ==========================================================================
+       THE COFFIN CRYPT (3x2 SARCOPHAGI GRID)
+       ========================================================================== */
+    .crypt-chamber {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 480px) {
+      .crypt-chamber {
+        gap: 8px;
+      }
+    }
+
+    /* Sarcophagus Unit */
+    .coffin-unit {
+      position: relative;
+      background: linear-gradient(180deg, #1b261f 0%, #0d1510 100%);
+      border: 2px solid var(--stone-border);
+      border-radius: 35px 35px 8px 8px;
+      height: clamp(140px, 24vw, 175px);
+      box-shadow: 
+        0 8px 18px rgba(0, 0, 0, 0.8),
+        inset 0 0 25px rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.08s, border-color 0.15s;
+    }
+
+    .coffin-unit:active {
+      transform: scale(0.97);
+    }
+
+    .coffin-unit:hover {
+      border-color: var(--stone-highlight);
+    }
+
+    /* Keyboard indicator badge */
+    .coffin-key-badge {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      padding: 1px 5px;
+      z-index: 5;
+    }
+
+    /* Sarcophagus Pit Opening */
+    .coffin-pit {
+      position: absolute;
+      bottom: 0;
+      width: 86%;
+      height: 75%;
+      background: #040805;
+      border-top: 3px solid #142118;
+      border-radius: 20px 20px 0 0;
+      box-shadow: inset 0 10px 20px rgba(0,0,0,0.95);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Monster Entity Peeking */
+    .monster-entity {
+      width: 78%;
+      height: 85%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transform: translateY(115%);
+      transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      z-index: 3;
+    }
+
+    .monster-entity.peeking {
+      transform: translateY(10%);
+    }
+
+    .monster-entity.whacked {
+      transform: translateY(120%) scale(0.85);
+      transition: transform 0.12s ease-in;
+    }
+
+    .monster-avatar {
+      font-size: clamp(2.4rem, 6.5vw, 3.4rem);
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8));
+      line-height: 1;
+    }
+
+    .monster-name-tag {
+      font-family: 'Cinzel', serif;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-top: 2px;
+      white-space: nowrap;
+    }
+
+    /* Floating Score Popup Particle */
+    .score-particle {
+      position: absolute;
+      font-family: 'Cinzel', serif;
+      font-weight: 900;
+      font-size: 1.1rem;
+      pointer-events: none;
+      z-index: 20;
+      animation: floatUpFade 0.65s forwards ease-out;
+    }
+
+    .score-particle.plus {
+      color: var(--toxic-green);
+      text-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .score-particle.minus {
+      color: var(--blood-red);
+      text-shadow: 0 0 10px var(--blood-glow);
+    }
+
+    @keyframes floatUpFade {
+      0% { transform: translateY(0) scale(0.8); opacity: 1; }
+      100% { transform: translateY(-38px) scale(1.2); opacity: 0; }
+    }
+
+    /* Whack Splash Effect */
+    .whack-effect {
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 2.2rem;
+      pointer-events: none;
+      z-index: 25;
+      animation: popSplash 0.3s forwards ease-out;
+    }
+
+    @keyframes popSplash {
+      0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+      70% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+    }
+
+    /* Start / Action Button */
+    .start-btn-box {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    .btn-spooky-action {
+      background: linear-gradient(180deg, var(--pumpkin-orange) 0%, #b84d07 100%);
+      border: none;
+      color: #000;
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      font-weight: 900;
+      padding: 12px 28px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 18px var(--pumpkin-glow);
+      transition: all 0.2s;
+    }
+
+    .btn-spooky-action:hover {
+      filter: brightness(1.15);
+      transform: translateY(-2px);
+    }
+
+    /* ==========================================================================
+       MODALS: VICTORY & DEFEAT
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 8, 6, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(180deg, #15241b 0%, #0a130e 100%);
+      border: 2px solid var(--stone-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      padding: 26px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.95);
+      transform: scale(0.92);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-align: center;
+    }
+
+    .modal-backdrop.active .modal-box {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: clamp(2.2rem, 6vw, 2.8rem);
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .modal-title.victory {
+      color: var(--toxic-green);
+      text-shadow: 0 0 16px var(--toxic-glow);
+    }
+
+    .modal-title.defeat {
+      color: var(--blood-red);
+      text-shadow: 0 0 16px var(--blood-glow);
+    }
+
+    .word-box-outer {
+      background: rgba(8, 14, 10, 0.75);
+      border: 2px dashed var(--toxic-green);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .word-box-label {
+      font-size: 0.72rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    .secret-word-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.8rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: var(--toxic-green);
+      text-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .discord-btn-box {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-discord-copy {
+      background: #5865f2;
+      border: none;
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(88, 101, 242, 0.5);
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-discord-copy:hover {
+      background: #4752c4;
+      transform: translateY(-2px);
+    }
+
+    .btn-discord-copy.copied {
+      background: #3ba55c;
+    }
+
+    .btn-krypt-return {
+      background: rgba(20, 32, 24, 0.8);
+      border: 1px solid var(--stone-border);
+      color: var(--parchment);
+      font-family: 'Cinzel', serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-krypt-return:hover {
+      border-color: var(--pumpkin-orange);
+      color: var(--pumpkin-orange);
+    }
+
+    /* Toast */
+    .spooky-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(14, 26, 18, 0.95);
+      border: 1px solid var(--toxic-green);
+      box-shadow: 0 4px 20px var(--toxic-glow);
+      color: var(--parchment);
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      z-index: 200;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .spooky-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <div class="game-shell">
+    <!-- Header -->
+    <header>
+      <div class="nav-bar">
+        <a href="../../index.html" class="btn-nav" title="Regresar al cementerio">
+          🏛️ Volver a la Krypta
+        </a>
+        <button class="btn-nav" id="soundToggleBtn">
+          🔊 Audio
+        </button>
+      </div>
+      <span class="day-subtitle">DÍA 02 • LA KRYPTA</span>
+      <h1 class="title-banner">CRIPTA DE LAS BESTIAS</h1>
+    </header>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <!-- Score & Target -->
+      <div class="hud-stat">
+        <span class="hud-label">Puntaje / Meta</span>
+        <span class="hud-val" id="scoreDisplay">0 / 1200</span>
+        <div class="goal-track">
+          <div class="goal-fill" id="goalFill"></div>
+        </div>
+      </div>
+
+      <!-- Time remaining -->
+      <div class="hud-stat center">
+        <span class="hud-label">Tiempo</span>
+        <span class="hud-val time" id="timeDisplay">⏳ 45s</span>
+      </div>
+
+      <!-- Souls / Lives -->
+      <div class="hud-stat right">
+        <span class="hud-label">Vidas</span>
+        <div class="souls-row">
+          <span class="soul-icon" id="soul-1">☠</span>
+          <span class="soul-icon" id="soul-2">☠</span>
+          <span class="soul-icon" id="soul-3">☠</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions / Status Banner -->
+    <div class="status-banner" id="statusBanner">
+      Golpea a las bestias que emergen de las fosas. <strong>¡CUIDADO! No golpees las Calabazas Sagradas 🎃.</strong>
+    </div>
+
+    <!-- 3x2 Sarcophagi Grid -->
+    <div class="crypt-chamber" id="cryptChamber">
+      <!-- 6 Coffins generated below -->
+      <!-- Coffin 0 [Q] -->
+      <div class="coffin-unit" id="coffin-0" data-index="0">
+        <span class="coffin-key-badge">[Q]</span>
+        <div class="coffin-pit">
+          <div class="monster-entity" id="monster-0">
+            <span class="monster-avatar">🦇</span>
+            <span class="monster-name-tag">Bestia</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coffin 1 [W] -->
+      <div class="coffin-unit" id="coffin-1" data-index="1">
+        <span class="coffin-key-badge">[W]</span>
+        <div class="coffin-pit">
+          <div class="monster-entity" id="monster-1">
+            <span class="monster-avatar">🧟</span>
+            <span class="monster-name-tag">Bestia</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coffin 2 [E] -->
+      <div class="coffin-unit" id="coffin-2" data-index="2">
+        <span class="coffin-key-badge">[E]</span>
+        <div class="coffin-pit">
+          <div class="monster-entity" id="monster-2">
+            <span class="monster-avatar">😈</span>
+            <span class="monster-name-tag">Bestia</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coffin 3 [A] -->
+      <div class="coffin-unit" id="coffin-3" data-index="3">
+        <span class="coffin-key-badge">[A]</span>
+        <div class="coffin-pit">
+          <div class="monster-entity" id="monster-3">
+            <span class="monster-avatar">🦇</span>
+            <span class="monster-name-tag">Bestia</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coffin 4 [S] -->
+      <div class="coffin-unit" id="coffin-4" data-index="4">
+        <span class="coffin-key-badge">[S]</span>
+        <div class="coffin-pit">
+          <div class="monster-entity" id="monster-4">
+            <span class="monster-avatar">🎃</span>
+            <span class="monster-name-tag">Sagrada</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coffin 5 [D] -->
+      <div class="coffin-unit" id="coffin-5" data-index="5">
+        <span class="coffin-key-badge">[D]</span>
+        <div class="coffin-pit">
+          <div class="monster-entity" id="monster-5">
+            <span class="monster-avatar">🧟</span>
+            <span class="monster-name-tag">Bestia</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Start Button -->
+    <div class="start-btn-box">
+      <button class="btn-spooky-action" id="startBtn">
+        ⚔️ Entrar a la Fosa de Bestias
+      </button>
+    </div>
+  </div>
+
+  <!-- VICTORY MODAL -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box">
+      <h2 class="modal-title victory">¡BESTIAS DOMINADAS!</h2>
+      <p style="font-size:0.9rem; color:var(--parchment); line-height: 1.4;">
+        Has limpiado los ataúdes de la cripta y alcanzado los 1200 puntos antes de expirar el tiempo.
+      </p>
+
+      <div class="word-box-outer">
+        <span class="word-box-label">Palabra Clave Secreta del Día 02:</span>
+        <div class="secret-word-display" id="secretWordDisplay">BESTIA-DE-AZUFRE</div>
+        <p style="font-size:0.75rem; color:var(--text-muted);">
+          Envía este código en Discord para registrar tu victoria del día.
+        </p>
+      </div>
+
+      <div class="discord-btn-box">
+        <!-- COPIAR PARA DISCORD CON SPOILERS "||" -->
+        <button class="btn-discord-copy" id="copyDiscordBtn" onclick="copyDiscordMessage()">
+          📋 Copiar para Discord
+        </button>
+        <a href="../../index.html" class="btn-krypt-return">
+          🏛️ Volver a la Krypta
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEFEAT MODAL -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box">
+      <h2 class="modal-title defeat">DEVORADO POR LAS BESTIAS</h2>
+      <p id="defeatReasonText" style="font-size:0.9rem; color:var(--parchment); line-height: 1.4;">
+        El tiempo se ha agotado o tus almas sucumbieron ante la furia de las criaturas.
+      </p>
+      <div style="font-size: 2.2rem; margin: 4px 0;">⚰️</div>
+      <button class="btn-spooky-action" style="width:100%; justify-content:center;" onclick="restartGame()">
+        🔄 Intentar la Cacería de Nuevo
+      </button>
+      <a href="../../index.html" class="btn-krypt-return" style="margin-top:4px;">
+        🏛️ Volver a la Krypta
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="spooky-toast" id="toast">Copiado al portapapeles</div>
+
+  <script>
+    /* ==========================================================================
+       SYNTHESIZER SOUND ENGINE (WEB AUDIO API)
+       ========================================================================== */
+    class CryptWhackAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playPop() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(360, now + 0.08);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+
+      playHitMonster() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Heavy impact thud
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.12);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+
+      playHitPumpkinTrap() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Harsh buzzer / glass crunch
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(90, now);
+        osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
+        notes.forEach((freq, i) => {
+          const now = this.ctx.currentTime + (i * 0.12);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.6);
+        });
+      }
+
+      playDefeat() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 1.1);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 1.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.1);
+      }
+    }
+
+    const sound = new CryptWhackAudio();
+
+    /* ==========================================================================
+       GAME ENGINE & STATE
+       ========================================================================== */
+    const TARGET_SCORE = 1200;
+    const TIME_LIMIT = 45;       // 45 seconds
+    const MAX_LIVES = 3;
+    const SECRET_WORD = "BESTIA-DE-AZUFRE";
+
+    let currentScore = 0;
+    let timeRemaining = TIME_LIMIT;
+    let livesRemaining = MAX_LIVES;
+    let isGameRunning = false;
+    let gameTimerInterval = null;
+    let monsterSpawnTimeout = null;
+
+    // Entity types pool
+    const ENTITY_TYPES = [
+      { type: 'bat', avatar: '🦇', name: 'Murciélago', points: 100, isTrap: false, duration: 1150 },
+      { type: 'zombie', avatar: '🧟', name: 'Zombi', points: 150, isTrap: false, duration: 1050 },
+      { type: 'gargoyle', avatar: '😈', name: 'Gárgola', points: 200, isTrap: false, duration: 900 },
+      { type: 'pumpkin', avatar: '🎃', name: '¡Sagrada!', points: -250, isTrap: true, duration: 1200 }
+    ];
+
+    // State of the 6 coffins
+    const coffinsState = [
+      { active: false, entity: null, timer: null },
+      { active: false, entity: null, timer: null },
+      { active: false, entity: null, timer: null },
+      { active: false, entity: null, timer: null },
+      { active: false, entity: null, timer: null },
+      { active: false, entity: null, timer: null }
+    ];
+
+    // DOM Elements
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const goalFill = document.getElementById('goalFill');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const statusBanner = document.getElementById('statusBanner');
+    const startBtn = document.getElementById('startBtn');
+    const vignette = document.getElementById('vignette');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const defeatReasonText = document.getElementById('defeatReasonText');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+
+    /* Start / Restart Game */
+    startBtn.addEventListener('click', () => {
+      sound.init();
+      startGame();
+    });
+
+    function startGame() {
+      currentScore = 0;
+      timeRemaining = TIME_LIMIT;
+      livesRemaining = MAX_LIVES;
+      isGameRunning = true;
+      startBtn.style.display = 'none';
+
+      updateScoreUI();
+      updateLivesUI();
+      updateTimeUI();
+
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      vignette.classList.remove('danger');
+
+      statusBanner.innerHTML = '¡Golpea a las bestias! <strong>+100/+150/+200 pts</strong>. Evita las calabazas <strong>🎃 (-250 pts y vida)</strong>.';
+
+      // Start countdown
+      clearInterval(gameTimerInterval);
+      gameTimerInterval = setInterval(gameTick, 1000);
+
+      // Start spawning loop
+      clearTimeout(monsterSpawnTimeout);
+      spawnNextMonster();
+    }
+
+    function restartGame() {
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      startGame();
+    }
+
+    function gameTick() {
+      if (!isGameRunning) return;
+      timeRemaining--;
+      updateTimeUI();
+
+      if (timeRemaining <= 0) {
+        endGame(false, "¡Se agotó el tiempo! No alcanzaste los 1200 puntos necesarios para purificar la cripta.");
+      }
+    }
+
+    function updateTimeUI() {
+      timeDisplay.textContent = `⏳ ${timeRemaining}s`;
+      if (timeRemaining <= 10) {
+        timeDisplay.classList.add('hurry');
+      } else {
+        timeDisplay.classList.remove('hurry');
+      }
+    }
+
+    function updateScoreUI() {
+      scoreDisplay.textContent = `${currentScore} / ${TARGET_SCORE}`;
+      const pct = Math.min(100, Math.max(0, (currentScore / TARGET_SCORE) * 100));
+      goalFill.style.width = `${pct}%`;
+    }
+
+    function updateLivesUI() {
+      for (let i = 1; i <= MAX_LIVES; i++) {
+        const soul = document.getElementById(`soul-${i}`);
+        if (i <= livesRemaining) {
+          soul.classList.remove('lost');
+        } else {
+          soul.classList.add('lost');
+        }
+      }
+    }
+
+    /* Spawn Monsters in available coffins */
+    function spawnNextMonster() {
+      if (!isGameRunning) return;
+
+      // Find free coffins
+      const freeIndices = [];
+      coffinsState.forEach((c, idx) => {
+        if (!c.active) freeIndices.push(idx);
+      });
+
+      if (freeIndices.length > 0) {
+        // Pick random free coffin
+        const chosenIndex = freeIndices[Math.floor(Math.random() * freeIndices.length)];
+        
+        // Pick random entity (70% monster, 30% trap pumpkin)
+        const rand = Math.random();
+        let entityType;
+        if (rand < 0.28) {
+          entityType = ENTITY_TYPES[3]; // Pumpkin trap
+        } else if (rand < 0.55) {
+          entityType = ENTITY_TYPES[0]; // Bat
+        } else if (rand < 0.80) {
+          entityType = ENTITY_TYPES[1]; // Zombie
+        } else {
+          entityType = ENTITY_TYPES[2]; // Gargoyle
+        }
+
+        activateCoffinMonster(chosenIndex, entityType);
+      }
+
+      // Next spawn delay speeds up slightly as score rises
+      const speedFactor = Math.max(450, 850 - (currentScore * 0.25));
+      const nextDelay = speedFactor + Math.random() * 350;
+      monsterSpawnTimeout = setTimeout(spawnNextMonster, nextDelay);
+    }
+
+    function activateCoffinMonster(coffinIndex, entity) {
+      const coffinState = coffinsState[coffinIndex];
+      const monsterEl = document.getElementById(`monster-${coffinIndex}`);
+      const avatarEl = monsterEl.querySelector('.monster-avatar');
+      const tagEl = monsterEl.querySelector('.monster-name-tag');
+
+      coffinState.active = true;
+      coffinState.entity = entity;
+
+      avatarEl.textContent = entity.avatar;
+      tagEl.textContent = entity.name;
+      if (entity.isTrap) {
+        tagEl.style.color = 'var(--pumpkin-orange)';
+      } else {
+        tagEl.style.color = 'var(--toxic-green)';
+      }
+
+      monsterEl.classList.remove('whacked');
+      monsterEl.classList.add('peeking');
+      sound.playPop();
+
+      // Auto hide after duration
+      clearTimeout(coffinState.timer);
+      coffinState.timer = setTimeout(() => {
+        hideCoffinMonster(coffinIndex);
+      }, entity.duration);
+    }
+
+    function hideCoffinMonster(coffinIndex) {
+      const coffinState = coffinsState[coffinIndex];
+      const monsterEl = document.getElementById(`monster-${coffinIndex}`);
+      monsterEl.classList.remove('peeking');
+
+      setTimeout(() => {
+        coffinState.active = false;
+        coffinState.entity = null;
+      }, 150);
+    }
+
+    /* Coffin Click / Tap / Key Strike */
+    function strikeCoffin(coffinIndex) {
+      if (!isGameRunning) return;
+      const coffinState = coffinsState[coffinIndex];
+      if (!coffinState.active || !coffinState.entity) return;
+
+      const entity = coffinState.entity;
+      const monsterEl = document.getElementById(`monster-${coffinIndex}`);
+      const coffinEl = document.getElementById(`coffin-${coffinIndex}`);
+
+      clearTimeout(coffinState.timer);
+      monsterEl.classList.remove('peeking');
+      monsterEl.classList.add('whacked');
+
+      if (entity.isTrap) {
+        // HIT HOLY PUMPKIN TRAP!
+        sound.playHitPumpkinTrap();
+        vignette.classList.add('danger');
+        setTimeout(() => vignette.classList.remove('danger'), 300);
+
+        currentScore = Math.max(0, currentScore + entity.points);
+        livesRemaining--;
+        updateLivesUI();
+        updateScoreUI();
+
+        spawnPopupParticle(coffinEl, `${entity.points}`, 'minus');
+        spawnWhackSplash(coffinEl, '💥');
+
+        if (livesRemaining <= 0) {
+          endGame(false, "¡Quebraste demasiadas Calabazas Sagradas y la maldición consumió todas tus almas!");
+          return;
+        }
+      } else {
+        // HIT VALID MONSTER!
+        sound.playHitMonster();
+        currentScore += entity.points;
+        updateScoreUI();
+
+        spawnPopupParticle(coffinEl, `+${entity.points}`, 'plus');
+        spawnWhackSplash(coffinEl, '⚔️');
+
+        // Check Victory
+        if (currentScore >= TARGET_SCORE) {
+          endGame(true);
+          return;
+        }
+      }
+
+      setTimeout(() => {
+        coffinState.active = false;
+        coffinState.entity = null;
+        monsterEl.classList.remove('whacked');
+      }, 150);
+    }
+
+    function spawnPopupParticle(parentElement, text, type) {
+      const p = document.createElement('div');
+      p.className = `score-particle ${type}`;
+      p.textContent = text;
+      p.style.top = '30%';
+      p.style.left = '40%';
+      parentElement.appendChild(p);
+      setTimeout(() => p.remove(), 700);
+    }
+
+    function spawnWhackSplash(parentElement, symbol) {
+      const s = document.createElement('div');
+      s.className = 'whack-effect';
+      s.textContent = symbol;
+      parentElement.appendChild(s);
+      setTimeout(() => s.remove(), 350);
+    }
+
+    function endGame(victory, reasonText = "") {
+      isGameRunning = false;
+      clearInterval(gameTimerInterval);
+      clearTimeout(monsterSpawnTimeout);
+
+      // Hide all active monsters
+      coffinsState.forEach((c, idx) => {
+        clearTimeout(c.timer);
+        hideCoffinMonster(idx);
+      });
+
+      if (victory) {
+        sound.playVictory();
+        try {
+          localStorage.setItem('krypt_day_02_cleared', 'true');
+        } catch(e){}
+
+        setTimeout(() => {
+          victoryModal.classList.add('active');
+        }, 400);
+      } else {
+        sound.playDefeat();
+        defeatReasonText.textContent = reasonText;
+        setTimeout(() => {
+          defeatModal.classList.add('active');
+        }, 400);
+      }
+    }
+
+    /* Coffin Click Listeners */
+    for (let i = 0; i < 6; i++) {
+      const c = document.getElementById(`coffin-${i}`);
+      c.addEventListener('click', () => strikeCoffin(i));
+    }
+
+    /* Keyboard Controls [Q, W, E] & [A, S, D] */
+    window.addEventListener('keydown', (e) => {
+      if (!isGameRunning) return;
+      const key = e.key.toUpperCase();
+      let coffinIdx = -1;
+
+      if (key === 'Q' || key === '7') coffinIdx = 0;
+      if (key === 'W' || key === '8') coffinIdx = 1;
+      if (key === 'E' || key === '9') coffinIdx = 2;
+      if (key === 'A' || key === '4') coffinIdx = 3;
+      if (key === 'S' || key === '5') coffinIdx = 4;
+      if (key === 'D' || key === '6') coffinIdx = 5;
+
+      if (coffinIdx !== -1) {
+        strikeCoffin(coffinIdx);
+      }
+    });
+
+    /* ==========================================================================
+       DISCORD MESSAGE GENERATOR WITH SPOILER SYNTAX "||"
+       ========================================================================== */
+    function copyDiscordMessage() {
+      // User requirement: Encerrar la palabra en "||" para spoiler en Discord
+      const discordText = `🎃 ¡He superado el Día 02 en La Krypta! Código: ||${SECRET_WORD}||`;
+
+      navigator.clipboard.writeText(discordText).then(() => {
+        copyDiscordBtn.innerHTML = '✓ ¡Copiado con Spoiler!';
+        copyDiscordBtn.classList.add('copied');
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.innerHTML = '📋 Copiar para Discord';
+          copyDiscordBtn.classList.remove('copied');
+        }, 2500);
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = discordText;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.innerHTML = '✓ ¡Copiado con Spoiler!';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+      });
+    }
+
+    /* Toast Helper */
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    /* Sound Toggle */
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+  </script>
+</body>
+</html>

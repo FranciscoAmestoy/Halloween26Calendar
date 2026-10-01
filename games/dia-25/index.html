@@ -1,0 +1,2761 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 25: Catapulta de Huesos - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --board-border: #283c2f;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --bone-white: #e6dfd3;
+      --spectral-purple: #c042ff;
+      --moon-gold: #ffd24d;
+      --moon-glow: rgba(255, 210, 77, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(65, 25, 10, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 85%, rgba(12, 28, 20, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 14px 12px;
+    }
+
+    /* Ambient mist and scanlines */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.15;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.3) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    .vignette-overlay.flash-gold {
+      box-shadow: inset 0 0 140px rgba(255, 210, 77, 0.85);
+    }
+
+    /* Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: #fff;
+      border-color: var(--pumpkin-orange);
+      box-shadow: 0 0 10px var(--pumpkin-glow);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--moon-gold);
+      color: #fff;
+      box-shadow: 0 0 8px var(--moon-glow);
+    }
+
+    /* Game Header Title */
+    .title-banner {
+      text-align: center;
+      margin-bottom: 2px;
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 2.1rem;
+      letter-spacing: 2px;
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 12px var(--pumpkin-glow), 2px 2px 0px #000;
+      line-height: 1.1;
+    }
+
+    .title-banner .sub {
+      font-size: 0.76rem;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 22, 17, 0.85);
+      border: 1px solid #2a3d2e;
+      border-radius: 8px;
+      padding: 6px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .hud-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .stat-value {
+      font-family: 'Cinzel', serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--moon-gold);
+      text-shadow: 0 0 8px var(--moon-glow);
+    }
+
+    .ammo-container {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ammo-icon {
+      font-size: 1.3rem;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      filter: drop-shadow(0 0 5px var(--pumpkin-glow));
+    }
+
+    .ammo-icon.used {
+      opacity: 0.25;
+      filter: grayscale(1);
+      transform: scale(0.85);
+    }
+
+    /* Boost helper hint */
+    .boost-hint {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #ff9d42;
+      background: rgba(255, 117, 24, 0.12);
+      border: 1px solid rgba(255, 117, 24, 0.35);
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-align: center;
+      animation: pulseBoost 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseBoost {
+      0%, 100% { opacity: 0.85; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.02); box-shadow: 0 0 10px rgba(255, 117, 24, 0.3); }
+    }
+
+    /* Canvas Container */
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid var(--board-border);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0, 0, 0, 0.8);
+      background: #060907;
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 880 / 500;
+      cursor: crosshair;
+    }
+
+    /* Floating In-Game Notification Text */
+    .floating-banner {
+      position: absolute;
+      top: 15%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Creepster', cursive;
+      font-size: 2.2rem;
+      color: var(--moon-gold);
+      text-shadow: 0 0 15px var(--moon-glow), 2px 2px 0 #000;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 15;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .floating-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    /* Bottom Info / Controls */
+    .bottom-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 4px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .btn-quick-reset {
+      background: rgba(25, 35, 28, 0.8);
+      border: 1px solid #364d3b;
+      color: var(--parchment);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-quick-reset:hover {
+      background: rgba(45, 25, 20, 0.8);
+      border-color: var(--pumpkin-orange);
+      color: #fff;
+    }
+
+    /* Modal Windows */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 6, 5, 0.88);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 16px;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(145deg, #131d16 0%, #0a0e0b 100%);
+      border: 2px solid #2a3d2e;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 440px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      transform: translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-backdrop.active .modal-box {
+      transform: translateY(0);
+    }
+
+    .modal-box.victory {
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 35px rgba(255, 210, 77, 0.35);
+    }
+
+    .modal-box.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 35px rgba(255, 42, 75, 0.35);
+    }
+
+    .modal-box.level-clear {
+      border-color: var(--pumpkin-orange);
+      box-shadow: 0 0 35px rgba(255, 117, 24, 0.35);
+    }
+
+    .modal-icon {
+      font-size: 3rem;
+      filter: drop-shadow(0 0 10px var(--moon-glow));
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2.2rem;
+      color: var(--moon-gold);
+      text-shadow: 0 0 10px var(--moon-glow);
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .modal-box.defeat .modal-title {
+      color: var(--blood-red);
+      text-shadow: 0 0 10px var(--blood-glow);
+    }
+
+    .modal-desc {
+      font-size: 0.88rem;
+      color: var(--parchment);
+      line-height: 1.5;
+    }
+
+    .skull-rating {
+      display: flex;
+      gap: 10px;
+      font-size: 2rem;
+      margin: 4px 0;
+    }
+
+    .skull-rating span {
+      filter: grayscale(1) opacity(0.3);
+      transition: all 0.4s ease;
+    }
+
+    .skull-rating span.active {
+      filter: grayscale(0) opacity(1) drop-shadow(0 0 8px var(--moon-glow));
+      transform: scale(1.15);
+    }
+
+    .secret-scroll {
+      background: rgba(18, 28, 22, 0.9);
+      border: 1px dashed var(--moon-gold);
+      border-radius: 8px;
+      padding: 12px 18px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .scroll-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: var(--moon-gold);
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px var(--moon-glow);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 12px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      color: #fff;
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 15px rgba(88, 101, 242, 0.6);
+    }
+
+    .btn-action.advance {
+      background: linear-gradient(135deg, #ff7518, #d44d00);
+      color: #fff;
+    }
+
+    .btn-action.advance:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 0 18px var(--pumpkin-glow);
+    }
+
+    .btn-action.retry {
+      background: linear-gradient(135deg, #a81c32, #680f1d);
+      color: #fff;
+    }
+
+    .btn-action.retry:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 0 15px var(--blood-glow);
+    }
+
+    .modal-close-corner {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .modal-close-corner:hover {
+      color: #fff;
+    }
+
+    .how-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      text-align: left;
+      font-size: 0.84rem;
+      line-height: 1.4;
+      width: 100%;
+    }
+
+    .how-step-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      background: rgba(18, 28, 22, 0.95);
+      border: 1px solid var(--toxic-green);
+      color: var(--parchment);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.8), 0 0 15px var(--toxic-glow);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 600px) {
+      .title-banner h1 { font-size: 1.7rem; }
+      .stat-value { font-size: 1rem; }
+      .hud-bar { padding: 4px 8px; }
+      .boost-hint { font-size: 0.65rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <div class="game-shell">
+    <!-- Header -->
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+
+      <div class="header-controls">
+        <button class="btn-icon" id="btnHowTo" title="Instrucciones">
+          <span>📜</span>
+          <span>Ayuda</span>
+        </button>
+        <button class="btn-icon" id="btnAudioToggle" title="Sonido">
+          <span id="audioIcon">🔊</span>
+          <span id="audioLabel">Sonido</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Title Banner -->
+    <div class="title-banner">
+      <div class="sub">Día XXV • La Krypta del Cementerio</div>
+      <h1>Catapulta de Huesos</h1>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-group">
+        <div class="hud-stat">
+          <span class="stat-label">Nivel</span>
+          <span class="stat-value" id="hudLevel">1 / 3</span>
+        </div>
+        <div class="hud-stat">
+          <span class="stat-label">Puntaje</span>
+          <span class="stat-value" id="hudScore">0</span>
+        </div>
+      </div>
+
+      <div class="boost-hint" id="boostHint">
+        🔥 Toca en vuelo para activar ¡Furia Ígnea!
+      </div>
+
+      <div class="hud-group">
+        <div class="hud-stat">
+          <span class="stat-label">Calabazas</span>
+          <div class="ammo-container" id="ammoContainer">
+            <span class="ammo-icon" id="ammo0">🎃</span>
+            <span class="ammo-icon" id="ammo1">🎃</span>
+            <span class="ammo-icon" id="ammo2">🎃</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas Sandbox -->
+    <div class="canvas-wrapper">
+      <canvas id="gameCanvas" width="880" height="500"></canvas>
+      <div class="floating-banner" id="floatingBanner">¡IMPACTO TOTAL!</div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="bottom-bar">
+      <span>Arrastra hacia atrás y suelta para disparar • Toca en el aire para propulsión ígnea</span>
+      <button class="btn-quick-reset" id="btnResetLevel">
+        <span>🔄</span>
+        <span>Reiniciar Nivel</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- How to Play Modal -->
+  <div class="modal-backdrop" id="helpModal">
+    <div class="modal-box">
+      <button class="modal-close-corner" id="btnCloseHelp">&times;</button>
+      <div class="modal-icon">🦴☄️</div>
+      <h2 class="modal-title">Cómo Jugar</h2>
+      
+      <div class="how-step">
+        <div class="how-step-icon">🎯</div>
+        <div><strong>Apunta y Dispara:</strong> Mantén presionado sobre la calabaza en la catapulta de huesos, arrastra hacia atrás para ajustar ángulo y potencia, y suelta para disparar.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">🔥</div>
+        <div><strong>Furia Ígnea:</strong> Mientras la calabaza esté volando, ¡haz clic o toca la pantalla una vez para acelerar como un meteoro ardiente y quebrar defensas pesadas!</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">💀</div>
+        <div><strong>Objetivo:</strong> Derriba las fortalezas y pulveriza a todos los esqueletos enemigos. ¡Aprovecha los barriles explosivos y el derrumbe de lápidas pesadas!</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">⭐</div>
+        <div><strong>Puntaje:</strong> Ahorra calabazas para ganar más calaveras de honor y puntos de bonificación.</div>
+      </div>
+
+      <button class="btn-action advance" id="btnStartPlaying">
+        <span>⚔️</span>
+        <span>¡Comenzar el Asedio!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Level Cleared Modal -->
+  <div class="modal-backdrop" id="levelClearModal">
+    <div class="modal-box level-clear">
+      <div class="modal-icon">💀🔥</div>
+      <h2 class="modal-title">¡Fortaleza Caída!</h2>
+      <p class="modal-desc" id="levelClearDesc">
+        Los esqueletos han sido reducidos a polvo y astillas.
+      </p>
+
+      <div class="skull-rating" id="levelSkulls">
+        <span id="star1">💀</span>
+        <span id="star2">💀</span>
+        <span id="star3">💀</span>
+      </div>
+
+      <div style="font-size: 0.95rem; color: var(--parchment);">
+        Puntaje del Nivel: <strong id="levelScoreVal" style="color: var(--moon-gold);">0</strong>
+      </div>
+
+      <button class="btn-action advance" id="btnNextLevel">
+        <span>⏩</span>
+        <span>Siguiente Fortaleza</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Level Failed Modal -->
+  <div class="modal-backdrop" id="levelFailModal">
+    <div class="modal-box defeat">
+      <div class="modal-icon">💀🥀</div>
+      <h2 class="modal-title">¡Munición Agotada!</h2>
+      <p class="modal-desc">
+        Aún quedan esqueletos profanando la cripta y tus calabazas ígneas se han extinguido.
+      </p>
+
+      <button class="btn-action retry" id="btnRetryLevel">
+        <span>🔄</span>
+        <span>Reintentar Asedio</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Final Victory Modal -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">👑🎃</div>
+      <h2 class="modal-title">¡Krypta Purificada!</h2>
+      <p class="modal-desc">
+        Has arrasado las tres fortalezas nigrománticas con la catapulta de huesos legendaria.
+      </p>
+
+      <div class="skull-rating">
+        <span class="active">💀</span>
+        <span class="active">💀</span>
+        <span class="active">💀</span>
+      </div>
+
+      <div style="font-size: 0.92rem; color: var(--parchment);">
+        Puntaje Total del Asedio: <strong id="finalScoreVal" style="color: var(--moon-gold);">0</strong>
+      </div>
+
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display">CALABAZA-IGNEA</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action advance" id="btnReplayAll">
+        <span>🔄</span>
+        <span>Rejugar Campaña</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Audio Engine & Game Script -->
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO CONTROLLER
+       ========================================================================== */
+    class CatapultAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playSlingStretch(pullFraction) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(120 + pullFraction * 180, now);
+        osc.frequency.linearRampToValueAtTime(140 + pullFraction * 240, now + 0.05);
+
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+
+      playLaunch() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Snappy whoosh & snap
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(60, now + 0.25);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+
+        // Noise snap
+        this.playNoise(0.12, 400, 0.15);
+      }
+
+      playBoost() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Fiery rocket burst
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(550, now + 0.2);
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+
+        this.playNoise(0.2, 800, 0.2);
+      }
+
+      playWoodCrack() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        this.playNoise(0.08, 1200, 0.12);
+      }
+
+      playStoneHit(intensity = 0.5) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(90, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.18);
+
+        const vol = Math.min(0.3, 0.1 + intensity * 0.2);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      }
+
+      playExplosion() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Low rumble boom
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.6);
+
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.6);
+
+        this.playNoise(0.5, 300, 0.35);
+      }
+
+      playSkeletonDeath() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Bone rattle chord + spooky squeak
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(450, now);
+        osc.frequency.linearRampToValueAtTime(650, now + 0.08);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.25);
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+
+        this.playNoise(0.12, 1800, 0.15);
+      }
+
+      playLevelClear() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [220, 277.18, 329.63, 440, 554.37];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+          gain.gain.setValueAtTime(0.15, now + idx * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.4);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.1);
+          osc.stop(now + idx * 0.1 + 0.4);
+        });
+      }
+
+      playLevelFail() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(55, now + 0.8);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.8);
+      }
+
+      playNoise(duration, filterFreq, volume) {
+        if (!this.ctx) return;
+        const bufferSize = this.ctx.sampleRate * duration;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(filterFreq, this.ctx.currentTime);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start();
+      }
+    }
+
+    const audio = new CatapultAudio();
+
+    /* ==========================================================================
+       GAME ENGINE & 2D PHYSICS SIMULATION
+       ========================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const vignette = document.getElementById('vignette');
+    const toast = document.getElementById('toast');
+    const floatingBanner = document.getElementById('floatingBanner');
+
+    const hudLevel = document.getElementById('hudLevel');
+    const hudScore = document.getElementById('hudScore');
+    const ammoIcons = [
+      document.getElementById('ammo0'),
+      document.getElementById('ammo1'),
+      document.getElementById('ammo2')
+    ];
+    const boostHint = document.getElementById('boostHint');
+
+    // Modals
+    const helpModal = document.getElementById('helpModal');
+    const levelClearModal = document.getElementById('levelClearModal');
+    const levelFailModal = document.getElementById('levelFailModal');
+    const victoryModal = document.getElementById('victoryModal');
+
+    // Constants
+    const CANVAS_WIDTH = 880;
+    const CANVAS_HEIGHT = 500;
+    const GROUND_Y = 440;
+    const SLING_X = 140;
+    const SLING_Y = 360;
+    const MAX_PULL = 85;
+    const LAUNCH_POWER = 0.22;
+    const GRAVITY = 0.32;
+    const AIR_RESISTANCE = 0.998;
+
+    // Game State
+    let currentLevel = 1;
+    let totalScore = 0;
+    let levelScore = 0;
+    let pumpkinsRemaining = 3;
+    let gameState = 'AIMING'; // AIMING, FLYING, SETTLING, LEVEL_CLEAR, LEVEL_FAIL, GAME_OVER
+    let isDragging = false;
+    let dragPos = { x: SLING_X, y: SLING_Y };
+    let boostUsed = false;
+    let settleTimer = 0;
+    let shakeDuration = 0;
+    let shakeIntensity = 0;
+
+    // Objects
+    let activePumpkin = null;
+    let blocks = [];
+    let enemies = [];
+    let particles = [];
+    let backgroundBats = [];
+
+    // Initialize Bats
+    for (let i = 0; i < 6; i++) {
+      backgroundBats.push({
+        x: Math.random() * CANVAS_WIDTH,
+        y: 40 + Math.random() * 120,
+        speed: 1 + Math.random() * 1.5,
+        flapPhase: Math.random() * Math.PI * 2,
+        size: 8 + Math.random() * 8
+      });
+    }
+
+    /* --- Physics Classes --- */
+    class Pumpkin {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.prevX = x;
+        this.prevY = y;
+        this.vx = 0;
+        this.vy = 0;
+        this.radius = 16;
+        this.angle = 0;
+        this.vAngle = 0;
+        this.isLaunched = false;
+        this.isDead = false;
+        this.flameTimer = 0;
+        this.mass = 3.5;
+        this.trail = [];
+      }
+
+      update() {
+        if (!this.isLaunched || this.isDead) return;
+
+        this.prevX = this.x;
+        this.prevY = this.y;
+
+        this.vy += GRAVITY;
+        this.vx *= AIR_RESISTANCE;
+        this.vy *= AIR_RESISTANCE;
+
+        this.x += this.vx;
+        this.y += this.vy;
+        this.angle += this.vAngle;
+
+        // Record flight trail
+        this.trail.push({ x: this.x, y: this.y, age: 0 });
+        if (this.trail.length > 20) this.trail.shift();
+
+        // Spawn fire / smoke particles
+        if (Math.random() < 0.8) {
+          spawnFireParticle(
+            this.x - this.vx * 0.5 + (Math.random() - 0.5) * 6,
+            this.y - this.vy * 0.5 + (Math.random() - 0.5) * 6,
+            (Math.random() - 0.5) * 1.5,
+            (Math.random() - 0.5) * 1.5 - 0.5,
+            boostUsed ? '#00e5ff' : '#ff7518',
+            boostUsed ? '#8000ff' : '#ff2a4b'
+          );
+        }
+
+        // Ground Collision
+        if (this.y + this.radius >= GROUND_Y) {
+          this.y = GROUND_Y - this.radius;
+          this.vy = -this.vy * 0.35;
+          this.vx *= 0.7;
+          this.vAngle = this.vx * 0.05;
+          if (Math.abs(this.vy) > 1.5) {
+            audio.playStoneHit(0.3);
+            createImpactDebris(this.x, GROUND_Y, '#364d3b', 4);
+          }
+        }
+
+        // Left / Right Walls
+        if (this.x - this.radius < 0) {
+          this.x = this.radius;
+          this.vx = -this.vx * 0.4;
+        }
+        if (this.x - this.radius > CANVAS_WIDTH + 60) {
+          this.isDead = true;
+        }
+
+        // Check if pumpkin is essentially stopped
+        if (Math.hypot(this.vx, this.vy) < 0.3 && this.y >= GROUND_Y - this.radius - 2) {
+          this.isDead = true;
+        }
+      }
+
+      boost() {
+        if (boostUsed || !this.isLaunched || this.isDead) return;
+        boostUsed = true;
+        audio.playBoost();
+        triggerScreenShake(7, 18);
+        flashVignette('flash-gold');
+
+        // Strong forward surge and slight upward lift
+        const currentSpeed = Math.hypot(this.vx, this.vy);
+        const angle = Math.atan2(this.vy, this.vx);
+        const boostSpeed = Math.max(currentSpeed * 1.55, 18);
+        this.vx = Math.cos(angle) * boostSpeed;
+        this.vy = Math.sin(angle) * boostSpeed - 2.5;
+
+        // Big fiery shockwave
+        for (let i = 0; i < 30; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const s = 2 + Math.random() * 6;
+          spawnFireParticle(this.x, this.y, Math.cos(a) * s, Math.sin(a) * s, '#ffd24d', '#ff7518');
+        }
+
+        showBanner('¡FURIA ÍGNEA!', '#ffd24d');
+      }
+
+      draw() {
+        // Draw Trail
+        for (let i = 0; i < this.trail.length; i++) {
+          const t = this.trail[i];
+          t.age++;
+          const alpha = (1 - i / this.trail.length) * 0.4;
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, this.radius * (0.3 + (i / this.trail.length) * 0.4), 0, Math.PI * 2);
+          ctx.fillStyle = boostUsed ? `rgba(0, 229, 255, ${alpha})` : `rgba(255, 117, 24, ${alpha})`;
+          ctx.fill();
+        }
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        // Fiery glow aura
+        ctx.shadowColor = boostUsed ? 'rgba(0, 229, 255, 0.9)' : 'rgba(255, 117, 24, 0.85)';
+        ctx.shadowBlur = boostUsed ? 25 : 15;
+
+        // Pumpkin Body
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = boostUsed ? '#00e5ff' : '#ff7518';
+        ctx.fill();
+
+        // Ribs / details
+        ctx.strokeStyle = boostUsed ? '#0077aa' : '#b34700';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, this.radius * 0.65, this.radius, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Pumpkin Stem
+        ctx.fillStyle = '#4a752c';
+        ctx.fillRect(-2, -this.radius - 4, 4, 6);
+
+        // Carved Jack-o'-Lantern Face (Eyes and evil grin)
+        ctx.fillStyle = '#060907';
+        // Left eye
+        ctx.beginPath();
+        ctx.moveTo(-7, -5);
+        ctx.lineTo(-2, -5);
+        ctx.lineTo(-4.5, -9);
+        ctx.closePath();
+        ctx.fill();
+
+        // Right eye
+        ctx.beginPath();
+        ctx.moveTo(2, -5);
+        ctx.lineTo(7, -5);
+        ctx.lineTo(4.5, -9);
+        ctx.closePath();
+        ctx.fill();
+
+        // Jagged smile
+        ctx.beginPath();
+        ctx.moveTo(-9, 3);
+        ctx.lineTo(-5, 7);
+        ctx.lineTo(-2, 4);
+        ctx.lineTo(0, 7);
+        ctx.lineTo(2, 4);
+        ctx.lineTo(5, 7);
+        ctx.lineTo(9, 3);
+        ctx.lineTo(6, 4);
+        ctx.lineTo(0, 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // Inner glowing eyes
+        ctx.fillStyle = boostUsed ? '#ffffff' : '#ffd24d';
+        ctx.beginPath();
+        ctx.arc(-4.5, -6.5, 1.2, 0, Math.PI * 2);
+        ctx.arc(4.5, -6.5, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    class Block {
+      constructor(x, y, w, h, type = 'bone') {
+        this.x = x; // Center x
+        this.y = y; // Center y
+        this.w = w;
+        this.h = h;
+        this.vx = 0;
+        this.vy = 0;
+        this.angle = 0;
+        this.vAngle = 0;
+        this.type = type; // 'bone', 'stone', 'tnt'
+        this.awake = false; // Starts sleeping / rock-solid!
+
+        if (type === 'bone') {
+          this.mass = (w * h) / 380;
+          this.health = 45;
+          this.color = '#e6dfd3';
+          this.borderColor = '#998d7b';
+        } else if (type === 'stone') {
+          this.mass = (w * h) / 180;
+          this.health = 130;
+          this.color = '#454e4a';
+          this.borderColor = '#2a332f';
+        } else if (type === 'tnt') {
+          this.mass = 4;
+          this.health = 25;
+          this.color = '#8b1828';
+          this.borderColor = '#ff2a4b';
+        }
+        this.maxHealth = this.health;
+        this.isDead = false;
+      }
+
+      wakeUp() {
+        if (this.awake || this.isDead) return;
+        this.awake = true;
+
+        // Wake up neighboring blocks that are in contact or resting on this block
+        for (let b of blocks) {
+          if (!b.awake && !b.isDead) {
+            const dx = Math.abs(b.x - this.x);
+            const dy = Math.abs(b.y - this.y);
+            if (dx <= (this.w + b.w) / 2 + 3 && dy <= (this.h + b.h) / 2 + 3) {
+              b.wakeUp();
+            }
+          }
+        }
+        for (let e of enemies) {
+          if (!e.awake && !e.isDead) {
+            const dx = Math.abs(e.x - this.x);
+            const dy = Math.abs(e.y - this.y);
+            if (dx <= (this.w / 2 + e.radius) + 3 && dy <= (this.h / 2 + e.radius) + 3) {
+              e.wakeUp();
+            }
+          }
+        }
+      }
+
+      update() {
+        if (this.isDead || !this.awake) return;
+
+        this.vy += GRAVITY;
+        this.vx *= 0.96;
+        this.vy *= 0.98;
+        this.vAngle *= 0.92;
+
+        this.x += this.vx;
+        this.y += this.vy;
+        this.angle += this.vAngle;
+
+        // Ground Collision
+        const halfH = this.h / 2;
+        if (this.y + halfH >= GROUND_Y) {
+          this.y = GROUND_Y - halfH;
+          if (Math.abs(this.vy) > 1.2) {
+            if (this.type === 'stone') audio.playStoneHit(0.2);
+            else if (this.type === 'bone') audio.playWoodCrack();
+          }
+          this.vy = -this.vy * 0.2;
+          this.vx *= 0.65;
+          this.vAngle *= 0.5;
+
+          if (Math.hypot(this.vx, this.vy) < 0.25) {
+            this.vx = 0;
+            this.vy = 0;
+            this.vAngle = 0;
+          }
+        }
+
+        // Left/Right/Bottom Bounds
+        const halfW = this.w / 2;
+        if (this.x - halfW < 0) {
+          this.x = halfW;
+          this.vx = -this.vx * 0.3;
+        }
+        if (this.x + halfW > CANVAS_WIDTH + 80 || this.y > CANVAS_HEIGHT + 50) {
+          this.isDead = true;
+        }
+
+        // Damage on hard impact
+        const speed = Math.hypot(this.vx, this.vy);
+        if (speed > 8) {
+          this.takeDamage(speed * 1.5);
+        }
+      }
+
+      takeDamage(amount) {
+        this.health -= amount;
+        if (this.health <= 0) {
+          this.destroy();
+        }
+      }
+
+      destroy() {
+        if (this.isDead) return;
+        this.isDead = true;
+
+        if (this.type === 'tnt') {
+          explodeTNT(this.x, this.y);
+          addScore(150, this.x, this.y);
+        } else if (this.type === 'bone') {
+          audio.playWoodCrack();
+          createImpactDebris(this.x, this.y, '#e6dfd3', 10);
+          addScore(60, this.x, this.y);
+        } else {
+          audio.playStoneHit(0.8);
+          createImpactDebris(this.x, this.y, '#454e4a', 14);
+          addScore(100, this.x, this.y);
+        }
+
+        // When a block is destroyed, wake up any blocks resting on or touching it!
+        for (let b of blocks) {
+          if (!b.awake && !b.isDead) {
+            const dx = Math.abs(b.x - this.x);
+            const dy = Math.abs(b.y - this.y);
+            if (dx <= (this.w + b.w) / 2 + 5 && dy <= (this.h + b.h) / 2 + 5) {
+              b.wakeUp();
+            }
+          }
+        }
+        for (let e of enemies) {
+          if (!e.awake && !e.isDead) {
+            const dx = Math.abs(e.x - this.x);
+            const dy = Math.abs(e.y - this.y);
+            if (dx <= (this.w / 2 + e.radius) + 5 && dy <= (this.h / 2 + e.radius) + 5) {
+              e.wakeUp();
+            }
+          }
+        }
+      }
+
+      draw() {
+        if (this.isDead) return;
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        const hw = this.w / 2;
+        const hh = this.h / 2;
+
+        if (this.type === 'bone') {
+          // Bone beam / plank
+          ctx.fillStyle = this.color;
+          ctx.fillRect(-hw, -hh, this.w, this.h);
+          ctx.strokeStyle = this.borderColor;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-hw, -hh, this.w, this.h);
+
+          // Bone knobs or skull rune
+          ctx.fillStyle = '#b3a898';
+          ctx.fillRect(-hw + 3, -hh + 3, 4, this.h - 6);
+          ctx.fillRect(hw - 7, -hh + 3, 4, this.h - 6);
+
+          // Cracks when damaged
+          if (this.health < this.maxHealth * 0.6) {
+            ctx.strokeStyle = '#5a4f42';
+            ctx.beginPath();
+            ctx.moveTo(-hw * 0.3, -hh * 0.5);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(hw * 0.4, hh * 0.3);
+            ctx.stroke();
+          }
+        } else if (this.type === 'stone') {
+          // Dark granite tombstone block
+          ctx.fillStyle = this.color;
+          ctx.fillRect(-hw, -hh, this.w, this.h);
+          ctx.strokeStyle = this.borderColor;
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(-hw, -hh, this.w, this.h);
+
+          // Carved cross / rune
+          ctx.strokeStyle = '#222825';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, -hh * 0.6);
+          ctx.lineTo(0, hh * 0.6);
+          ctx.moveTo(-hw * 0.4, -hh * 0.2);
+          ctx.lineTo(hw * 0.4, -hh * 0.2);
+          ctx.stroke();
+
+          // Damage cracks
+          if (this.health < this.maxHealth * 0.7) {
+            ctx.strokeStyle = '#111513';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(-hw * 0.5, hh * 0.4);
+            ctx.lineTo(-hw * 0.1, 0);
+            ctx.lineTo(hw * 0.3, -hh * 0.4);
+            ctx.stroke();
+          }
+        } else if (this.type === 'tnt') {
+          // Explosive skull barrel / urn
+          ctx.fillStyle = this.color;
+          ctx.fillRect(-hw, -hh, this.w, this.h);
+          ctx.strokeStyle = this.borderColor;
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(-hw, -hh, this.w, this.h);
+
+          // Glow outline
+          ctx.shadowColor = '#ff2a4b';
+          ctx.shadowBlur = 10;
+
+          // Skull emblem
+          ctx.fillStyle = '#ffdfbf';
+          ctx.beginPath();
+          ctx.arc(0, -2, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(-4, 3, 8, 4);
+
+          // Eyeholes
+          ctx.fillStyle = '#070908';
+          ctx.beginPath();
+          ctx.arc(-2.5, -2, 1.5, 0, Math.PI * 2);
+          ctx.arc(2.5, -2, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // TNT Text
+          ctx.font = 'bold 9px Montserrat';
+          ctx.fillStyle = '#ffd24d';
+          ctx.textAlign = 'center';
+          ctx.fillText('AZUFRE', 0, hh - 3);
+        }
+
+        ctx.restore();
+      }
+    }
+
+    class Enemy {
+      constructor(x, y, isArmored = false) {
+        this.x = x;
+        this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+        this.radius = 16;
+        this.mass = 2.0; // Proper mass to prevent NaN!
+        this.health = isArmored ? 60 : 35;
+        this.maxHealth = this.health;
+        this.isArmored = isArmored;
+        this.isDead = false;
+        this.awake = false; // Starts sleeping / rock-solid!
+        this.fearTimer = 0;
+        this.blinkTimer = Math.random() * 120;
+        this.quiver = 0;
+      }
+
+      wakeUp() {
+        if (this.awake || this.isDead) return;
+        this.awake = true;
+
+        for (let b of blocks) {
+          if (!b.awake && !b.isDead) {
+            const dx = Math.abs(b.x - this.x);
+            const dy = Math.abs(b.y - this.y);
+            if (dx <= (b.w / 2 + this.radius) + 3 && dy <= (b.h / 2 + this.radius) + 3) {
+              b.wakeUp();
+            }
+          }
+        }
+      }
+
+      update() {
+        if (this.isDead || !this.awake) return;
+
+        this.vy += GRAVITY;
+        this.vx *= 0.96;
+        this.vy *= 0.98;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Ground Collision
+        if (this.y + this.radius >= GROUND_Y) {
+          this.y = GROUND_Y - this.radius;
+          this.vy = -this.vy * 0.2;
+          this.vx *= 0.7;
+          if (Math.hypot(this.vx, this.vy) < 0.25) {
+            this.vx = 0;
+            this.vy = 0;
+          }
+        }
+
+        // Offscreen check
+        if (this.x < -40 || this.x > CANVAS_WIDTH + 60 || this.y > CANVAS_HEIGHT + 40) {
+          this.destroy();
+          return;
+        }
+
+        // Quiver in fear if flying pumpkin is close
+        if (activePumpkin && !activePumpkin.isDead) {
+          const dist = Math.hypot(activePumpkin.x - this.x, activePumpkin.y - this.y);
+          if (dist < 180) {
+            this.fearTimer = 15;
+            this.quiver = (Math.random() - 0.5) * 3;
+          }
+        }
+        if (this.fearTimer > 0) this.fearTimer--;
+
+        // Blinking
+        this.blinkTimer--;
+        if (this.blinkTimer <= 0) this.blinkTimer = 100 + Math.random() * 120;
+
+        // Damage from high speed fall or throw
+        const speed = Math.hypot(this.vx, this.vy);
+        if (speed > 6) {
+          this.takeDamage(speed * 2.2);
+        }
+      }
+
+      takeDamage(amount) {
+        if (this.isDead) return;
+        this.health -= amount;
+        if (this.health <= 0) {
+          this.destroy();
+        }
+      }
+
+      destroy() {
+        if (this.isDead) return;
+        this.isDead = true;
+        audio.playSkeletonDeath();
+        addScore(500, this.x, this.y);
+        showBanner('¡ESQUELETO PULVERIZADO!', '#39ff14');
+
+        // Shatter into flying skull and bone pieces
+        createImpactDebris(this.x, this.y, '#e6dfd3', 14);
+
+        // Floating phantom soul
+        spawnSoul(this.x, this.y);
+      }
+
+      draw() {
+        if (this.isDead) return;
+
+        ctx.save();
+        ctx.translate(this.x + (this.fearTimer > 0 ? this.quiver : 0), this.y);
+
+        // Body bone
+        ctx.strokeStyle = '#c4bcb0';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, this.radius * 0.2);
+        ctx.lineTo(0, this.radius + 6);
+        // Ribs
+        ctx.moveTo(-6, this.radius * 0.5);
+        ctx.lineTo(6, this.radius * 0.5);
+        ctx.moveTo(-5, this.radius * 0.8);
+        ctx.lineTo(5, this.radius * 0.8);
+        ctx.stroke();
+
+        // Skull Head
+        ctx.shadowColor = 'rgba(57, 255, 20, 0.4)';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = '#e6dfd3';
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Jaw
+        ctx.fillRect(-6, this.radius * 0.5, 12, 6);
+        ctx.fillStyle = '#222';
+        // Teeth notches
+        ctx.fillRect(-4, this.radius * 0.7, 2, 3);
+        ctx.fillRect(2, this.radius * 0.7, 2, 3);
+
+        // Helmet if armored
+        if (this.isArmored) {
+          ctx.fillStyle = '#55625c';
+          ctx.beginPath();
+          ctx.arc(0, -4, this.radius + 1, Math.PI, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#29352f';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Helmet Horns
+          ctx.fillStyle = '#8a9992';
+          ctx.beginPath();
+          ctx.moveTo(-this.radius, -4);
+          ctx.lineTo(-this.radius - 6, -12);
+          ctx.lineTo(-this.radius + 2, -6);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(this.radius, -4);
+          ctx.lineTo(this.radius + 6, -12);
+          ctx.lineTo(this.radius - 2, -6);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Eye Sockets
+        const isBlinking = this.blinkTimer < 5;
+        ctx.fillStyle = '#111814';
+        if (isBlinking) {
+          ctx.fillRect(-8, -2, 5, 2);
+          ctx.fillRect(3, -2, 5, 2);
+        } else {
+          ctx.beginPath();
+          ctx.arc(-5.5, -1, this.fearTimer > 0 ? 4 : 3, 0, Math.PI * 2);
+          ctx.arc(5.5, -1, this.fearTimer > 0 ? 4 : 3, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Green spectral pupil
+          ctx.fillStyle = '#39ff14';
+          ctx.beginPath();
+          ctx.arc(-5.5, -1, 1.2, 0, Math.PI * 2);
+          ctx.arc(5.5, -1, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Nose triangular cavity
+        ctx.fillStyle = '#111814';
+        ctx.beginPath();
+        ctx.moveTo(0, 4);
+        ctx.lineTo(-2, 7);
+        ctx.lineTo(2, 7);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    /* --- Particle Systems --- */
+    function spawnFireParticle(x, y, vx, vy, color1 = '#ff7518', color2 = '#ff2a4b') {
+      particles.push({
+        type: 'fire',
+        x, y, vx, vy,
+        radius: 4 + Math.random() * 5,
+        color1, color2,
+        life: 1,
+        decay: 0.04 + Math.random() * 0.03
+      });
+    }
+
+    function createImpactDebris(x, y, color, count = 8) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 7;
+        particles.push({
+          type: 'debris',
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 2,
+          radius: 2 + Math.random() * 3.5,
+          color,
+          life: 1,
+          decay: 0.02 + Math.random() * 0.02
+        });
+      }
+    }
+
+    function spawnSoul(x, y) {
+      particles.push({
+        type: 'soul',
+        x, y,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: -1.5,
+        alpha: 1,
+        life: 1,
+        decay: 0.015
+      });
+    }
+
+    function explodeTNT(centerX, centerY) {
+      audio.playExplosion();
+      triggerScreenShake(12, 25);
+      flashVignette('danger');
+
+      // Visual blast
+      for (let i = 0; i < 45; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = 3 + Math.random() * 11;
+        spawnFireParticle(centerX, centerY, Math.cos(a) * s, Math.sin(a) * s, '#ffd24d', '#ff2a4b');
+      }
+
+      showBanner('¡BOOM DEMOLEDOR!', '#ff2a4b');
+
+      // Physics Blast Wave (affects blocks and enemies)
+      const blastRadius = 140;
+      const blastForce = 22;
+
+      blocks.forEach(b => {
+        if (b.isDead) return;
+        const dist = Math.hypot(b.x - centerX, b.y - centerY);
+        if (dist < blastRadius && dist > 0.1) {
+          b.wakeUp();
+          const factor = (1 - dist / blastRadius);
+          const angle = Math.atan2(b.y - centerY, b.x - centerX);
+          b.vx += Math.cos(angle) * blastForce * factor;
+          b.vy += Math.sin(angle) * blastForce * factor - 4;
+          b.vAngle += (Math.random() - 0.5) * 0.3;
+          b.takeDamage(factor * 95);
+        }
+      });
+
+      enemies.forEach(e => {
+        if (e.isDead) return;
+        const dist = Math.hypot(e.x - centerX, e.y - centerY);
+        if (dist < blastRadius && dist > 0.1) {
+          e.wakeUp();
+          const factor = (1 - dist / blastRadius);
+          const angle = Math.atan2(e.y - centerY, e.x - centerX);
+          e.vx += Math.cos(angle) * blastForce * factor;
+          e.vy += Math.sin(angle) * blastForce * factor - 5;
+          e.takeDamage(factor * 120);
+        }
+      });
+
+      if (activePumpkin && !activePumpkin.isDead) {
+        const dist = Math.hypot(activePumpkin.x - centerX, activePumpkin.y - centerY);
+        if (dist < blastRadius) {
+          const factor = (1 - dist / blastRadius);
+          const angle = Math.atan2(activePumpkin.y - centerY, activePumpkin.x - centerX);
+          activePumpkin.vx += Math.cos(angle) * blastForce * factor * 0.8;
+          activePumpkin.vy += Math.sin(angle) * blastForce * factor * 0.8;
+        }
+      }
+    }
+
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life -= p.decay;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        if (p.type === 'fire') {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.radius *= 0.96;
+        } else if (p.type === 'debris') {
+          p.vy += GRAVITY * 0.8;
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.y >= GROUND_Y) {
+            p.y = GROUND_Y;
+            p.vy = -p.vy * 0.3;
+            p.vx *= 0.8;
+          }
+        } else if (p.type === 'soul') {
+          p.x += p.vx + Math.sin(p.life * 10) * 0.5;
+          p.y += p.vy;
+          p.alpha = p.life;
+        }
+      }
+    }
+
+    function drawParticles() {
+      particles.forEach(p => {
+        ctx.save();
+        if (p.type === 'fire') {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, Math.max(0.5, p.radius), 0, Math.PI * 2);
+          ctx.fillStyle = p.life > 0.5 ? p.color1 : p.color2;
+          ctx.globalAlpha = p.life;
+          ctx.shadowColor = p.color1;
+          ctx.shadowBlur = 8;
+          ctx.fill();
+        } else if (p.type === 'debris') {
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.life;
+          ctx.fillRect(p.x - p.radius, p.y - p.radius, p.radius * 2, p.radius * 2);
+        } else if (p.type === 'soul') {
+          ctx.globalAlpha = p.alpha;
+          ctx.font = '20px serif';
+          ctx.fillText('👻', p.x, p.y);
+        }
+        ctx.restore();
+      });
+    }
+
+    /* --- Collision System --- */
+    function checkCircleBoxCollision(c, b) {
+      if (b.isDead || (c.isDead !== undefined && c.isDead)) return false;
+
+      // If both are sleeping, skip completely (rock-solid equilibrium)
+      if (!c.isLaunched && !b.awake && (!c.awake || c.awake === false)) {
+        return false;
+      }
+
+      // Unrotated relative coordinate
+      const cos = Math.cos(-b.angle);
+      const sin = Math.sin(-b.angle);
+      const cx = cos * (c.x - b.x) - sin * (c.y - b.y);
+      const cy = sin * (c.x - b.x) + cos * (c.y - b.y);
+
+      const halfW = b.w / 2;
+      const halfH = b.h / 2;
+
+      // Find closest point on box
+      const closestX = Math.max(-halfW, Math.min(halfW, cx));
+      const closestY = Math.max(-halfH, Math.min(halfH, cy));
+
+      const distX = cx - closestX;
+      const distY = cy - closestY;
+      const distSq = distX * distX + distY * distY;
+
+      if (distSq < c.radius * c.radius) {
+        // Impact! Wake both up
+        if (b.wakeUp) b.wakeUp();
+        if (c.wakeUp) c.wakeUp();
+
+        const dist = Math.sqrt(distSq) || 0.001;
+        const overlap = c.radius - dist;
+
+        // Normal in world space
+        const normLocalX = distX / dist;
+        const normLocalY = distY / dist;
+        const worldNormX = Math.cos(b.angle) * normLocalX - Math.sin(b.angle) * normLocalY;
+        const worldNormY = Math.sin(b.angle) * normLocalX + Math.cos(b.angle) * normLocalY;
+
+        // Position correction
+        c.x += worldNormX * overlap;
+        c.y += worldNormY * overlap;
+
+        const cMass = c.mass || 2.0;
+        const bMass = b.mass || 2.0;
+
+        // Impulse resolution
+        const relVx = c.vx - b.vx;
+        const relVy = c.vy - b.vy;
+        const velAlongNormal = relVx * worldNormX + relVy * worldNormY;
+
+        if (velAlongNormal < 0) {
+          const restitution = 0.3;
+          const impulseMag = -(1 + restitution) * velAlongNormal / (1 / cMass + 1 / bMass);
+
+          c.vx += (impulseMag / cMass) * worldNormX;
+          c.vy += (impulseMag / cMass) * worldNormY;
+
+          b.vx -= (impulseMag / bMass) * worldNormX;
+          b.vy -= (impulseMag / bMass) * worldNormY;
+          b.vAngle += (Math.random() - 0.5) * 0.1;
+
+          const impactForce = Math.abs(impulseMag);
+          b.takeDamage(impactForce * 2.8);
+
+          if (impactForce > 4) {
+            triggerScreenShake(Math.min(8, impactForce * 0.8), 10);
+            if (b.type === 'stone') audio.playStoneHit(0.5);
+            else if (b.type === 'bone') audio.playWoodCrack();
+          }
+        }
+        return true;
+      }
+      return false;
+    }
+
+    function checkBoxBoxCollision(b1, b2) {
+      if (b1.isDead || b2.isDead) return;
+
+      // If neither block is awake, they are in static equilibrium!
+      if (!b1.awake && !b2.awake) return;
+
+      const hw1 = b1.w / 2;
+      const hh1 = b1.h / 2;
+      const hw2 = b2.w / 2;
+      const hh2 = b2.h / 2;
+
+      const dx = b2.x - b1.x;
+      const dy = b2.y - b1.y;
+      const overlapX = hw1 + hw2 - Math.abs(dx);
+      const overlapY = hh1 + hh2 - Math.abs(dy);
+
+      if (overlapX > 0 && overlapY > 0) {
+        // One hit the other -> wake both up!
+        b1.wakeUp();
+        b2.wakeUp();
+
+        if (overlapX < overlapY) {
+          const sx = dx > 0 ? 1 : -1;
+          const push = overlapX * 0.5;
+          b1.x -= push * sx;
+          b2.x += push * sx;
+          const relVx = b1.vx - b2.vx;
+          b1.vx -= relVx * 0.4;
+          b2.vx += relVx * 0.4;
+        } else {
+          const sy = dy > 0 ? 1 : -1;
+          const push = overlapY * 0.5;
+          b1.y -= push * sy;
+          b2.y += push * sy;
+          const relVy = b1.vy - b2.vy;
+          b1.vy -= relVy * 0.4;
+          b2.vy += relVy * 0.4;
+
+          // Crushing damage check (heavy falling stone onto lighter block)
+          if (Math.abs(relVy) > 5) {
+            b1.takeDamage(Math.abs(relVy) * 3);
+            b2.takeDamage(Math.abs(relVy) * 3);
+          }
+        }
+      }
+    }
+
+    function checkCircleCircleCollision(c1, c2, isEnemy = false) {
+      const dx = c2.x - c1.x;
+      const dy = c2.y - c1.y;
+      const dist = Math.hypot(dx, dy);
+      const minDist = c1.radius + c2.radius;
+
+      if (dist < minDist && dist > 0.001) {
+        if (c1.wakeUp) c1.wakeUp();
+        if (c2.wakeUp) c2.wakeUp();
+
+        const overlap = minDist - dist;
+        const nx = dx / dist;
+        const ny = dy / dist;
+
+        c1.x -= nx * overlap * 0.5;
+        c1.y -= ny * overlap * 0.5;
+        c2.x += nx * overlap * 0.5;
+        c2.y += ny * overlap * 0.5;
+
+        const relVx = c1.vx - c2.vx;
+        const relVy = c1.vy - c2.vy;
+        const velAlongNormal = relVx * nx + relVy * ny;
+
+        if (velAlongNormal > 0) {
+          const impulse = (velAlongNormal * 1.4) / 2;
+          c1.vx -= impulse * nx;
+          c1.vy -= impulse * ny;
+          c2.vx += impulse * nx;
+          c2.vy += impulse * ny;
+
+          if (isEnemy) {
+            c2.takeDamage(Math.abs(velAlongNormal) * 5.5);
+          }
+        }
+      }
+    }
+
+    /* --- Level Generation & Setup --- */
+    function loadLevel(lvl) {
+      currentLevel = lvl;
+      gameState = 'AIMING';
+      levelScore = 0;
+      pumpkinsRemaining = 3;
+      boostUsed = false;
+      settleTimer = 0;
+      activePumpkin = new Pumpkin(SLING_X, SLING_Y);
+      dragPos = { x: SLING_X, y: SLING_Y };
+      isDragging = false;
+
+      blocks = [];
+      enemies = [];
+      particles = [];
+
+      hudLevel.textContent = `${currentLevel} / 3`;
+      updateAmmoHUD();
+      boostHint.style.display = 'block';
+
+      if (lvl === 1) {
+        // Nivel 1: "El Osario del Aprendiz"
+        const baseX = 660;
+
+        // Ground Pillars (height 80, sits on GROUND_Y = 440) -> center y = 400, top = 360
+        blocks.push(new Block(baseX - 45, 400, 20, 80, 'bone'));
+        blocks.push(new Block(baseX + 45, 400, 20, 80, 'bone'));
+
+        // Enemy 1 on ground between pillars (radius 16, sits on 440)
+        enemies.push(new Enemy(baseX, 424));
+
+        // Platform slab (width 140, height 20, sits on top at 360) -> center y = 350, top = 340
+        blocks.push(new Block(baseX, 350, 140, 20, 'bone'));
+
+        // TNT Barrel on platform (width 36, height 40, sits on 340) -> center y = 320, top = 300
+        blocks.push(new Block(baseX, 320, 36, 40, 'tnt'));
+
+        // Upper pillars (height 70, sits on platform at 340) -> center y = 305, top = 270
+        blocks.push(new Block(baseX - 40, 305, 18, 70, 'bone'));
+        blocks.push(new Block(baseX + 40, 305, 18, 70, 'bone'));
+
+        // Top Slab (width 110, height 18, sits on upper pillars at 270) -> center y = 261, top = 252
+        blocks.push(new Block(baseX, 261, 110, 18, 'bone'));
+
+        // Enemy 2 on top slab (radius 16, sits on top at 252) -> center y = 236
+        enemies.push(new Enemy(baseX, 236));
+
+      } else if (lvl === 2) {
+        // Nivel 2: "Las Columnas del Panteón"
+        const baseX = 640;
+
+        // 3 Ground Pillars (height 100, sits on ground 440) -> center y = 390, top = 340
+        blocks.push(new Block(baseX - 70, 390, 26, 100, 'stone'));
+        blocks.push(new Block(baseX, 390, 20, 100, 'bone'));
+        blocks.push(new Block(baseX + 70, 390, 26, 100, 'stone'));
+
+        // 2 Armored Enemies under colonnade on ground
+        enemies.push(new Enemy(baseX - 35, 424, true));
+        enemies.push(new Enemy(baseX + 35, 424, true));
+
+        // Heavy Stone Roof Slab (width 190, height 24, sits on top at 340) -> center y = 328, top = 316
+        blocks.push(new Block(baseX, 328, 190, 24, 'stone'));
+
+        // Upper Pillars (height 60, sits on roof at 316) -> center y = 286, top = 256
+        blocks.push(new Block(baseX - 45, 286, 20, 60, 'bone'));
+        blocks.push(new Block(baseX + 45, 286, 20, 60, 'bone'));
+
+        // Upper Stone Slab (width 120, height 20, sits on 256) -> center y = 246, top = 236
+        blocks.push(new Block(baseX, 246, 120, 20, 'stone'));
+
+        // Armored Enemy 3 on upper slab (sits on 236) -> center y = 220
+        enemies.push(new Enemy(baseX, 220, true));
+
+        // TNT on left flank on ground (height 40, sits on 440) -> center y = 420
+        blocks.push(new Block(baseX - 125, 420, 36, 40, 'tnt'));
+
+      } else if (lvl === 3) {
+        // Nivel 3: "La Ciudadela Nigromántica"
+        const t1X = 530;
+        const t2X = 720;
+
+        // --- Tower 1 (West Bastion) ---
+        // Lower Pillars (height 90, sits on ground 440) -> center 395, top 350
+        blocks.push(new Block(t1X - 35, 395, 22, 90, 'stone'));
+        blocks.push(new Block(t1X + 35, 395, 22, 90, 'stone'));
+        enemies.push(new Enemy(t1X, 424, false));
+
+        // Floor 1 Slab (height 18, sits on 350) -> center 341, top 332
+        blocks.push(new Block(t1X, 341, 100, 18, 'bone'));
+
+        // TNT on Floor 1 (height 40, sits on 332) -> center 312, top 292
+        blocks.push(new Block(t1X, 312, 36, 40, 'tnt'));
+
+        // Upper Pillars (height 60, sits on 332) -> center 302, top 272
+        blocks.push(new Block(t1X - 30, 302, 18, 60, 'bone'));
+        blocks.push(new Block(t1X + 30, 302, 18, 60, 'bone'));
+
+        // Top Slab (height 16, sits on 272) -> center 264, top 256
+        blocks.push(new Block(t1X, 264, 85, 16, 'bone'));
+        enemies.push(new Enemy(t1X, 240, false));
+
+        // --- Tower 2 (Grand Crypt Mausoleum) ---
+        // Massive Stone Pillars (height 120, sits on 440) -> center 380, top 320
+        blocks.push(new Block(t2X - 38, 380, 28, 120, 'stone'));
+        blocks.push(new Block(t2X + 38, 380, 28, 120, 'stone'));
+        enemies.push(new Enemy(t2X, 424, true));
+
+        // Stone Architrave Roof (height 24, sits on 320) -> center 308, top 296
+        blocks.push(new Block(t2X, 308, 120, 24, 'stone'));
+
+        // Spire Pillars (height 70, sits on 296) -> center 261, top 226
+        blocks.push(new Block(t2X - 25, 261, 18, 70, 'bone'));
+        blocks.push(new Block(t2X + 25, 261, 18, 70, 'bone'));
+
+        // Spire Cap (height 18, sits on 226) -> center 217, top 208
+        blocks.push(new Block(t2X, 217, 80, 18, 'stone'));
+        enemies.push(new Enemy(t2X, 192, true));
+
+        // Connecting Bridge (height 16, sits on Floor 1 top 332) -> center 324
+        const bridgeX = (t1X + t2X) / 2;
+        blocks.push(new Block(bridgeX, 324, 110, 16, 'bone'));
+
+        // TNT on Bridge (height 40, sits on bridge top 316) -> center 296
+        blocks.push(new Block(bridgeX, 296, 34, 40, 'tnt'));
+      }
+    }
+
+    function addScore(pts, x, y) {
+      levelScore += pts;
+      totalScore += pts;
+      hudScore.textContent = totalScore;
+
+      // Spawn floating score particle
+      particles.push({
+        type: 'soul',
+        x, y,
+        vx: 0,
+        vy: -1.8,
+        alpha: 1,
+        life: 1,
+        decay: 0.02,
+        text: `+${pts}`
+      });
+    }
+
+    function showBanner(text, color = '#ffd24d') {
+      floatingBanner.textContent = text;
+      floatingBanner.style.color = color;
+      floatingBanner.classList.add('show');
+      setTimeout(() => {
+        floatingBanner.classList.remove('show');
+      }, 1200);
+    }
+
+    function triggerScreenShake(intensity = 6, duration = 15) {
+      shakeIntensity = intensity;
+      shakeDuration = duration;
+    }
+
+    function flashVignette(cssClass) {
+      vignette.classList.add(cssClass);
+      setTimeout(() => {
+        vignette.classList.remove(cssClass);
+      }, 350);
+    }
+
+    function updateAmmoHUD() {
+      for (let i = 0; i < 3; i++) {
+        if (i < pumpkinsRemaining) {
+          ammoIcons[i].classList.remove('used');
+        } else {
+          ammoIcons[i].classList.add('used');
+        }
+      }
+    }
+
+    /* --- Drawing Background & Environment --- */
+    function drawBackground() {
+      // Sky Gradient
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+      skyGrad.addColorStop(0, '#0c1410');
+      skyGrad.addColorStop(0.6, '#17271e');
+      skyGrad.addColorStop(1, '#253d2d');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      // Giant Blood Moon
+      const moonX = 420;
+      const moonY = 110;
+      const moonRadius = 65;
+
+      const moonGlow = ctx.createRadialGradient(moonX, moonY, moonRadius * 0.4, moonX, moonY, moonRadius * 2.2);
+      moonGlow.addColorStop(0, 'rgba(255, 117, 24, 0.45)');
+      moonGlow.addColorStop(0.5, 'rgba(255, 42, 75, 0.2)');
+      moonGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = moonGlow;
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, moonRadius * 2.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Moon Body
+      ctx.fillStyle = '#ffbd73';
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Moon Craters
+      ctx.fillStyle = '#e09855';
+      ctx.beginPath();
+      ctx.arc(moonX - 20, moonY - 15, 12, 0, Math.PI * 2);
+      ctx.arc(moonX + 15, moonY + 22, 16, 0, Math.PI * 2);
+      ctx.arc(moonX - 10, moonY + 30, 8, 0, Math.PI * 2);
+      ctx.arc(moonX + 28, moonY - 18, 9, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Spooky Distant Spires & Hills Silhouette
+      ctx.fillStyle = '#080d0a';
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y);
+      ctx.lineTo(0, 310);
+      ctx.quadraticCurveTo(150, 270, 300, 320);
+      ctx.lineTo(315, 230); // spire
+      ctx.lineTo(325, 325);
+      ctx.quadraticCurveTo(500, 280, 650, 330);
+      ctx.lineTo(665, 210); // crypt cross
+      ctx.lineTo(675, 335);
+      ctx.quadraticCurveTo(780, 290, CANVAS_WIDTH, 315);
+      ctx.lineTo(CANVAS_WIDTH, GROUND_Y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Animated Background Bats
+      ctx.fillStyle = '#040705';
+      backgroundBats.forEach(bat => {
+        bat.x += bat.speed;
+        if (bat.x > CANVAS_WIDTH + 30) bat.x = -30;
+        bat.flapPhase += 0.25;
+        const wingSpan = Math.sin(bat.flapPhase) * (bat.size * 0.7);
+
+        ctx.beginPath();
+        ctx.moveTo(bat.x, bat.y);
+        ctx.lineTo(bat.x - bat.size, bat.y - wingSpan);
+        ctx.lineTo(bat.x - bat.size * 0.4, bat.y);
+        ctx.lineTo(bat.x, bat.y + bat.size * 0.3);
+        ctx.lineTo(bat.x + bat.size * 0.4, bat.y);
+        ctx.lineTo(bat.x + bat.size, bat.y - wingSpan);
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      // Ground (Cemetery Soil & Cobblestone)
+      const groundGrad = ctx.createLinearGradient(0, GROUND_Y, 0, CANVAS_HEIGHT);
+      groundGrad.addColorStop(0, '#1c281e');
+      groundGrad.addColorStop(0.2, '#121a13');
+      groundGrad.addColorStop(1, '#060907');
+      ctx.fillStyle = groundGrad;
+      ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_Y);
+
+      // Top ground grass / jagged mud border
+      ctx.fillStyle = '#293d2e';
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y);
+      for (let x = 0; x < CANVAS_WIDTH; x += 18) {
+        ctx.lineTo(x + 9, GROUND_Y - (x % 36 === 0 ? 5 : 2));
+        ctx.lineTo(x + 18, GROUND_Y);
+      }
+      ctx.fill();
+    }
+
+    function drawSlingshot() {
+      const baseBoneX = SLING_X;
+      const baseBoneY = GROUND_Y;
+
+      // Base Skull Anchor
+      ctx.fillStyle = '#d8cfbe';
+      ctx.beginPath();
+      ctx.arc(baseBoneX, baseBoneY - 14, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1c281e';
+      ctx.beginPath();
+      ctx.arc(baseBoneX - 7, baseBoneY - 14, 4.5, 0, Math.PI * 2);
+      ctx.arc(baseBoneX + 7, baseBoneY - 14, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Slingshot Fork Bones (Y-Frame)
+      ctx.strokeStyle = '#e6dfd3';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // Trunk
+      ctx.beginPath();
+      ctx.moveTo(baseBoneX, baseBoneY - 20);
+      ctx.lineTo(baseBoneX, SLING_Y + 25);
+      ctx.stroke();
+
+      // Left prong
+      ctx.beginPath();
+      ctx.moveTo(baseBoneX, SLING_Y + 25);
+      ctx.lineTo(baseBoneX - 22, SLING_Y - 20);
+      ctx.stroke();
+
+      // Right prong
+      ctx.beginPath();
+      ctx.moveTo(baseBoneX, SLING_Y + 25);
+      ctx.lineTo(baseBoneX + 22, SLING_Y - 20);
+      ctx.stroke();
+
+      // Bone accents
+      ctx.fillStyle = '#998d7b';
+      ctx.beginPath();
+      ctx.arc(baseBoneX - 22, SLING_Y - 20, 8, 0, Math.PI * 2);
+      ctx.arc(baseBoneX + 22, SLING_Y - 20, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Back Rubber Band
+      const pullX = isDragging ? dragPos.x : (activePumpkin ? activePumpkin.x : SLING_X);
+      const pullY = isDragging ? dragPos.y : (activePumpkin ? activePumpkin.y : SLING_Y);
+
+      ctx.strokeStyle = '#5a2216';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(baseBoneX - 22, SLING_Y - 20);
+      ctx.lineTo(pullX, pullY);
+      ctx.stroke();
+
+      // If dragging, draw trajectory prediction dots
+      if (isDragging) {
+        drawTrajectory(pullX, pullY);
+      }
+
+      // Front Rubber Band
+      ctx.strokeStyle = '#7c2e1f';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(baseBoneX + 22, SLING_Y - 20);
+      ctx.lineTo(pullX, pullY);
+      ctx.stroke();
+
+      // Leather pouch
+      ctx.fillStyle = '#361811';
+      ctx.beginPath();
+      ctx.arc(pullX, pullY, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawTrajectory(pullX, pullY) {
+      const dx = SLING_X - pullX;
+      const dy = SLING_Y - pullY;
+      const pullDist = Math.hypot(dx, dy);
+      if (pullDist < 12) return;
+
+      const launchSpeed = pullDist * LAUNCH_POWER;
+      const angle = Math.atan2(dy, dx);
+      let simVx = Math.cos(angle) * launchSpeed;
+      let simVy = Math.sin(angle) * launchSpeed;
+      let simX = pullX;
+      let simY = pullY;
+
+      ctx.fillStyle = 'rgba(255, 210, 77, 0.7)';
+      for (let step = 0; step < 26; step++) {
+        simVy += GRAVITY;
+        simVx *= AIR_RESISTANCE;
+        simVy *= AIR_RESISTANCE;
+        simX += simVx;
+        simY += simVy;
+
+        if (simY > GROUND_Y) break;
+
+        const dotRadius = Math.max(1.5, 4.5 * (1 - step / 28));
+        ctx.beginPath();
+        ctx.arc(simX, simY, dotRadius, 0, Math.PI * 2);
+        ctx.shadowColor = 'rgba(255, 210, 77, 0.8)';
+        ctx.shadowBlur = 6;
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    /* --- Input Handlers (Mouse & Touch) --- */
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = CANVAS_WIDTH / rect.width;
+      const scaleY = CANVAS_HEIGHT / rect.height;
+
+      let clientX = e.clientX;
+      let clientY = e.clientY;
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      }
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function handleStart(e) {
+      if (gameState === 'FLYING') {
+        // Tap screen while airborne to trigger "Furia Ígnea" boost!
+        if (activePumpkin && !boostUsed) {
+          activePumpkin.boost();
+        }
+        return;
+      }
+
+      if (gameState !== 'AIMING' || !activePumpkin) return;
+      audio.init();
+
+      const pos = getCanvasCoords(e);
+      const dist = Math.hypot(pos.x - SLING_X, pos.y - SLING_Y);
+      if (dist < 60) {
+        isDragging = true;
+        handleDrag(e);
+      }
+    }
+
+    function handleDrag(e) {
+      if (!isDragging) return;
+      const pos = getCanvasCoords(e);
+      let dx = pos.x - SLING_X;
+      let dy = pos.y - SLING_Y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > MAX_PULL) {
+        const factor = MAX_PULL / dist;
+        dx *= factor;
+        dy *= factor;
+      }
+
+      dragPos.x = SLING_X + dx;
+      dragPos.y = SLING_Y + dy;
+
+      if (activePumpkin) {
+        activePumpkin.x = dragPos.x;
+        activePumpkin.y = dragPos.y;
+      }
+
+      audio.playSlingStretch(dist / MAX_PULL);
+    }
+
+    function handleEnd(e) {
+      if (!isDragging) return;
+      isDragging = false;
+
+      const dx = SLING_X - dragPos.x;
+      const dy = SLING_Y - dragPos.y;
+      const pullDist = Math.hypot(dx, dy);
+
+      if (pullDist > 18) {
+        // Fire pumpkin!
+        const launchSpeed = pullDist * LAUNCH_POWER;
+        const angle = Math.atan2(dy, dx);
+
+        activePumpkin.vx = Math.cos(angle) * launchSpeed;
+        activePumpkin.vy = Math.sin(angle) * launchSpeed;
+        activePumpkin.vAngle = (Math.random() - 0.5) * 0.12;
+        activePumpkin.isLaunched = true;
+
+        audio.playLaunch();
+        triggerScreenShake(4, 8);
+
+        pumpkinsRemaining--;
+        updateAmmoHUD();
+        gameState = 'FLYING';
+        boostUsed = false;
+      } else {
+        // Cancel pull
+        dragPos.x = SLING_X;
+        dragPos.y = SLING_Y;
+        if (activePumpkin) {
+          activePumpkin.x = SLING_X;
+          activePumpkin.y = SLING_Y;
+        }
+      }
+    }
+
+    // Canvas Events
+    canvas.addEventListener('mousedown', handleStart);
+    window.addEventListener('mousemove', handleDrag);
+    window.addEventListener('mouseup', handleEnd);
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      handleStart(e);
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+      if (isDragging) {
+        e.preventDefault();
+        handleDrag(e);
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+      handleEnd(e);
+    });
+
+    // Spacebar to boost in flight
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        if (gameState === 'FLYING' && activePumpkin && !boostUsed) {
+          e.preventDefault();
+          activePumpkin.boost();
+        }
+      }
+    });
+
+    /* --- Game Loop & Update --- */
+    function checkStageProgress() {
+      const livingEnemies = enemies.filter(e => !e.isDead);
+
+      // If all enemies dead -> Stage Cleared!
+      if (livingEnemies.length === 0) {
+        gameState = 'LEVEL_CLEAR';
+        audio.playLevelClear();
+        triggerScreenShake(8, 20);
+
+        // Calculate score & skulls
+        const unusedBonus = pumpkinsRemaining * 1000;
+        levelScore += unusedBonus;
+        totalScore += unusedBonus;
+        hudScore.textContent = totalScore;
+
+        let skullsCount = 1;
+        if (pumpkinsRemaining >= 2) skullsCount = 3;
+        else if (pumpkinsRemaining === 1) skullsCount = 2;
+
+        showLevelClearModal(skullsCount);
+        return;
+      }
+
+      // If pumpkin finished its flight and things settled
+      if (gameState === 'SETTLING') {
+        settleTimer++;
+        // Check if blocks have slowed down or 2.5s passed
+        let allCalm = true;
+        for (let b of blocks) {
+          if (!b.isDead && Math.hypot(b.vx, b.vy) > 0.4) {
+            allCalm = false;
+            break;
+          }
+        }
+
+        if (allCalm || settleTimer > 150) {
+          if (livingEnemies.length > 0) {
+            if (pumpkinsRemaining > 0) {
+              // Load next pumpkin
+              gameState = 'AIMING';
+              activePumpkin = new Pumpkin(SLING_X, SLING_Y);
+              dragPos = { x: SLING_X, y: SLING_Y };
+              boostUsed = false;
+            } else {
+              // Out of ammo and enemies survive -> Stage Failed
+              gameState = 'LEVEL_FAIL';
+              audio.playLevelFail();
+              levelFailModal.classList.add('active');
+            }
+          }
+        }
+      }
+    }
+
+    function showLevelClearModal(skulls) {
+      document.getElementById('star1').className = skulls >= 1 ? 'active' : '';
+      document.getElementById('star2').className = skulls >= 2 ? 'active' : '';
+      document.getElementById('star3').className = skulls >= 3 ? 'active' : '';
+      document.getElementById('levelScoreVal').textContent = levelScore;
+
+      if (currentLevel < 3) {
+        levelClearModal.classList.add('active');
+      } else {
+        // Complete campaign victory!
+        setTimeout(() => {
+          showVictoryModal();
+        }, 600);
+      }
+    }
+
+    function showVictoryModal() {
+      localStorage.setItem('krypt_day_25_cleared', 'true');
+      document.getElementById('finalScoreVal').textContent = totalScore;
+      victoryModal.classList.add('active');
+      audio.playLevelClear();
+    }
+
+    function gameLoop() {
+      // Screen Shake
+      ctx.save();
+      if (shakeDuration > 0) {
+        shakeDuration--;
+        const ox = (Math.random() - 0.5) * shakeIntensity;
+        const oy = (Math.random() - 0.5) * shakeIntensity;
+        ctx.translate(ox, oy);
+      }
+
+      // 1. Draw Scene
+      drawBackground();
+      drawSlingshot();
+
+      // 2. Physics & Logic Updates
+      if (activePumpkin) {
+        activePumpkin.update();
+        activePumpkin.draw();
+
+        // Check if flight ended
+        if (gameState === 'FLYING' && activePumpkin.isDead) {
+          gameState = 'SETTLING';
+          settleTimer = 0;
+        }
+      }
+
+      // Update & Draw Blocks
+      for (let i = 0; i < blocks.length; i++) {
+        blocks[i].update();
+        blocks[i].draw();
+
+        // Pumpkin vs Block
+        if (activePumpkin && activePumpkin.isLaunched && !activePumpkin.isDead) {
+          checkCircleBoxCollision(activePumpkin, blocks[i]);
+        }
+
+        // Block vs Block collisions
+        for (let j = i + 1; j < blocks.length; j++) {
+          checkBoxBoxCollision(blocks[i], blocks[j]);
+        }
+      }
+
+      // Update & Draw Enemies
+      enemies.forEach(enemy => {
+        enemy.update();
+        enemy.draw();
+
+        // Pumpkin vs Enemy
+        if (activePumpkin && activePumpkin.isLaunched && !activePumpkin.isDead) {
+          checkCircleCircleCollision(activePumpkin, enemy, true);
+        }
+
+        // Block vs Enemy
+        blocks.forEach(block => {
+          if (!block.isDead && !enemy.isDead) {
+            checkCircleBoxCollision(enemy, block);
+          }
+        });
+      });
+
+      // Update & Draw Particles
+      updateParticles();
+      drawParticles();
+
+      // Stage Progression Check
+      checkStageProgress();
+
+      ctx.restore();
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* --- UI & Control Listeners --- */
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // Audio toggle
+    const btnAudioToggle = document.getElementById('btnAudioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+    const audioLabel = document.getElementById('audioLabel');
+
+    btnAudioToggle.addEventListener('click', () => {
+      audio.enabled = !audio.enabled;
+      if (audio.enabled) {
+        audioIcon.textContent = '🔊';
+        audioLabel.textContent = 'Sonido';
+        audio.init();
+        showToast('Sonido activado');
+      } else {
+        audioIcon.textContent = '🔇';
+        audioLabel.textContent = 'Silencio';
+        showToast('Sonido silenciado');
+      }
+    });
+
+    // How to play modal
+    const btnHowTo = document.getElementById('btnHowTo');
+    const btnCloseHelp = document.getElementById('btnCloseHelp');
+    const btnStartPlaying = document.getElementById('btnStartPlaying');
+
+    btnHowTo.addEventListener('click', () => {
+      helpModal.classList.add('active');
+    });
+
+    btnCloseHelp.addEventListener('click', () => {
+      helpModal.classList.remove('active');
+    });
+
+    btnStartPlaying.addEventListener('click', () => {
+      helpModal.classList.remove('active');
+    });
+
+    // Next Level Button
+    document.getElementById('btnNextLevel').addEventListener('click', () => {
+      levelClearModal.classList.remove('active');
+      loadLevel(currentLevel + 1);
+    });
+
+    // Retry Level Button
+    document.getElementById('btnRetryLevel').addEventListener('click', () => {
+      levelFailModal.classList.remove('active');
+      loadLevel(currentLevel);
+    });
+
+    // Quick Reset Level Button
+    document.getElementById('btnResetLevel').addEventListener('click', () => {
+      loadLevel(currentLevel);
+      showToast(`Nivel ${currentLevel} reiniciado`);
+    });
+
+    // Replay All Campaign
+    document.getElementById('btnReplayAll').addEventListener('click', () => {
+      victoryModal.classList.remove('active');
+      totalScore = 0;
+      loadLevel(1);
+    });
+
+    // Copy Discord Spoiler
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    copyDiscordBtn.addEventListener('click', () => {
+      const discordText = `🎃 ¡He superado el Día 25 en La Krypta! Código: ||CALABAZA-IGNEA|| (Puntaje Total: ${totalScore})`;
+      navigator.clipboard.writeText(discordText).then(() => {
+        copyDiscordBtn.innerHTML = '<span>✔️</span><span>¡Copiado!</span>';
+        showToast('Mensaje copiado para Discord');
+        setTimeout(() => {
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        showToast('Error al copiar');
+      });
+    });
+
+    // Start Game
+    loadLevel(1);
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

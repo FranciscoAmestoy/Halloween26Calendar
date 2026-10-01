@@ -1,0 +1,2149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 18: Pinball de Nosferatu - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@700;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --table-bg: #0d1410;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.6);
+      --spectral-purple: #c042ff;
+      --spectral-glow: rgba(192, 66, 255, 0.6);
+      --spectral-gold: #ffd700;
+      --spectral-gold-glow: rgba(255, 215, 0, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 12%, rgba(55, 15, 30, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 88%, rgba(15, 28, 20, 0.65) 0%, transparent 75%);
+      padding: 6px 10px 14px 10px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.22;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.flash-gold {
+      box-shadow: inset 0 0 120px rgba(255, 215, 0, 0.85);
+    }
+
+    .vignette-overlay.flash-blood {
+      box-shadow: inset 0 0 120px rgba(255, 42, 75, 0.85);
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: var(--toxic-green);
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .day-badge {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: var(--blood-red);
+      background: rgba(255, 42, 75, 0.12);
+      border: 1px solid var(--blood-red);
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+
+    .audio-btn {
+      background: rgba(20, 32, 25, 0.75);
+      border: 1px solid #283c2f;
+      color: var(--parchment);
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .audio-btn:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+    }
+
+    /* Title */
+    .title-banner {
+      text-align: center;
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 1.85rem;
+      color: var(--blood-red);
+      letter-spacing: 2px;
+      text-shadow: 0 0 14px var(--blood-glow);
+      line-height: 1.1;
+    }
+
+    .title-banner p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 20, 16, 0.92);
+      border: 1px solid #293d31;
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .hud-val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .hud-val.gold {
+      color: var(--spectral-gold);
+      text-shadow: 0 0 8px var(--spectral-gold-glow);
+    }
+
+    .hud-val.red {
+      color: var(--blood-red);
+      text-shadow: 0 0 8px var(--blood-glow);
+    }
+
+    .hud-val.purple {
+      color: var(--spectral-purple);
+      text-shadow: 0 0 8px var(--spectral-glow);
+    }
+
+    /* Goal Progress Bar */
+    .goal-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .goal-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .goal-bar-bg {
+      width: 100%;
+      height: 7px;
+      background: #111a14;
+      border: 1px solid #28392d;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .goal-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff7518, #ffd700, #39ff14);
+      border-radius: 4px;
+      box-shadow: 0 0 8px var(--spectral-gold-glow);
+      transition: width 0.2s ease-out;
+    }
+
+    /* Pinball Table Container */
+    .table-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      background: var(--table-bg);
+      border: 3px solid #2c4233;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.85),
+        inset 0 0 50px rgba(0, 0, 0, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      touch-action: manipulation;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    /* Touch Controls Panel */
+    .controls-panel {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 90px 1fr;
+      gap: 6px;
+    }
+
+    .btn-flipper {
+      background: linear-gradient(180deg, #25392b 0%, #15231a 100%);
+      border: 2px solid #385541;
+      border-radius: 10px;
+      color: var(--parchment);
+      padding: 12px 6px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      transition: all 0.08s ease;
+      touch-action: manipulation;
+    }
+
+    .btn-flipper:active, .btn-flipper.active {
+      transform: scale(0.95);
+      background: #39ff14;
+      color: #070908;
+      border-color: #fff;
+      box-shadow: 0 0 15px var(--toxic-glow);
+    }
+
+    .btn-plunger {
+      background: linear-gradient(180deg, #7a1525 0%, #420b13 100%);
+      border: 2px solid #aa2337;
+      border-radius: 10px;
+      color: #fff;
+      padding: 10px 4px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      transition: all 0.08s ease;
+      touch-action: manipulation;
+    }
+
+    .btn-plunger:active, .btn-plunger.active {
+      transform: scale(0.94);
+      background: #ff2a4b;
+      box-shadow: 0 0 18px var(--blood-glow);
+    }
+
+    .ctrl-hint {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    /* Modal Victory / Defeat Overlays */
+    .overlay-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 8, 6, 0.88);
+      backdrop-filter: blur(5px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .overlay-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(180deg, #161c16 0%, #0d120e 100%);
+      border: 2px solid #2f4738;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 380px;
+      padding: 22px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.9);
+      position: relative;
+    }
+
+    .modal-box.victory {
+      border-color: var(--spectral-gold);
+      box-shadow: 0 0 30px var(--spectral-gold-glow);
+    }
+
+    .modal-box.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 30px var(--blood-glow);
+    }
+
+    .modal-icon {
+      font-size: 3rem;
+      line-height: 1;
+      animation: floatIcon 2.5s ease-in-out infinite;
+    }
+
+    @keyframes floatIcon {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2rem;
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .modal-title.victory {
+      color: var(--spectral-gold);
+      text-shadow: 0 0 14px var(--spectral-gold-glow);
+    }
+
+    .modal-title.defeat {
+      color: var(--blood-red);
+      text-shadow: 0 0 14px var(--blood-glow);
+    }
+
+    .modal-desc {
+      font-size: 0.85rem;
+      color: var(--parchment);
+      line-height: 1.4;
+    }
+
+    .secret-scroll {
+      width: 100%;
+      background: rgba(20, 32, 24, 0.7);
+      border: 1px dashed var(--spectral-gold);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .scroll-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    .code-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--spectral-gold);
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px var(--spectral-gold-glow);
+    }
+
+    .modal-stats {
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      background: rgba(10, 16, 12, 0.6);
+      border-radius: 6px;
+      padding: 8px;
+      border: 1px solid #1f2f24;
+    }
+
+    .modal-stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-label {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .stat-val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .btn-action {
+      background: linear-gradient(180deg, #1e2e23 0%, #121e16 100%);
+      border: 1px solid #2e4737;
+      border-radius: 8px;
+      color: var(--parchment);
+      padding: 11px 16px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      border-color: #7983f5;
+      color: #fff;
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 14px rgba(88, 101, 242, 0.6);
+    }
+
+    .btn-action.discord.copied {
+      background: #23a55a;
+      border-color: #57f287;
+    }
+
+    .btn-action.retry {
+      border-color: var(--blood-red);
+      color: var(--blood-red);
+    }
+
+    .btn-action.retry:hover {
+      background: rgba(255, 42, 75, 0.15);
+      box-shadow: 0 0 10px var(--blood-glow);
+    }
+
+    .btn-action.infinite {
+      border-color: var(--spectral-gold);
+      color: var(--spectral-gold);
+    }
+
+    .btn-action.infinite:hover {
+      background: rgba(255, 215, 0, 0.15);
+      box-shadow: 0 0 10px var(--spectral-gold-glow);
+    }
+
+    /* Toast */
+    .spooky-toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(40px);
+      background: rgba(14, 20, 16, 0.95);
+      border: 1px solid var(--toxic-green);
+      color: var(--toxic-green);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 0 0 15px var(--toxic-glow);
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 200;
+    }
+
+    .spooky-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>←</span>
+        <span>Krypta</span>
+      </a>
+      <div class="header-badges">
+        <span class="day-badge">DÍA 18 • XVIII</span>
+        <button class="audio-btn" id="soundToggleBtn">🔊 Audio</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <h1>Pinball de Nosferatu</h1>
+      <p>🎯 Meta: Acumula 5,000 PUNTOS golpeando bumpers, tumbas y el sarcófago</p>
+    </div>
+
+    <!-- HUD -->
+    <div class="hud-bar">
+      <div class="hud-box">
+        <span class="hud-label">Puntaje</span>
+        <span class="hud-val gold" id="scoreDisplay">0</span>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Bolas</span>
+        <span class="hud-val red" id="ballsDisplay">⚪ ⚪ ⚪</span>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Multiplicador</span>
+        <span class="hud-val purple" id="multiplierDisplay">x1</span>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Récord</span>
+        <span class="hud-val" id="bestDisplay">0</span>
+      </div>
+    </div>
+
+    <!-- Goal Progress (Target: 5,000 Points) -->
+    <div class="goal-wrap">
+      <div class="goal-labels">
+        <span>Meta: 5,000 Pts para vencer la Cripta</span>
+        <span id="goalPercent">0 / 5,000</span>
+      </div>
+      <div class="goal-bar-bg">
+        <div class="goal-bar-fill" id="goalBarFill"></div>
+      </div>
+    </div>
+
+    <!-- Canvas Pinball Table -->
+    <div class="table-container">
+      <canvas id="gameCanvas" width="400" height="570"></canvas>
+    </div>
+
+    <!-- Touch / Mouse Action Controls -->
+    <div class="controls-panel">
+      <button class="btn-flipper" id="btnFlipperLeft">
+        <span>◀ FLIPPER</span>
+        <span class="ctrl-hint">[Z] o [←]</span>
+      </button>
+      <button class="btn-plunger" id="btnPlunger">
+        <span>🚀 LANZAR</span>
+        <span class="ctrl-hint">[Espacio]</span>
+      </button>
+      <button class="btn-flipper" id="btnFlipperRight">
+        <span>FLIPPER ▶</span>
+        <span class="ctrl-hint">[M] o [→]</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="overlay-modal" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">🧛‍♂️</div>
+      <h2 class="modal-title victory">¡Meta de 5,000 Puntos Alcanzada!</h2>
+      <p class="modal-desc">Has acumulado 5,000 puntos consagrados en la mesa maldita, rompiendo los sellos vampíricos de Nosferatu.</p>
+      
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display" id="secretCodeDisplay">COLMILLO-DE-PLATA</div>
+      </div>
+
+      <div class="modal-stats">
+        <div class="modal-stat-item">
+          <span class="stat-label">Puntaje</span>
+          <span class="stat-val" id="vicScore">5,000</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="stat-label">Récord</span>
+          <span class="stat-val" id="vicBest">5,000</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="stat-label">Bolas Restantes</span>
+          <span class="stat-val" id="vicBalls">3</span>
+        </div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action infinite" id="btnInfiniteMode">
+        <span>♾️</span>
+        <span>Continuar en Modo Infinito</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action">
+        <span>🏛️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="overlay-modal" id="defeatModal">
+    <div class="modal-box defeat">
+      <div class="modal-icon">🩸</div>
+      <h2 class="modal-title defeat">¡Bolas Agotadas!</h2>
+      <p class="modal-desc">Todas las bolas de plata cayeron al abismo de sangre. Nosferatu reclama tu alma.</p>
+
+      <div class="modal-stats">
+        <div class="modal-stat-item">
+          <span class="stat-label">Puntaje</span>
+          <span class="stat-val" id="defScore">0</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="stat-label">Récord</span>
+          <span class="stat-val" id="defBest">0</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="stat-label">Meta</span>
+          <span class="stat-val">5,000</span>
+        </div>
+      </div>
+
+      <button class="btn-action retry" id="btnRetryDefeat">
+        <span>🔄</span>
+        <span>Nueva Partida [Espacio]</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action">
+        <span>🏛️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="spooky-toast" id="toast"></div>
+
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO API (Vintage Mechanical Pinball + Gothic Sounds)
+       ========================================================================== */
+    class PinballAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playBumper(pitch = 1) {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Dual chime
+        const baseFreq = 523.25 * pitch;
+        [baseFreq, baseFreq * 1.5].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        });
+      }
+
+      playFlipper() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Solenoid mechanical clack
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.05);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      }
+
+      playPlungerRelease() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Spring twang
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(60, now + 0.15);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+
+      playTargetHit() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(440, now + 0.12);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+
+      playJackpot() {
+        if (!this.enabled || !this.ctx) return;
+        const notes = [440, 554.37, 659.25, 880, 1108.73];
+        const now = this.ctx.currentTime;
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.08);
+          gain.gain.setValueAtTime(0.28, now + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.08);
+          osc.stop(now + i * 0.08 + 0.4);
+        });
+      }
+
+      playDrain() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Dark tomb gong
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(95, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.6);
+
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.6);
+      }
+
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+        const now = this.ctx.currentTime;
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.11);
+          gain.gain.setValueAtTime(0.3, now + i * 0.11);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.11 + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.11);
+          osc.stop(now + i * 0.11 + 0.45);
+        });
+      }
+    }
+
+    const sound = new PinballAudio();
+
+    /* ==========================================================================
+       CONSTANTS & LAYOUT (Canvas: 400 x 570)
+       ========================================================================== */
+    const SECRET_KEYWORD = "COLMILLO-DE-PLATA";
+    const VICTORY_GOAL = 5000;
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const WIDTH = 400;
+    const HEIGHT = 570;
+    const GRAVITY = 0.22;
+    const BALL_RADIUS = 8.5;
+
+    // Plunger Lane
+    const PLUNGER_X = 371;
+    const PLUNGER_LANE_LEFT = 352;
+    const PLUNGER_BASE_Y = 515;
+
+    // Game state
+    let state = 'WAITING_LAUNCH'; // WAITING_LAUNCH, IN_PLAY, WON, GAME_OVER
+    let score = 0;
+    let bestScore = parseInt(localStorage.getItem('krypt_day_18_best') || '0', 10);
+    let ballsLeft = 3;
+    let multiplier = 1;
+    let infiniteMode = false;
+    let ballSaveTimer = 0; // seconds ball save is active
+    let ballStuckTimer = 0; // anti-stuck watchdog timer
+
+    // Plunger state
+    let plungerCharging = false;
+    let plungerPower = 0; // 0 to 100
+
+    // Ball
+    let ball = {
+      x: PLUNGER_X,
+      y: PLUNGER_BASE_Y,
+      vx: 0,
+      vy: 0,
+      active: true,
+      inPlungerLane: true
+    };
+
+    // Flippers (Calibrated length 56 with 46px tip gap at rest to prevent center pinching)
+    // Left Flipper
+    const flipperLeft = {
+      pivotX: 110,
+      pivotY: 480,
+      length: 56,
+      restAngle: 28 * Math.PI / 180,
+      activeAngle: -24 * Math.PI / 180,
+      angle: 28 * Math.PI / 180,
+      prevAngle: 28 * Math.PI / 180,
+      angularVel: 0,
+      active: false
+    };
+
+    // Right Flipper
+    const flipperRight = {
+      pivotX: 255,
+      pivotY: 480,
+      length: 56,
+      restAngle: (180 - 28) * Math.PI / 180,
+      activeAngle: (180 + 24) * Math.PI / 180,
+      angle: (180 - 28) * Math.PI / 180,
+      prevAngle: (180 - 28) * Math.PI / 180,
+      angularVel: 0,
+      active: false
+    };
+
+    // 3 Gargoyle Bumpers
+    const bumpers = [
+      { x: 125, y: 190, r: 24, flashTimer: 0, color: '#ff2a4b', icon: '🦇' },
+      { x: 240, y: 190, r: 24, flashTimer: 0, color: '#ff7518', icon: '💀' },
+      { x: 182, y: 255, r: 24, flashTimer: 0, color: '#39ff14', icon: ' gargoyle ' }
+    ];
+
+    // Sarcophagus Target Vault
+    const sarcophagus = {
+      x: 182,
+      y: 110,
+      w: 52,
+      h: 40,
+      hits: 0,
+      flashTimer: 0,
+      opened: false
+    };
+
+    // 3 Tombstone Drop Targets (R.I.P.)
+    const dropTargets = [
+      { x: 42, y: 240, w: 18, h: 26, hit: false, label: 'R' },
+      { x: 42, y: 275, w: 18, h: 26, hit: false, label: 'I' },
+      { x: 42, y: 310, w: 18, h: 26, hit: false, label: 'P' }
+    ];
+
+    // Slingshots (Left & Right Kickers - Positioned with generous inlane clearance)
+    const slingshotLeft = {
+      p1: { x: 72, y: 355 },
+      p2: { x: 100, y: 415 },
+      p3: { x: 72, y: 415 },
+      flashTimer: 0
+    };
+
+    const slingshotRight = {
+      p1: { x: 293, y: 355 },
+      p2: { x: 265, y: 415 },
+      p3: { x: 293, y: 415 },
+      flashTimer: 0
+    };
+
+    // Rollover Lanes at top (3 lanes)
+    const rolloverLanes = [
+      { x: 120, y: 65, w: 26, h: 24, lit: false, label: '🌕' },
+      { x: 170, y: 65, w: 26, h: 24, lit: false, label: '🧛' },
+      { x: 220, y: 65, w: 26, h: 24, lit: false, label: '🩸' }
+    ];
+
+    // Static guide walls (Lines for collision)
+    // All lower lines slope strictly DOWNWARDS (dy > 0) to eliminate any V-pockets or dead zones
+    const staticWalls = [
+      // Left outer wall
+      { x1: 25, y1: 70, x2: 25, y2: 420 },
+      // Top curved arc (Smooth sealed curve from left wall around to right wall)
+      { x1: 25, y1: 70, x2: 45, y2: 35 },
+      { x1: 45, y1: 35, x2: 75, y2: 18 },
+      { x1: 75, y1: 18, x2: 140, y2: 10 },
+      { x1: 140, y1: 10, x2: 250, y2: 10 },
+      { x1: 250, y1: 10, x2: 325, y2: 12 },
+      { x1: 325, y1: 12, x2: 360, y2: 20 },
+      { x1: 360, y1: 20, x2: 382, y2: 40 },
+      { x1: 382, y1: 40, x2: 390, y2: 70 },
+      // Plunger right outer wall
+      { x1: 390, y1: 70, x2: 390, y2: 545 },
+      // Plunger bottom floor
+      { x1: 352, y1: 545, x2: 390, y2: 545 },
+      // Plunger lane left divider wall (completely open at y < 115)
+      { x1: 352, y1: 115, x2: 352, y2: 545 },
+
+      // Left Outlane & Inlane guides (Clean vertical divider without diagonal posts)
+      { x1: 25, y1: 420, x2: 25, y2: 550 },
+      { x1: 52, y1: 415, x2: 52, y2: 550 },
+      { x1: 52, y1: 435, x2: 110, y2: 480 },
+
+      // Right Outlane & Inlane guides (Clean vertical divider without diagonal posts)
+      { x1: 325, y1: 415, x2: 325, y2: 550 },
+      { x1: 325, y1: 435, x2: 255, y2: 480 }
+    ];
+
+    // Particles & Floating texts
+    let particles = [];
+    let floatTexts = [];
+
+    /* DOM elements */
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const bestDisplay = document.getElementById('bestDisplay');
+    const ballsDisplay = document.getElementById('ballsDisplay');
+    const multiplierDisplay = document.getElementById('multiplierDisplay');
+    const goalBarFill = document.getElementById('goalBarFill');
+    const goalPercent = document.getElementById('goalPercent');
+    const vignette = document.getElementById('vignette');
+
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    const btnInfiniteMode = document.getElementById('btnInfiniteMode');
+    const btnRetryDefeat = document.getElementById('btnRetryDefeat');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+
+    bestDisplay.textContent = bestScore;
+
+    /* ==========================================================================
+       GAME INITIALIZATION
+       ========================================================================== */
+    function initGame() {
+      state = 'WAITING_LAUNCH';
+      score = 0;
+      ballsLeft = 3;
+      multiplier = 1;
+      infiniteMode = false;
+      plungerCharging = false;
+      plungerPower = 0;
+      ballSaveTimer = 0;
+      particles = [];
+      floatTexts = [];
+
+      resetSarcophagus();
+      resetDropTargets();
+      resetRolloverLanes();
+      respawnBall();
+
+      updateUI();
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      vignette.className = 'vignette-overlay';
+    }
+
+    function resetSarcophagus() {
+      sarcophagus.hits = 0;
+      sarcophagus.flashTimer = 0;
+      sarcophagus.opened = false;
+    }
+
+    function resetDropTargets() {
+      dropTargets.forEach(t => t.hit = false);
+    }
+
+    function resetRolloverLanes() {
+      rolloverLanes.forEach(l => l.lit = false);
+    }
+
+    function respawnBall() {
+      ball.x = PLUNGER_X;
+      ball.y = PLUNGER_BASE_Y;
+      ball.vx = 0;
+      ball.vy = 0;
+      ball.active = true;
+      ball.inPlungerLane = true;
+      state = 'WAITING_LAUNCH';
+      plungerCharging = false;
+      plungerPower = 0;
+      ballSaveTimer = 0;
+      ballStuckTimer = 0;
+    }
+
+    /* ==========================================================================
+       PLUNGER LAUNCH
+       ========================================================================== */
+    function startPlungerCharge() {
+      if (state !== 'WAITING_LAUNCH') return;
+      sound.init();
+      plungerCharging = true;
+    }
+
+    function releasePlunger() {
+      if (state !== 'WAITING_LAUNCH') return;
+      plungerCharging = false;
+      sound.playPlungerRelease();
+
+      const powerPct = Math.max(0, Math.min(100, plungerPower));
+      // vy from -14.2 (tap) to -17.2 (full charge)
+      ball.x = PLUNGER_X;
+      ball.y = PLUNGER_BASE_Y;
+      ball.vy = - (14.2 + (powerPct / 100) * 3.0);
+      ball.vx = 0;
+      ball.inPlungerLane = true;
+      plungerPower = 0;
+      state = 'IN_PLAY';
+      ballSaveTimer = 6.0; // 6s ball save
+      showToast("⚡ ¡Bola lanzada! Defiende el templo vampírico");
+    }
+
+    /* ==========================================================================
+       FLIPPER CONTROLS
+       ========================================================================== */
+    function setFlipperLeft(active) {
+      if (flipperLeft.active !== active) {
+        sound.init();
+        if (active) sound.playFlipper();
+      }
+      flipperLeft.active = active;
+      document.getElementById('btnFlipperLeft').classList.toggle('active', active);
+    }
+
+    function setFlipperRight(active) {
+      if (flipperRight.active !== active) {
+        sound.init();
+        if (active) sound.playFlipper();
+      }
+      flipperRight.active = active;
+      document.getElementById('btnFlipperRight').classList.toggle('active', active);
+    }
+
+    /* ==========================================================================
+       PHYSICS UPDATE (COLLISIONS & FLIPPERS)
+       ========================================================================== */
+    function updatePhysics(dt, subSteps = 4) {
+      // 1. Plunger Charging
+      if (plungerCharging) {
+        plungerPower = Math.min(100, plungerPower + dt * 140);
+      }
+
+      // 2. Ball Save countdown
+      if (ballSaveTimer > 0) {
+        ballSaveTimer -= dt;
+      }
+
+      // 3. Update Flippers Angles
+      updateFlipperAngle(flipperLeft, dt);
+      updateFlipperAngle(flipperRight, dt);
+
+      // 4. Update Bumpers & Targets Flash Timers
+      bumpers.forEach(b => { if (b.flashTimer > 0) b.flashTimer -= dt; });
+      if (sarcophagus.flashTimer > 0) sarcophagus.flashTimer -= dt;
+      if (slingshotLeft.flashTimer > 0) slingshotLeft.flashTimer -= dt;
+      if (slingshotRight.flashTimer > 0) slingshotRight.flashTimer -= dt;
+
+      // If waiting for launch, ball rests securely on plunger tip
+      if (state === 'WAITING_LAUNCH') {
+        ball.x = PLUNGER_X;
+        ball.y = PLUNGER_BASE_Y + (plungerPower / 100) * 28;
+        ball.vx = 0;
+        ball.vy = 0;
+        ball.inPlungerLane = true;
+        return;
+      }
+
+      // 5. Ball Physics (Only when in play)
+      if (ball.active && state === 'IN_PLAY') {
+        const stepFrac = 1 / subSteps;
+
+        // Gravity
+        ball.vy += GRAVITY * stepFrac;
+
+        // Air drag
+        ball.vx *= Math.pow(0.998, stepFrac);
+        ball.vy *= Math.pow(0.998, stepFrac);
+
+        // Position step
+        ball.x += ball.vx * stepFrac;
+        ball.y += ball.vy * stepFrac;
+
+        // Speed clamp to prevent tunneling
+        const speed = Math.hypot(ball.vx, ball.vy);
+        const MAX_SPEED = 18;
+        if (speed > MAX_SPEED) {
+          ball.vx = (ball.vx / speed) * MAX_SPEED;
+          ball.vy = (ball.vy / speed) * MAX_SPEED;
+        }
+
+        // Hard top & side bounds clamp
+        if (ball.y < BALL_RADIUS + 8) {
+          ball.y = BALL_RADIUS + 8;
+          ball.vy = Math.abs(ball.vy) * 0.7;
+        }
+        if (ball.x < BALL_RADIUS + 22) {
+          ball.x = BALL_RADIUS + 22;
+          ball.vx = Math.abs(ball.vx) * 0.7;
+        }
+        if (ball.x > 390 - BALL_RADIUS) {
+          ball.x = 390 - BALL_RADIUS;
+          ball.vx = -Math.abs(ball.vx) * 0.7;
+        }
+
+        // Plunger Lane Tracking & Return Safety
+        if (ball.inPlungerLane) {
+          // Check if ball exited plunger lane into playfield at top
+          if (ball.y < 100 && ball.x < PLUNGER_LANE_LEFT) {
+            ball.inPlungerLane = false;
+          }
+          // If ball failed to reach top and fell back down the plunger chute
+          else if (ball.y >= PLUNGER_BASE_Y && ball.vy >= 0) {
+            ball.x = PLUNGER_X;
+            ball.y = PLUNGER_BASE_Y;
+            ball.vx = 0;
+            ball.vy = 0;
+            state = 'WAITING_LAUNCH';
+            plungerCharging = false;
+            plungerPower = 0;
+            showToast("¡Tiro suave! Mantén pulsado para cargar más fuerza.");
+            return;
+          }
+        } else {
+          // One-way gate: prevent ball from re-entering plunger chute from top
+          if (ball.x > PLUNGER_LANE_LEFT && ball.y < 125) {
+            ball.x = PLUNGER_LANE_LEFT - 1;
+            if (ball.vx > 0) ball.vx = -Math.abs(ball.vx) * 0.7;
+          }
+        }
+
+        // Collisions:
+        // A. Static Walls
+        staticWalls.forEach(wall => checkLineCollision(wall.x1, wall.y1, wall.x2, wall.y2, 0.72));
+
+        // B. Bumpers (Circle collision with anti-clipping clamp)
+        bumpers.forEach((bumper, idx) => {
+          const dx = ball.x - bumper.x;
+          const dy = ball.y - bumper.y;
+          const dist = Math.hypot(dx, dy) || 0.001;
+          const minDist = bumper.r + BALL_RADIUS;
+
+          if (dist < minDist) {
+            // Repel with controlled, snappy energy (capped to prevent clipping)
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const speed = Math.min(12.0, Math.max(8.0, Math.hypot(ball.vx, ball.vy) * 1.15));
+            ball.vx = nx * speed;
+            ball.vy = ny * speed;
+            ball.x = bumper.x + nx * (minDist + 1.5);
+            ball.y = bumper.y + ny * (minDist + 1.5);
+
+            bumper.flashTimer = 0.25;
+            sound.playBumper(1 + idx * 0.25);
+            addScore(60 * multiplier);
+            spawnSparks(bumper.x, bumper.y, bumper.color);
+          }
+        });
+
+        // C. Sarcophagus Target Vault
+        checkSarcophagusCollision();
+
+        // D. Drop Targets
+        checkDropTargetsCollision();
+
+        // E. Rollover Lanes
+        checkRolloverLanes();
+
+        // F. Slingshots
+        checkSlingshotCollision(slingshotLeft, 1);
+        checkSlingshotCollision(slingshotRight, -1);
+
+        // G. Flippers
+        checkFlipperCollision(flipperLeft);
+        checkFlipperCollision(flipperRight);
+
+        // H. Drain Check (Only when in playfield)
+        if (ball.y > HEIGHT + 15 && !ball.inPlungerLane) {
+          handleBallDrain();
+        }
+
+        // I. Anti-Stuck Safeguard (Auto-Nudge if ball rests motionless for > 0.8s)
+        const currentSpeed = Math.hypot(ball.vx, ball.vy);
+        if (currentSpeed < 0.35) {
+          ballStuckTimer += dt;
+          if (ballStuckTimer > 0.8) {
+            ball.vx = (WIDTH / 2 - ball.x > 0 ? 3.2 : -3.2);
+            ball.vy = 3.6;
+            ballStuckTimer = 0;
+            sound.playBumper(0.8);
+            showToast("⚡ ¡Impulso espectral!");
+          }
+        } else {
+          ballStuckTimer = 0;
+        }
+      }
+
+      // Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= p.decay;
+        if (p.alpha <= 0) particles.splice(i, 1);
+      }
+
+      // Update Float Texts
+      for (let i = floatTexts.length - 1; i >= 0; i--) {
+        const ft = floatTexts[i];
+        ft.y -= 25 * dt;
+        ft.life -= dt;
+        if (ft.life <= 0) floatTexts.splice(i, 1);
+      }
+    }
+
+    function updateFlipperAngle(flipper, dt) {
+      flipper.prevAngle = flipper.angle;
+      const target = flipper.active ? flipper.activeAngle : flipper.restAngle;
+      const speed = 28; // rad/s fast flip
+      const diff = target - flipper.angle;
+
+      if (Math.abs(diff) < speed * dt) {
+        flipper.angle = target;
+      } else {
+        flipper.angle += Math.sign(diff) * speed * dt;
+      }
+
+      flipper.angularVel = (flipper.angle - flipper.prevAngle) / dt;
+    }
+
+    /* ==========================================================================
+       COLLISION ROUTINES
+       ========================================================================== */
+    function checkLineCollision(x1, y1, x2, y2, restitution = 0.7) {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const lenSq = dx * dx + dy * dy;
+      if (lenSq === 0) return;
+
+      let t = ((ball.x - x1) * dx + (ball.y - y1) * dy) / lenSq;
+      t = Math.max(0, Math.min(1, t));
+
+      const nearX = x1 + t * dx;
+      const nearY = y1 + t * dy;
+
+      const distSq = (ball.x - nearX) * (ball.x - nearX) + (ball.y - nearY) * (ball.y - nearY);
+
+      if (distSq < BALL_RADIUS * BALL_RADIUS) {
+        const dist = Math.sqrt(distSq) || 0.001;
+        const nx = (ball.x - nearX) / dist;
+        const ny = (ball.y - nearY) / dist;
+
+        // Position correction
+        ball.x = nearX + nx * BALL_RADIUS;
+        ball.y = nearY + ny * BALL_RADIUS;
+
+        // Reflect velocity
+        const dot = ball.vx * nx + ball.vy * ny;
+        if (dot < 0) {
+          ball.vx = (ball.vx - 2 * dot * nx) * restitution;
+          ball.vy = (ball.vy - 2 * dot * ny) * restitution;
+        }
+      }
+    }
+
+    function checkFlipperCollision(flipper) {
+      const tipX = flipper.pivotX + Math.cos(flipper.angle) * flipper.length;
+      const tipY = flipper.pivotY + Math.sin(flipper.angle) * flipper.length;
+
+      const dx = tipX - flipper.pivotX;
+      const dy = tipY - flipper.pivotY;
+      const lenSq = dx * dx + dy * dy;
+
+      let t = ((ball.x - flipper.pivotX) * dx + (ball.y - flipper.pivotY) * dy) / lenSq;
+      t = Math.max(0, Math.min(1, t));
+
+      const nearX = flipper.pivotX + t * dx;
+      const nearY = flipper.pivotY + t * dy;
+
+      const distSq = (ball.x - nearX) * (ball.x - nearX) + (ball.y - nearY) * (ball.y - nearY);
+
+      if (distSq < (BALL_RADIUS + 5) * (BALL_RADIUS + 5)) {
+        const dist = Math.sqrt(distSq) || 0.001;
+        const nx = (ball.x - nearX) / dist;
+        const ny = (ball.y - nearY) / dist;
+
+        // When flipper is at rest and ball is rolling off the tip downward, let it drain freely
+        if (!flipper.active && t > 0.90 && ball.y > flipper.pivotY + 16 && ball.vy > 0) {
+          return;
+        }
+
+        ball.x = nearX + nx * (BALL_RADIUS + 5);
+        ball.y = nearY + ny * (BALL_RADIUS + 5);
+
+        // Linear velocity from flipper rotation at collision point
+        const radiusDist = t * flipper.length;
+        const perpX = -Math.sin(flipper.angle);
+        const perpY = Math.cos(flipper.angle);
+        const flipperVelX = perpX * flipper.angularVel * radiusDist * 0.04;
+        const flipperVelY = perpY * flipper.angularVel * radiusDist * 0.04;
+
+        // Normal bounce
+        const dot = ball.vx * nx + ball.vy * ny;
+        if (dot < 0) {
+          ball.vx = (ball.vx - 1.8 * dot * nx) * 0.65 + flipperVelX;
+          ball.vy = (ball.vy - 1.8 * dot * ny) * 0.65 + flipperVelY;
+        }
+
+        // Strong upward kick when flipping up!
+        if (flipper.active && flipper.angularVel !== 0) {
+          ball.vy = Math.min(ball.vy, -11.5 - t * 4);
+          spawnSparks(ball.x, ball.y, '#39ff14');
+        }
+      }
+    }
+
+    function checkSarcophagusCollision() {
+      if (sarcophagus.flashTimer > 0) return; // Cooldown to avoid multi-hitting
+
+      const halfW = sarcophagus.w / 2 + BALL_RADIUS;
+      const halfH = sarcophagus.h / 2 + BALL_RADIUS;
+      const dx = ball.x - sarcophagus.x;
+      const dy = ball.y - sarcophagus.y;
+
+      if (Math.abs(dx) < halfW && Math.abs(dy) < halfH) {
+        // Impact occurred! Determine bounce direction & eject ball
+        const overlapX = halfW - Math.abs(dx);
+        const overlapY = halfH - Math.abs(dy);
+
+        const signX = Math.sign(dx) || 1;
+        const signY = Math.sign(dy) || 1;
+
+        if (overlapX < overlapY) {
+          // Horizontal side bounce
+          ball.x = sarcophagus.x + signX * (halfW + 3);
+          ball.vx = signX * Math.max(5.5, Math.abs(ball.vx) * 0.85 + 3.0);
+        } else {
+          // Vertical bounce
+          ball.y = sarcophagus.y + signY * (halfH + 3);
+          ball.vy = signY * Math.max(5.5, Math.abs(ball.vy) * 0.85 + 3.5);
+        }
+
+        sarcophagus.hits++;
+        sarcophagus.flashTimer = 0.35;
+        sound.playTargetHit();
+
+        if (sarcophagus.hits >= 3) {
+          sarcophagus.opened = true;
+          sarcophagus.hits = 0;
+          addScore(1000 * multiplier);
+          multiplier = Math.min(4, multiplier + 1);
+          sound.playJackpot();
+          vignette.classList.add('flash-gold');
+          setTimeout(() => vignette.classList.remove('flash-gold'), 400);
+          showToast(`⚰️ ¡NOSFERATU DESPERTADO! +1,000 PTS (Multiplicador x${multiplier})`);
+          spawnSparks(sarcophagus.x, sarcophagus.y, '#ffd700', 35);
+        } else {
+          addScore(150 * multiplier);
+          showToast(`🩸 Sello de Drácula ${sarcophagus.hits}/3 (+${150 * multiplier} pts)`);
+          spawnSparks(sarcophagus.x, sarcophagus.y, '#ff2a4b', 16);
+        }
+      }
+    }
+
+    function checkDropTargetsCollision() {
+      dropTargets.forEach(target => {
+        if (!target.hit) {
+          if (ball.x > target.x - target.w / 2 - BALL_RADIUS &&
+              ball.x < target.x + target.w / 2 + BALL_RADIUS &&
+              ball.y > target.y - target.h / 2 - BALL_RADIUS &&
+              ball.y < target.y + target.h / 2 + BALL_RADIUS) {
+            
+            target.hit = true;
+            ball.vx = Math.abs(ball.vx) + 2.5; // Bounce to the right
+            sound.playTargetHit();
+            addScore(200 * multiplier);
+            spawnSparks(target.x, target.y, '#ff2a4b');
+
+            // Check if all 3 R.I.P. targets are down
+            if (dropTargets.every(t => t.hit)) {
+              addScore(800 * multiplier);
+              sound.playJackpot();
+              showToast("🪦 ¡LÁPIDAS R.I.P. DERRIBADAS! +800 PTS");
+              setTimeout(resetDropTargets, 2500);
+            }
+          }
+        }
+      });
+    }
+
+    function checkRolloverLanes() {
+      rolloverLanes.forEach(lane => {
+        if (!lane.lit) {
+          if (ball.x > lane.x - lane.w / 2 &&
+              ball.x < lane.x + lane.w / 2 &&
+              ball.y > lane.y - lane.h / 2 &&
+              ball.y < lane.y + lane.h / 2) {
+            
+            lane.lit = true;
+            sound.playBumper(1.5);
+            addScore(150 * multiplier);
+
+            // If all 3 are lit
+            if (rolloverLanes.every(l => l.lit)) {
+              multiplier = Math.min(4, multiplier + 1);
+              sound.playJackpot();
+              showToast(`🦇 ¡RUNAS DEL AQUELARRE ACTIVAS! Multiplicador x${multiplier}`);
+              setTimeout(resetRolloverLanes, 2800);
+            }
+          }
+        }
+      });
+    }
+
+    function checkSlingshotCollision(sling, dir) {
+      // Check collision on hypotenuse line (p1 to p2)
+      checkLineCollision(sling.p1.x, sling.p1.y, sling.p2.x, sling.p2.y, 1.45);
+    }
+
+    /* ==========================================================================
+       BALL DRAIN & GAME OVER
+       ========================================================================== */
+    function handleBallDrain() {
+      if (state !== 'IN_PLAY') return;
+
+      // If Ball Save is active
+      if (ballSaveTimer > 0) {
+        sound.playJackpot();
+        showToast("🛡️ ¡Alma Salvada! Bola devuelta al resorte.");
+        respawnBall();
+        updateUI();
+        return;
+      }
+
+      // Immediately lock state to prevent multiple drain calls across sub-steps/frames!
+      state = 'DRAINING';
+      ball.active = false;
+      ball.vx = 0;
+      ball.vy = 0;
+
+      sound.playDrain();
+      vignette.classList.add('flash-blood');
+      setTimeout(() => vignette.classList.remove('flash-blood'), 400);
+
+      ballsLeft--;
+      updateUI();
+
+      if (ballsLeft > 0) {
+        showToast(`💀 Bola perdida. Te quedan ${ballsLeft} bolas de plata.`);
+        setTimeout(() => {
+          respawnBall();
+          updateUI();
+        }, 900);
+      } else {
+        // Out of balls
+        setTimeout(() => {
+          if (score >= VICTORY_GOAL) {
+            triggerVictory();
+          } else {
+            triggerDefeat();
+          }
+        }, 400);
+      }
+    }
+
+    function addScore(pts) {
+      score += pts;
+      if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem('krypt_day_18_best', bestScore);
+        bestDisplay.textContent = bestScore;
+      }
+
+      floatTexts.push({
+        text: `+${pts}`,
+        x: ball.x,
+        y: ball.y - 12,
+        color: pts >= 800 ? '#ffd700' : '#39ff14',
+        life: 0.9
+      });
+
+      // Check Victory
+      if (score >= VICTORY_GOAL && state !== 'WON' && !infiniteMode) {
+        triggerVictory();
+      }
+
+      updateUI();
+    }
+
+    function triggerVictory() {
+      state = 'WON';
+      sound.playVictory();
+      localStorage.setItem('krypt_day_18_cleared', 'true');
+
+      document.getElementById('vicScore').textContent = score.toLocaleString();
+      document.getElementById('vicBest').textContent = bestScore.toLocaleString();
+      document.getElementById('vicBalls').textContent = ballsLeft;
+
+      victoryModal.classList.add('active');
+    }
+
+    function triggerDefeat() {
+      state = 'GAME_OVER';
+      document.getElementById('defScore').textContent = score.toLocaleString();
+      document.getElementById('defBest').textContent = bestScore.toLocaleString();
+      defeatModal.classList.add('active');
+    }
+
+    /* ==========================================================================
+       PARTICLES & VISUAL EFFECTS
+       ========================================================================== */
+    function spawnSparks(x, y, color, count = 16) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 6;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: 2 + Math.random() * 3,
+          color: color,
+          alpha: 1,
+          decay: 0.04 + Math.random() * 0.04
+        });
+      }
+    }
+
+    /* ==========================================================================
+       UI UPDATES
+       ========================================================================== */
+    function updateUI() {
+      scoreDisplay.textContent = score.toLocaleString();
+      multiplierDisplay.textContent = `x${multiplier}`;
+
+      // Balls indicator
+      let ballIcons = '';
+      for (let i = 0; i < 3; i++) {
+        ballIcons += (i < ballsLeft) ? '⚪ ' : '💀 ';
+      }
+      ballsDisplay.textContent = ballIcons.trim();
+
+      // Goal progress
+      const goalClamp = Math.min(score, VICTORY_GOAL);
+      const goalPct = (goalClamp / VICTORY_GOAL) * 100;
+      goalBarFill.style.width = `${goalPct}%`;
+      goalPercent.textContent = `${score.toLocaleString()} / ${VICTORY_GOAL.toLocaleString()}`;
+    }
+
+    /* ==========================================================================
+       RENDER LOOP
+       ========================================================================== */
+    let lastTime = 0;
+
+    function gameLoop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+      lastTime = timestamp;
+
+      // Sub-stepping for ultra-stable pinball physics
+      const subSteps = 4;
+      const subDt = dt / subSteps;
+      for (let s = 0; s < subSteps; s++) {
+        updatePhysics(subDt, subSteps);
+      }
+
+      render();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+      // 1. Table Background & Gothic Patterns
+      renderTableBackdrop();
+
+      // 2. Rollover Lanes & Drop Targets
+      renderTableTargets();
+
+      // 3. Sarcophagus Target
+      renderSarcophagus();
+
+      // 4. Bumpers
+      renderBumpers();
+
+      // 5. Slingshots
+      renderSlingshots();
+
+      // 6. Flippers
+      renderFlippers();
+
+      // 7. Plunger Spring & Lane
+      renderPlunger();
+
+      // 8. Ball
+      if (ball.active) {
+        renderBall();
+      }
+
+      // 9. Particles & Float Texts
+      renderFX();
+    }
+
+    function renderTableBackdrop() {
+      // Deep velvet crypt gradient
+      const grad = ctx.createRadialGradient(WIDTH / 2, 260, 40, WIDTH / 2, 260, 320);
+      grad.addColorStop(0, '#131e17');
+      grad.addColorStop(0.6, '#09100c');
+      grad.addColorStop(1, '#050806');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+      // Outer border walls
+      ctx.strokeStyle = '#324a3a';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      staticWalls.forEach(w => {
+        ctx.moveTo(w.x1, w.y1);
+        ctx.lineTo(w.x2, w.y2);
+      });
+      ctx.stroke();
+
+      // Nosferatu Silhouette watermark in center
+      ctx.save();
+      ctx.font = '56px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255, 42, 75, 0.08)';
+      ctx.fillText('🧛‍♂️', 182, 330);
+
+      ctx.font = '10px Montserrat, sans-serif';
+      ctx.fillStyle = 'rgba(133, 154, 141, 0.2)';
+      ctx.letterSpacing = '2px';
+      ctx.fillText('CRIPTA DE NOSFERATU', 182, 355);
+      ctx.restore();
+    }
+
+    function renderTableTargets() {
+      // 3 Rollover Lanes
+      rolloverLanes.forEach(l => {
+        ctx.save();
+        ctx.fillStyle = l.lit ? 'rgba(255, 215, 0, 0.35)' : 'rgba(20, 30, 24, 0.6)';
+        ctx.strokeStyle = l.lit ? '#ffd700' : '#283c2f';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(l.x - l.w / 2, l.y - l.h / 2, l.w, l.h);
+        ctx.strokeRect(l.x - l.w / 2, l.y - l.h / 2, l.w, l.h);
+
+        ctx.font = '13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(l.label, l.x, l.y);
+        ctx.restore();
+      });
+
+      // 3 Drop Targets (R.I.P.)
+      dropTargets.forEach(t => {
+        ctx.save();
+        if (t.hit) {
+          ctx.fillStyle = 'rgba(10, 16, 12, 0.4)';
+          ctx.fillRect(t.x - t.w / 2, t.y - t.h / 2, t.w, t.h);
+        } else {
+          ctx.fillStyle = 'linear-gradient(180deg, #526c5b 0%, #293d31 100%)';
+          ctx.fillStyle = '#405648';
+          ctx.fillRect(t.x - t.w / 2, t.y - t.h / 2, t.w, t.h);
+          ctx.strokeStyle = '#ff7518';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(t.x - t.w / 2, t.y - t.h / 2, t.w, t.h);
+
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 12px Montserrat, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(t.label, t.x, t.y);
+        }
+        ctx.restore();
+      });
+    }
+
+    function renderSarcophagus() {
+      ctx.save();
+      const s = sarcophagus;
+      const isFlashing = s.flashTimer > 0;
+
+      ctx.fillStyle = isFlashing ? '#ffd700' : '#1e1115';
+      ctx.fillRect(s.x - s.w / 2, s.y - s.h / 2, s.w, s.h);
+      ctx.strokeStyle = isFlashing ? '#fff' : '#ff2a4b';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(s.x - s.w / 2, s.y - s.h / 2, s.w, s.h);
+
+      ctx.font = '18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s.opened ? '✨' : '⚰️', s.x, s.y);
+
+      // Hit pips
+      for (let i = 0; i < 3; i++) {
+        ctx.fillStyle = i < s.hits ? '#ff2a4b' : '#331d24';
+        ctx.beginPath();
+        ctx.arc(s.x - 14 + i * 14, s.y + s.h / 2 + 6, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function renderBumpers() {
+      bumpers.forEach(b => {
+        ctx.save();
+        const isFlashing = b.flashTimer > 0;
+
+        // Outer glow ring
+        ctx.fillStyle = isFlashing ? '#ffffff' : b.color;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner core
+        ctx.fillStyle = isFlashing ? b.color : '#0f1712';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r - 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(b.icon.trim(), b.x, b.y);
+
+        ctx.restore();
+      });
+    }
+
+    function renderSlingshots() {
+      [slingshotLeft, slingshotRight].forEach(sling => {
+        ctx.save();
+        const isFlashing = sling.flashTimer > 0;
+        ctx.fillStyle = isFlashing ? '#39ff14' : '#1b2a20';
+        ctx.beginPath();
+        ctx.moveTo(sling.p1.x, sling.p1.y);
+        ctx.lineTo(sling.p2.x, sling.p2.y);
+        ctx.lineTo(sling.p3.x, sling.p3.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = isFlashing ? '#fff' : '#3d5c47';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    function renderFlippers() {
+      [flipperLeft, flipperRight].forEach(fl => {
+        ctx.save();
+        const tipX = fl.pivotX + Math.cos(fl.angle) * fl.length;
+        const tipY = fl.pivotY + Math.sin(fl.angle) * fl.length;
+
+        // Flipper body
+        ctx.strokeStyle = fl.active ? '#39ff14' : '#ff7518';
+        ctx.lineWidth = 11;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(fl.pivotX, fl.pivotY);
+        ctx.lineTo(tipX, tipY);
+        ctx.stroke();
+
+        // Pivot cap
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(fl.pivotX, fl.pivotY, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      });
+    }
+
+    function renderPlunger() {
+      ctx.save();
+      // Plunger Lane background
+      ctx.fillStyle = '#0a100c';
+      ctx.fillRect(PLUNGER_LANE_LEFT, 70, 390 - PLUNGER_LANE_LEFT, HEIGHT - 70);
+
+      // Spring
+      const springTopY = PLUNGER_BASE_Y + (plungerPower / 100) * 28;
+      ctx.strokeStyle = '#ff2a4b';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(PLUNGER_X, HEIGHT - 15);
+      ctx.lineTo(PLUNGER_X, springTopY);
+      ctx.stroke();
+
+      // Plunger Tip
+      ctx.fillStyle = '#e8eee9';
+      ctx.beginPath();
+      ctx.arc(PLUNGER_X, springTopY, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Power meter indicator
+      if (state === 'WAITING_LAUNCH' && (plungerCharging || plungerPower > 0)) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+        ctx.fillRect(PLUNGER_X - 16, 360, 5, 120);
+        const fillH = (plungerPower / 100) * 120;
+        const grad = ctx.createLinearGradient(0, 480, 0, 360);
+        grad.addColorStop(0, '#39ff14');
+        grad.addColorStop(0.5, '#ffd700');
+        grad.addColorStop(1, '#ff2a4b');
+        ctx.fillStyle = grad;
+        ctx.fillRect(PLUNGER_X - 16, 480 - fillH, 5, fillH);
+        ctx.strokeStyle = '#283c2f';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(PLUNGER_X - 16, 360, 5, 120);
+      }
+
+      // Launch instruction overlay if waiting
+      if (state === 'WAITING_LAUNCH' && !plungerCharging) {
+        ctx.font = 'bold 10px Montserrat, sans-serif';
+        ctx.fillStyle = '#39ff14';
+        ctx.textAlign = 'center';
+        ctx.save();
+        ctx.translate(PLUNGER_X - 14, 300);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('MANTÉN [ESPACIO] PARA LANZAR', 0, 0);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function renderBall() {
+      ctx.save();
+      // Silver ball with highlight & shadow
+      const grad = ctx.createRadialGradient(ball.x - 2, ball.y - 3, 1, ball.x, ball.y, BALL_RADIUS);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.4, '#c8d6ce');
+      grad.addColorStop(1, '#53685e');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Spectral aura if ball saver active
+      if (ballSaveTimer > 0) {
+        ctx.strokeStyle = 'rgba(57, 255, 20, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, BALL_RADIUS + 3, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function renderFX() {
+      // Particles
+      for (const p of particles) {
+        ctx.save();
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Float Texts
+      for (const ft of floatTexts) {
+        ctx.save();
+        ctx.font = 'bold 13px Montserrat, sans-serif';
+        ctx.fillStyle = ft.color;
+        ctx.textAlign = 'center';
+        ctx.shadowColor = ft.color;
+        ctx.shadowBlur = 6;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      }
+    }
+
+    /* ==========================================================================
+       USER INPUT HANDLING (KEYBOARD & TOUCH)
+       ========================================================================== */
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'z' || e.key === 'Z' || e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        setFlipperLeft(true);
+      }
+      if (e.key === 'ArrowRight' || e.key === 'm' || e.key === 'M' || e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        setFlipperRight(true);
+      }
+      if (e.key === ' ' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (state === 'GAME_OVER') {
+          initGame();
+        } else if (state === 'WAITING_LAUNCH') {
+          startPlungerCharge();
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'z' || e.key === 'Z' || e.key === 'a' || e.key === 'A') {
+        setFlipperLeft(false);
+      }
+      if (e.key === 'ArrowRight' || e.key === 'm' || e.key === 'M' || e.key === 'd' || e.key === 'D') {
+        setFlipperRight(false);
+      }
+      if (e.key === ' ' || e.key === 'ArrowDown') {
+        if (state === 'WAITING_LAUNCH' && plungerCharging) {
+          releasePlunger();
+        }
+      }
+    });
+
+    // Touch Buttons
+    const btnLeft = document.getElementById('btnFlipperLeft');
+    btnLeft.addEventListener('pointerdown', (e) => { e.preventDefault(); setFlipperLeft(true); });
+    btnLeft.addEventListener('pointerup', (e) => { e.preventDefault(); setFlipperLeft(false); });
+    btnLeft.addEventListener('pointerleave', (e) => { e.preventDefault(); setFlipperLeft(false); });
+
+    const btnRight = document.getElementById('btnFlipperRight');
+    btnRight.addEventListener('pointerdown', (e) => { e.preventDefault(); setFlipperRight(true); });
+    btnRight.addEventListener('pointerup', (e) => { e.preventDefault(); setFlipperRight(false); });
+    btnRight.addEventListener('pointerleave', (e) => { e.preventDefault(); setFlipperRight(false); });
+
+    const btnPlunger = document.getElementById('btnPlunger');
+    btnPlunger.addEventListener('pointerdown', (e) => { e.preventDefault(); startPlungerCharge(); });
+    btnPlunger.addEventListener('pointerup', (e) => { e.preventDefault(); releasePlunger(); });
+    btnPlunger.addEventListener('pointerleave', (e) => { if (plungerCharging) releasePlunger(); });
+
+    // Direct Canvas Touch (Left half = left flipper, Right half = right flipper)
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.clientX - rect.left;
+      const normX = clientX / rect.width;
+
+      if (normX > 0.88 && state === 'WAITING_LAUNCH') {
+        startPlungerCharge();
+      } else if (normX < 0.5) {
+        setFlipperLeft(true);
+      } else {
+        setFlipperRight(true);
+      }
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+      e.preventDefault();
+      if (plungerCharging) releasePlunger();
+      setFlipperLeft(false);
+      setFlipperRight(false);
+    });
+
+    btnRetryDefeat.addEventListener('click', initGame);
+    btnInfiniteMode.addEventListener('click', () => {
+      infiniteMode = true;
+      state = 'IN_PLAY';
+      victoryModal.classList.remove('active');
+      // Si la bola estaba cerca o dentro del sarcófago, empujarla con suficiente impulso hacia abajo
+      if (Math.hypot(ball.x - sarcophagus.x, ball.y - sarcophagus.y) < 75) {
+        ball.y = sarcophagus.y + sarcophagus.h / 2 + BALL_RADIUS + 25;
+        ball.vy = 5.5;
+        ball.vx = (Math.random() - 0.5) * 4;
+      }
+      showToast("♾️ ¡Modo Infinito activado! Sigue buscando el récord.");
+    });
+
+    // Discord Spoiler Copy
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 18 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    // Audio Toggle
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    // Toast Utility
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // Launch Game
+    initGame();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

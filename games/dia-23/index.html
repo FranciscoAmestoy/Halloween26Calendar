@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 23: Duelo Espectral - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --board-border: #283c2f;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --spectral-purple: #c042ff;
+      --spectral-glow: rgba(192, 66, 255, 0.55);
+      --spectral-cyan: #00e5ff;
+      --spectral-cyan-glow: rgba(0, 229, 255, 0.6);
+      --moon-gold: #ffd24d;
+      --moon-glow: rgba(255, 210, 77, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 12%, rgba(20, 45, 65, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 88%, rgba(14, 32, 22, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 14px 12px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.18;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.flash-cyan {
+      box-shadow: inset 0 0 140px rgba(0, 229, 255, 0.85);
+    }
+
+    .vignette-overlay.flash-red {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: #fff;
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--spectral-cyan);
+      box-shadow: 0 0 10px var(--spectral-cyan-glow);
+      color: #fff;
+    }
+
+    /* Titles */
+    .title-banner {
+      text-align: center;
+    }
+
+    .curse-day {
+      font-size: 0.72rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--spectral-cyan);
+      font-weight: 800;
+      text-shadow: 0 0 8px var(--spectral-cyan-glow);
+    }
+
+    .curse-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.45rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #fff;
+      text-shadow: 0 0 12px var(--spectral-cyan-glow);
+      margin-top: -2px;
+    }
+
+    .curse-subtitle {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    /* Scoreboard HUD */
+    .scoreboard-hud {
+      width: 100%;
+      background: rgba(14, 22, 17, 0.85);
+      border: 1px solid #283c2f;
+      border-radius: 8px;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .score-side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .score-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .score-num {
+      font-family: 'Cinzel', serif;
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: #fff;
+      min-width: 32px;
+      text-align: center;
+    }
+
+    .score-num.player {
+      color: var(--spectral-cyan);
+      text-shadow: 0 0 10px var(--spectral-cyan-glow);
+    }
+
+    .score-num.specter {
+      color: var(--spectral-purple);
+      text-shadow: 0 0 10px var(--spectral-glow);
+    }
+
+    .match-target {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+    }
+
+    .match-target-title {
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--moon-gold);
+      font-weight: 800;
+    }
+
+    .match-vs {
+      font-family: 'Cinzel', serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    /* Canvas Arena */
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      background: #091210;
+      border: 2px solid var(--board-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.85), inset 0 0 35px rgba(0, 0, 0, 0.7);
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* Start / Overlay */
+    .arena-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7, 10, 8, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 20px;
+      text-align: center;
+      gap: 12px;
+      z-index: 20;
+      transition: opacity 0.25s ease;
+    }
+
+    .arena-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .overlay-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      color: var(--spectral-cyan);
+      text-shadow: 0 0 14px var(--spectral-cyan-glow);
+    }
+
+    .overlay-desc {
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: var(--parchment);
+      max-width: 320px;
+    }
+
+    .powerups-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(15, 25, 20, 0.85);
+      border: 1px solid #283c2f;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #175463, #0f343e);
+      color: #fff;
+      border: 1px solid var(--spectral-cyan);
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 0 15px var(--spectral-cyan-glow);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 22px var(--spectral-cyan-glow);
+      background: linear-gradient(135deg, #1e6e82, #144452);
+    }
+
+    .controls-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.85;
+    }
+
+    /* Modals (Victory / Defeat) */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 16px;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 380px;
+      background: #0f1612;
+      border: 2px solid #32503d;
+      border-radius: 12px;
+      padding: 22px 18px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.9);
+      position: relative;
+      animation: modalPop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .modal-box.victory {
+      border-color: var(--spectral-cyan);
+      box-shadow: 0 0 30px var(--spectral-cyan-glow);
+    }
+
+    .modal-box.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 30px var(--blood-glow);
+    }
+
+    @keyframes modalPop {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-icon {
+      font-size: 2.4rem;
+      filter: drop-shadow(0 0 10px var(--spectral-cyan));
+    }
+
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .modal-desc {
+      font-size: 0.82rem;
+      color: var(--parchment);
+      line-height: 1.45;
+    }
+
+    /* Secret Parchment Scroll */
+    .secret-scroll {
+      width: 100%;
+      background: linear-gradient(180deg, #1b281f 0%, #111a14 100%);
+      border: 1px dashed var(--toxic-green);
+      border-radius: 8px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scroll-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--toxic-green);
+      font-weight: 800;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', monospace;
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #fff;
+      text-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 16px rgba(88, 101, 242, 0.7);
+    }
+
+    .btn-action.discord.copied {
+      background: #23a55a;
+    }
+
+    .btn-action.advance {
+      background: linear-gradient(135deg, #1c5260, #10343e);
+      color: var(--parchment);
+      border: 1px solid #2d7386;
+    }
+
+    .btn-action.advance:hover {
+      border-color: var(--spectral-cyan);
+      color: #fff;
+    }
+
+    .btn-action.retry {
+      background: linear-gradient(135deg, #7a1d2e, #47101a);
+      color: #fff;
+      border: 1px solid var(--blood-red);
+      box-shadow: 0 0 14px var(--blood-glow);
+    }
+
+    .btn-action.retry:hover {
+      background: linear-gradient(135deg, #962539, #5e1623);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #142017;
+      border: 1px solid var(--spectral-cyan);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      box-shadow: 0 0 16px var(--spectral-cyan-glow);
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient FX -->
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <!-- Game Shell -->
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>⚰️</span>
+        <span>Cementerio</span>
+      </a>
+
+      <div class="header-controls">
+        <button class="btn-icon" id="soundToggleBtn">🔊 Audio</button>
+        <button class="btn-icon" id="restartBtn">🔄 Reiniciar</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <div class="curse-day">Día XXIII • Maleficio del Altar</div>
+      <h1 class="curse-title">Duelo Espectral</h1>
+      <div class="curse-subtitle">Desvía la esfera de fuego azul con tu escudo sepulcral</div>
+    </div>
+
+    <!-- Scoreboard HUD -->
+    <div class="scoreboard-hud">
+      <div class="score-side">
+        <span class="score-label">Tú (Escudo)</span>
+        <span class="score-num player" id="playerScoreDisplay">0</span>
+      </div>
+
+      <div class="match-target">
+        <span class="match-target-title">A 5 Puntos</span>
+        <span class="match-vs">VS</span>
+      </div>
+
+      <div class="score-side">
+        <span class="score-label">Espectro</span>
+        <span class="score-num specter" id="specterScoreDisplay">0</span>
+      </div>
+    </div>
+
+    <!-- Canvas Wrapper -->
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="gameCanvas" width="420" height="540"></canvas>
+
+      <!-- Start Overlay -->
+      <div class="arena-overlay" id="startOverlay">
+        <h2 class="overlay-title">DUELO ESPECTRAL</h2>
+        <p class="overlay-desc">
+          Un espectro milenario custodia el altar mayor. Mueve tu lápida consagrada para devolver la llama azul y superar su defensa.
+        </p>
+
+        <div class="powerups-legend">
+          <div class="legend-item">🛡️ <span>Escudo Mayor</span></div>
+          <div class="legend-item">⚡ <span>Velocidad</span></div>
+          <div class="legend-item">❄️ <span>Gélido (Frena rival)</span></div>
+          <div class="legend-item">☄️ <span>Fuego Doble</span></div>
+        </div>
+
+        <button class="btn-start" id="btnStartGame">
+          <span>🏓</span>
+          <span>Aceptar Desafío</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="controls-hint">
+      <span>🖱️</span>
+      <span>Arrastra con el ratón/dedo o usa flechas [◄] [►] / [A] [D]</span>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">🏓✨</div>
+      <h2 class="modal-title">¡Espectro Derrotado!</h2>
+      <p class="modal-desc">
+        Tu destreza con el escudo consagrado extinguió el orgullo del espectro. El altar ceremonial se inclina ante tu luz.
+      </p>
+
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display">FUEGO-AZUL</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action advance" id="btnEndlessDuel">
+        <span>♾️</span>
+        <span>Continuar en Duelo Infinito</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box defeat">
+      <div class="modal-icon">👻💀</div>
+      <h2 class="modal-title">¡El Espectro ha Triunfado!</h2>
+      <p class="modal-desc">
+        La llama espectral superó tu guardia y tu alma quedó confinada en el altar profanado.
+      </p>
+
+      <button class="btn-action retry" id="btnRetry">
+        <span>🔄</span>
+        <span>Revancha Ceremonial</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Huir al Cementerio</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Audio and Game Logic -->
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO CONTROLLER
+       ========================================================================== */
+    class DuelAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playWallBounce() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + 0.05);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+
+      playPaddleHit(isPlayer, speedFactor = 1.0) {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const baseFreq = isPlayer ? 580 : 420;
+        const finalFreq = baseFreq * (1 + (speedFactor - 1) * 0.15);
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = isPlayer ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(finalFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(finalFreq * 0.45, now + 0.09);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      }
+
+      playPowerup() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + i * 0.04);
+          gain.gain.setValueAtTime(0.14, now + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.22);
+        });
+      }
+
+      playGoalPlayer() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const fanfare = [440, 554.37, 659.25, 880];
+        fanfare.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now + i * 0.06);
+          gain.gain.setValueAtTime(0.2, now + i * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.06);
+          osc.stop(now + i * 0.06 + 0.4);
+        });
+      }
+
+      playGoalSpecter() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.4);
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.42);
+      }
+
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const fanfare = [
+          { f: 523.25, t: 0.0, d: 0.25 },
+          { f: 659.25, t: 0.15, d: 0.25 },
+          { f: 783.99, t: 0.3, d: 0.35 },
+          { f: 1046.50, t: 0.5, d: 0.75 }
+        ];
+        fanfare.forEach(n => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(n.f, now + n.t);
+          gain.gain.setValueAtTime(0.24, now + n.t);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + n.t);
+          osc.stop(now + n.t + n.d + 0.05);
+        });
+      }
+
+      playClick() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.05);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+    }
+
+    const sound = new DuelAudio();
+
+    /* ==========================================================================
+       CONSTANTS & CONFIG
+       ========================================================================== */
+    const SECRET_KEYWORD = "FUEGO-AZUL";
+    const TARGET_VICTORY_GOALS = 5;
+
+    /* DOM References */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const playerScoreDisplay = document.getElementById('playerScoreDisplay');
+    const specterScoreDisplay = document.getElementById('specterScoreDisplay');
+    const startOverlay = document.getElementById('startOverlay');
+    const btnStartGame = document.getElementById('btnStartGame');
+    const vignette = document.getElementById('vignette');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    const btnEndlessDuel = document.getElementById('btnEndlessDuel');
+    const btnRetry = document.getElementById('btnRetry');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const toast = document.getElementById('toast');
+
+    /* ==========================================================================
+       GAME ENGINE STATE
+       ========================================================================== */
+    let isPlaying = false;
+    let isGameOver = false;
+    let hasWon = false;
+    let isEndless = false;
+
+    let playerScore = 0;
+    let specterScore = 0;
+
+    // Arena dimensions
+    const ARENA_WIDTH = 420;
+    const ARENA_HEIGHT = 540;
+
+    // Player Paddle
+    const player = {
+      x: ARENA_WIDTH / 2,
+      y: 495,
+      baseWidth: 84,
+      width: 84,
+      height: 16,
+      vx: 0,
+      targetX: ARENA_WIDTH / 2,
+      speed: 7,
+      color: '#00e5ff',
+      buffTimer: 0
+    };
+
+    // Specter AI Paddle
+    const specter = {
+      x: ARENA_WIDTH / 2,
+      y: 45,
+      width: 80,
+      height: 16,
+      vx: 0,
+      baseSpeed: 4.8,
+      speed: 4.8,
+      color: '#c042ff',
+      chilledTimer: 0,
+      floatPhase: 0
+    };
+
+    // Balls list (supports multi-ball powerup)
+    let balls = [];
+
+    // Particle bursts
+    let particles = [];
+    let floatingTexts = [];
+
+    // Floating Power-up Orb
+    let activePowerup = null;
+    let powerupSpawnTimer = 0;
+
+    // Keyboard state
+    const keys = { left: false, right: false };
+
+    /* ==========================================================================
+       BALL PHYSICS
+       ========================================================================== */
+    class Fireball {
+      constructor(serveToPlayer = true) {
+        this.reset(serveToPlayer);
+        this.radius = 9;
+        this.trail = [];
+      }
+
+      reset(serveToPlayer = true) {
+        this.x = ARENA_WIDTH / 2;
+        this.y = ARENA_HEIGHT / 2;
+        this.baseSpeed = 5.6;
+        this.speed = this.baseSpeed;
+        
+        // Slightly randomized angle
+        const angle = (Math.PI / 4) + (Math.random() * (Math.PI / 2));
+        const dirY = serveToPlayer ? 1 : -1;
+        const dirX = Math.random() < 0.5 ? -1 : 1;
+
+        this.vx = Math.cos(angle) * this.speed * dirX;
+        this.vy = Math.sin(angle) * this.speed * dirY;
+
+        this.trail = [];
+        this.isMulti = false;
+      }
+
+      update(dtFactor) {
+        this.trail.push({ x: this.x, y: this.y, alpha: 1.0 });
+        if (this.trail.length > 8) this.trail.shift();
+
+        this.trail.forEach(t => t.alpha -= 0.1 * dtFactor);
+
+        this.x += this.vx * dtFactor;
+        this.y += this.vy * dtFactor;
+
+        // Side Wall Collisions
+        if (this.x - this.radius <= 10) {
+          this.x = 10 + this.radius;
+          this.vx = Math.abs(this.vx);
+          sound.playWallBounce();
+          createWallParticles(this.x, this.y);
+        } else if (this.x + this.radius >= ARENA_WIDTH - 10) {
+          this.x = ARENA_WIDTH - 10 - this.radius;
+          this.vx = -Math.abs(this.vx);
+          sound.playWallBounce();
+          createWallParticles(this.x, this.y);
+        }
+      }
+
+      draw(c) {
+        // Draw trailing ghost fire
+        c.save();
+        for (let i = 0; i < this.trail.length; i++) {
+          const t = this.trail[i];
+          const progress = i / this.trail.length;
+          c.fillStyle = `rgba(0, 229, 255, ${t.alpha * 0.4})`;
+          c.beginPath();
+          c.arc(t.x, t.y, this.radius * progress * 0.9, 0, Math.PI * 2);
+          c.fill();
+        }
+
+        // Fireball Body
+        c.shadowColor = '#00e5ff';
+        c.shadowBlur = 12;
+        c.fillStyle = '#ffffff';
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        c.fill();
+
+        // Inner core
+        c.fillStyle = '#00e5ff';
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius * 0.65, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    /* ==========================================================================
+       POWER-UPS SYSTEM
+       ========================================================================== */
+    const POWERUP_TYPES = [
+      { id: 'shield', icon: '🛡️', name: 'Escudo Mayor', color: '#39ff14' },
+      { id: 'haste',  icon: '⚡', name: 'Relámpago', color: '#ffd24d' },
+      { id: 'frost',  icon: '❄️', name: 'Vaho Gélido', color: '#00e5ff' },
+      { id: 'multi',  icon: '☄️', name: 'Fuego Gemelo', color: '#ff7518' }
+    ];
+
+    class PowerupOrb {
+      constructor() {
+        const spec = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+        this.spec = spec;
+        this.x = 60 + Math.random() * (ARENA_WIDTH - 120);
+        this.y = 180 + Math.random() * 180;
+        this.radius = 16;
+        this.floatPhase = Math.random() * 10;
+        this.isCollected = false;
+      }
+
+      update(dtFactor) {
+        this.floatPhase += 0.05 * dtFactor;
+      }
+
+      draw(c) {
+        if (this.isCollected) return;
+        const bob = Math.sin(this.floatPhase) * 4;
+        c.save();
+        c.translate(this.x, this.y + bob);
+
+        // Pulsing glow aura
+        c.strokeStyle = this.spec.color;
+        c.shadowColor = this.spec.color;
+        c.shadowBlur = 10;
+        c.lineWidth = 2;
+        c.beginPath();
+        c.arc(0, 0, this.radius + 3, 0, Math.PI * 2);
+        c.stroke();
+
+        // Icon
+        c.font = '16px Montserrat';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(this.spec.icon, 0, 0);
+
+        c.restore();
+      }
+    }
+
+    function applyPowerupEffect(spec) {
+      sound.playPowerup();
+      floatingTexts.push(new FloatingText(spec.name, ARENA_WIDTH / 2, 270, spec.color, 1.25));
+
+      if (spec.id === 'shield') {
+        player.width = player.baseWidth * 1.38;
+        player.buffTimer = 450;
+      } else if (spec.id === 'haste') {
+        balls.forEach(b => {
+          b.vx *= 1.2;
+          b.vy *= 1.2;
+        });
+      } else if (spec.id === 'frost') {
+        specter.chilledTimer = 320;
+        showToast("❄️ ¡Espectro ralentizado por vaho gélido!");
+      } else if (spec.id === 'multi') {
+        if (balls.length < 3) {
+          const newBall = new Fireball(false);
+          newBall.x = balls[0].x;
+          newBall.y = balls[0].y;
+          newBall.vx = -balls[0].vx;
+          newBall.vy = -balls[0].vy;
+          newBall.isMulti = true;
+          balls.push(newBall);
+          showToast("☄️ ¡Fuego Gemelo desatado en el altar!");
+        }
+      }
+    }
+
+    /* ==========================================================================
+       PARTICLES & TEXTS
+       ========================================================================== */
+    class Particle {
+      constructor(x, y, color, size, vx, vy, life) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.size = size;
+        this.vx = vx;
+        this.vy = vy;
+        this.maxLife = life;
+        this.life = life;
+      }
+
+      update(dtFactor) {
+        this.x += this.vx * dtFactor;
+        this.y += this.vy * dtFactor;
+        this.life -= dtFactor;
+      }
+
+      draw(c) {
+        if (this.life <= 0) return;
+        const progress = this.life / this.maxLife;
+        c.save();
+        c.globalAlpha = progress;
+        c.fillStyle = this.color;
+        c.beginPath();
+        c.arc(this.x, this.y, this.size * progress, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    class FloatingText {
+      constructor(text, x, y, color, scale = 1.0) {
+        this.text = text;
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.scale = scale;
+        this.alpha = 1.0;
+      }
+
+      update(dtFactor) {
+        this.y -= 1.1 * dtFactor;
+        this.alpha -= 0.02 * dtFactor;
+      }
+
+      draw(c) {
+        if (this.alpha <= 0) return;
+        c.save();
+        c.globalAlpha = this.alpha;
+        c.font = `900 ${Math.round(18 * this.scale)}px 'Cinzel', serif`;
+        c.textAlign = 'center';
+        c.fillStyle = this.color;
+        c.shadowColor = this.color;
+        c.shadowBlur = 8;
+        c.fillText(this.text, this.x, this.y);
+        c.restore();
+      }
+    }
+
+    function createWallParticles(x, y) {
+      for (let i = 0; i < 8; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = 1.5 + Math.random() * 3.5;
+        particles.push(new Particle(x, y, '#00e5ff', 3, Math.cos(angle) * spd, Math.sin(angle) * spd, 15));
+      }
+    }
+
+    function createPaddleParticles(x, y, color) {
+      for (let i = 0; i < 14; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = 2 + Math.random() * 4;
+        particles.push(new Particle(x, y, color, 3.5, Math.cos(angle) * spd, Math.sin(angle) * spd, 20));
+      }
+    }
+
+    /* ==========================================================================
+       AI OPPONENT (THE SPECTER)
+       ========================================================================== */
+    function updateSpecterAI(dtFactor) {
+      specter.floatPhase += 0.05 * dtFactor;
+
+      // Find the ball traveling upwards towards the specter, or closest
+      let targetBall = null;
+      let highestY = ARENA_HEIGHT;
+
+      balls.forEach(b => {
+        if (b.vy < 0 && b.y < highestY) {
+          highestY = b.y;
+          targetBall = b;
+        }
+      });
+
+      if (!targetBall && balls.length > 0) {
+        targetBall = balls[0];
+      }
+
+      let effSpeed = specter.baseSpeed;
+      if (specter.chilledTimer > 0) {
+        specter.chilledTimer -= dtFactor;
+        effSpeed *= 0.55; // slowed down
+      }
+
+      if (targetBall) {
+        // Anticipate with slight organic latency / deadzone
+        const targetX = targetBall.x;
+        const diff = targetX - specter.x;
+
+        if (Math.abs(diff) > 8) {
+          const moveStep = Math.min(Math.abs(diff), effSpeed * dtFactor);
+          specter.x += Math.sign(diff) * moveStep;
+        }
+      } else {
+        // Return to center
+        const diff = (ARENA_WIDTH / 2) - specter.x;
+        specter.x += Math.sign(diff) * 2 * dtFactor;
+      }
+
+      // Constrain within arena walls
+      const halfW = specter.width / 2;
+      specter.x = Math.max(14 + halfW, Math.min(ARENA_WIDTH - 14 - halfW, specter.x));
+    }
+
+    /* ==========================================================================
+       PLAYER PADDLE UPDATE
+       ========================================================================== */
+    function updatePlayerPaddle(dtFactor) {
+      // Buff timer degradation
+      if (player.buffTimer > 0) {
+        player.buffTimer -= dtFactor;
+        if (player.buffTimer <= 0) {
+          player.width = player.baseWidth;
+        }
+      }
+
+      // Keyboard movement
+      if (keys.left) {
+        player.targetX -= player.speed * dtFactor * 1.5;
+      }
+      if (keys.right) {
+        player.targetX += player.speed * dtFactor * 1.5;
+      }
+
+      // Smooth interpolation to targetX (mouse / touch / keys)
+      const diff = player.targetX - player.x;
+      player.x += diff * 0.35 * dtFactor;
+
+      const halfW = player.width / 2;
+      player.x = Math.max(14 + halfW, Math.min(ARENA_WIDTH - 14 - halfW, player.x));
+    }
+
+    /* ==========================================================================
+       PADDLE & BALL COLLISION LOGIC
+       ========================================================================== */
+    function checkCollisions() {
+      for (let i = balls.length - 1; i >= 0; i--) {
+        const ball = balls[i];
+
+        // 1. Collision with Player Paddle (Bottom)
+        if (
+          ball.vy > 0 &&
+          ball.y + ball.radius >= player.y - player.height / 2 &&
+          ball.y - ball.radius <= player.y + player.height / 2 &&
+          ball.x >= player.x - player.width / 2 - 4 &&
+          ball.x <= player.x + player.width / 2 + 4
+        ) {
+          // Calculate hit offset for spin / angle reflection
+          const hitOffset = (ball.x - player.x) / (player.width / 2); // -1.0 to 1.0
+          const maxBounceAngle = (5 * Math.PI) / 12; // 75 degrees max
+          const bounceAngle = hitOffset * maxBounceAngle;
+
+          ball.speed = Math.min(10.5, ball.speed + 0.22);
+          ball.vx = Math.sin(bounceAngle) * ball.speed;
+          ball.vy = -Math.cos(bounceAngle) * ball.speed;
+          ball.y = player.y - player.height / 2 - ball.radius - 1;
+
+          sound.playPaddleHit(true, ball.speed / 5.5);
+          createPaddleParticles(ball.x, ball.y, '#00e5ff');
+        }
+
+        // 2. Collision with Specter Paddle (Top)
+        if (
+          ball.vy < 0 &&
+          ball.y - ball.radius <= specter.y + specter.height / 2 &&
+          ball.y + ball.radius >= specter.y - specter.height / 2 &&
+          ball.x >= specter.x - specter.width / 2 - 4 &&
+          ball.x <= specter.x + specter.width / 2 + 4
+        ) {
+          const hitOffset = (ball.x - specter.x) / (specter.width / 2);
+          const maxBounceAngle = (5 * Math.PI) / 12;
+          const bounceAngle = hitOffset * maxBounceAngle;
+
+          ball.speed = Math.min(10.5, ball.speed + 0.2);
+          ball.vx = Math.sin(bounceAngle) * ball.speed;
+          ball.vy = Math.cos(bounceAngle) * ball.speed;
+          ball.y = specter.y + specter.height / 2 + ball.radius + 1;
+
+          sound.playPaddleHit(false, ball.speed / 5.5);
+          createPaddleParticles(ball.x, ball.y, '#c042ff');
+        }
+
+        // 3. Collision with Floating Power-up Orb
+        if (activePowerup && !activePowerup.isCollected) {
+          const distOrb = Math.hypot(ball.x - activePowerup.x, ball.y - activePowerup.y);
+          if (distOrb <= ball.radius + activePowerup.radius) {
+            activePowerup.isCollected = true;
+            applyPowerupEffect(activePowerup.spec);
+            createPaddleParticles(activePowerup.x, activePowerup.y, activePowerup.spec.color);
+            activePowerup = null;
+          }
+        }
+
+        // 4. Goal Check (Passed Player -> Specter Scores)
+        if (ball.y - ball.radius > ARENA_HEIGHT) {
+          if (balls.length > 1) {
+            // Remove multi-ball without goal if secondary
+            balls.splice(i, 1);
+            continue;
+          }
+          handleSpecterGoal();
+          return;
+        }
+
+        // 5. Goal Check (Passed Specter -> Player Scores)
+        if (ball.y + ball.radius < 0) {
+          if (balls.length > 1) {
+            balls.splice(i, 1);
+            continue;
+          }
+          handlePlayerGoal();
+          return;
+        }
+      }
+    }
+
+    /* ==========================================================================
+       GOAL SCORING & ROUND RESET
+       ========================================================================== */
+    function handlePlayerGoal() {
+      playerScore++;
+      sound.playGoalPlayer();
+      vignette.classList.add('flash-cyan');
+      setTimeout(() => vignette.classList.remove('flash-cyan'), 450);
+
+      floatingTexts.push(new FloatingText("¡GOL BENDITO!", ARENA_WIDTH / 2, 220, '#00e5ff', 1.4));
+      updateScoreboard();
+
+      if (!hasWon && playerScore >= TARGET_VICTORY_GOALS) {
+        handleVictory();
+      } else {
+        resetBallRound(false);
+      }
+    }
+
+    function handleSpecterGoal() {
+      specterScore++;
+      sound.playGoalSpecter();
+      vignette.classList.add('flash-red');
+      setTimeout(() => vignette.classList.remove('flash-red'), 450);
+
+      floatingTexts.push(new FloatingText("¡GOL DEL ESPECTRO!", ARENA_WIDTH / 2, 320, '#ff2a4b', 1.35));
+      updateScoreboard();
+
+      if (specterScore >= TARGET_VICTORY_GOALS && !isEndless) {
+        handleDefeat();
+      } else {
+        resetBallRound(true);
+      }
+    }
+
+    function resetBallRound(serveToPlayer) {
+      balls = [new Fireball(serveToPlayer)];
+      activePowerup = null;
+      powerupSpawnTimer = 0;
+    }
+
+    function handleVictory() {
+      hasWon = true;
+      isPlaying = false;
+      sound.playVictory();
+      localStorage.setItem('krypt_day_23_cleared', 'true');
+      showToast("🌟 ¡HAS VENCIDO AL ESPECTRO DEL ALTAR!");
+      setTimeout(() => {
+        victoryModal.classList.add('active');
+      }, 700);
+    }
+
+    function handleDefeat() {
+      isGameOver = true;
+      isPlaying = false;
+      defeatModal.classList.add('active');
+    }
+
+    function updateScoreboard() {
+      playerScoreDisplay.textContent = playerScore;
+      specterScoreDisplay.textContent = specterScore;
+    }
+
+    /* ==========================================================================
+       MAIN GAME ANIMATION LOOP
+       ========================================================================== */
+    let lastTimestamp = performance.now();
+
+    function gameLoop(now) {
+      const dt = Math.min(32, now - lastTimestamp);
+      lastTimestamp = now;
+      const dtFactor = dt / 16.666;
+
+      ctx.clearRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
+
+      // Draw Arena Aesthetics
+      drawArenaBackground(ctx);
+
+      if (isPlaying && !isGameOver) {
+        // Update Paddles
+        updatePlayerPaddle(dtFactor);
+        updateSpecterAI(dtFactor);
+
+        // Update Balls
+        balls.forEach(b => b.update(dtFactor));
+
+        // Check Collisions
+        checkCollisions();
+
+        // Power-up Spawner
+        powerupSpawnTimer += dtFactor;
+        if (powerupSpawnTimer > 750 && !activePowerup) {
+          activePowerup = new PowerupOrb();
+          powerupSpawnTimer = 0;
+        }
+
+        if (activePowerup) {
+          activePowerup.update(dtFactor);
+        }
+      }
+
+      // Draw Powerup
+      if (activePowerup) {
+        activePowerup.draw(ctx);
+      }
+
+      // Draw Balls
+      balls.forEach(b => b.draw(ctx));
+
+      // Draw Paddles
+      drawPlayerPaddle(ctx);
+      drawSpecterPaddle(ctx);
+
+      // Update & Draw Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.update(dtFactor);
+        p.draw(ctx);
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      // Update & Draw Floating Texts
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.update(dtFactor);
+        ft.draw(ctx);
+        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* ==========================================================================
+       ARENA DRAWING ROUTINES
+       ========================================================================== */
+    function drawArenaBackground(c) {
+      // Floor stone tiles
+      c.fillStyle = '#0b1411';
+      c.fillRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
+
+      // Stone Side Borders
+      c.fillStyle = '#16221b';
+      c.fillRect(0, 0, 10, ARENA_HEIGHT);
+      c.fillRect(ARENA_WIDTH - 10, 0, 10, ARENA_HEIGHT);
+      c.strokeStyle = '#273c2e';
+      c.lineWidth = 1;
+      c.strokeRect(0, 0, 10, ARENA_HEIGHT);
+      c.strokeRect(ARENA_WIDTH - 10, 0, 10, ARENA_HEIGHT);
+
+      // Center Divider Rune Line
+      c.save();
+      c.strokeStyle = 'rgba(0, 229, 255, 0.25)';
+      c.lineWidth = 2;
+      c.setLineDash([8, 12]);
+      c.beginPath();
+      c.moveTo(10, ARENA_HEIGHT / 2);
+      c.lineTo(ARENA_WIDTH - 10, ARENA_HEIGHT / 2);
+      c.stroke();
+
+      // Center Mystic Ring
+      c.beginPath();
+      c.arc(ARENA_WIDTH / 2, ARENA_HEIGHT / 2, 40, 0, Math.PI * 2);
+      c.stroke();
+      c.setLineDash([]);
+
+      // Center Altar Emblem
+      c.font = '18px Montserrat';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('🕯️', ARENA_WIDTH / 2, ARENA_HEIGHT / 2);
+
+      // Torches on Left & Right
+      c.font = '14px Montserrat';
+      c.fillText('🔥', 5, ARENA_HEIGHT / 2 - 80);
+      c.fillText('🔥', 5, ARENA_HEIGHT / 2 + 80);
+      c.fillText('🔥', ARENA_WIDTH - 5, ARENA_HEIGHT / 2 - 80);
+      c.fillText('🔥', ARENA_WIDTH - 5, ARENA_HEIGHT / 2 + 80);
+
+      c.restore();
+    }
+
+    function drawPlayerPaddle(c) {
+      c.save();
+      c.translate(player.x, player.y);
+
+      // Consecrated Tombstone Slab (Player)
+      const halfW = player.width / 2;
+      const halfH = player.height / 2;
+
+      // Glow outline
+      c.shadowColor = player.color;
+      c.shadowBlur = 12;
+
+      c.fillStyle = '#1c2e25';
+      c.beginPath();
+      c.roundRect(-halfW, -halfH, player.width, player.height, 6);
+      c.fill();
+
+      c.strokeStyle = player.color;
+      c.lineWidth = 2;
+      c.stroke();
+
+      // Rune engravings on paddle
+      c.fillStyle = '#ffffff';
+      c.font = '10px Montserrat';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('✝ ᛟ ✝', 0, 0);
+
+      c.restore();
+    }
+
+    function drawSpecterPaddle(c) {
+      c.save();
+      c.translate(specter.x, specter.y);
+
+      // Floating Specter Avatar above paddle
+      const bob = Math.sin(specter.floatPhase) * 3;
+      c.font = '22px Montserrat';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('👻', 0, -20 + bob);
+
+      // Cursed Specter Paddle (Obsidian with spikes)
+      const halfW = specter.width / 2;
+      const halfH = specter.height / 2;
+
+      c.shadowColor = specter.color;
+      c.shadowBlur = 10;
+
+      c.fillStyle = '#221426';
+      c.beginPath();
+      c.roundRect(-halfW, -halfH, specter.width, specter.height, 6);
+      c.fill();
+
+      c.strokeStyle = specter.color;
+      c.lineWidth = 2;
+      c.stroke();
+
+      // Runic marking
+      c.fillStyle = '#e8a5ff';
+      c.font = '10px Montserrat';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('ᚱ ᛞ ᚱ', 0, 0);
+
+      c.restore();
+    }
+
+    /* ==========================================================================
+       USER INPUT HANDLING (MOUSE, TOUCH, KEYBOARD)
+       ========================================================================== */
+    function getCanvasCoordinates(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = ARENA_WIDTH / rect.width;
+      let clientX = e.clientX;
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+      }
+      return (clientX - rect.left) * scaleX;
+    }
+
+    function onPointerMove(e) {
+      if (!isPlaying || isGameOver) return;
+      const x = getCanvasCoordinates(e);
+      player.targetX = x;
+    }
+
+    canvas.addEventListener('mousemove', onPointerMove);
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      onPointerMove(e);
+    }, { passive: false });
+
+    canvas.addEventListener('touchstart', (e) => {
+      sound.init();
+      onPointerMove(e);
+    }, { passive: true });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        keys.left = true;
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        keys.right = true;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        keys.left = false;
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        keys.right = false;
+      }
+    });
+
+    /* ==========================================================================
+       BUTTON LISTENERS & RESTART
+       ========================================================================== */
+    function restartGame() {
+      sound.init();
+      sound.playClick();
+
+      isPlaying = true;
+      isGameOver = false;
+      hasWon = false;
+      isEndless = false;
+
+      playerScore = 0;
+      specterScore = 0;
+      updateScoreboard();
+
+      player.x = ARENA_WIDTH / 2;
+      player.targetX = ARENA_WIDTH / 2;
+      player.width = player.baseWidth;
+      specter.x = ARENA_WIDTH / 2;
+
+      particles = [];
+      floatingTexts = [];
+      resetBallRound(true);
+
+      startOverlay.classList.add('hidden');
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      vignette.classList.remove('flash-cyan', 'flash-red');
+
+      showToast("🏓 ¡Duelo iniciado! Defiende tu sepulcro.");
+    }
+
+    btnStartGame.addEventListener('click', restartGame);
+    restartBtn.addEventListener('click', restartGame);
+    btnRetry.addEventListener('click', restartGame);
+
+    btnEndlessDuel.addEventListener('click', () => {
+      sound.init();
+      sound.playClick();
+      isEndless = true;
+      isPlaying = true;
+      isGameOver = false;
+      victoryModal.classList.remove('active');
+      resetBallRound(true);
+      showToast("♾️ Modo Duelo Infinito activado. ¡Anota cuantos goles puedas!");
+    });
+
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    // Discord Copy
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 23 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // Initialize animation loop
+    balls = [new Fireball(true)];
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

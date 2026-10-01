@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 15: Tiro a la Bruja - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --board-border: #283c2f;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --spectral-purple: #c042ff;
+      --spectral-glow: rgba(192, 66, 255, 0.55);
+      --spectral-cyan: #00e5ff;
+      --moon-gold: #ffd24d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 12%, rgba(45, 20, 60, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 88%, rgba(15, 28, 20, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 14px 12px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.22;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: var(--toxic-green);
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 6px;
+    }
+
+    .day-badge {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: var(--pumpkin-orange);
+      background: rgba(255, 117, 24, 0.12);
+      border: 1px solid var(--pumpkin-orange);
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+
+    .audio-btn {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-family: 'Montserrat', sans-serif;
+      transition: all 0.2s;
+    }
+
+    .audio-btn:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+    }
+
+    /* Title */
+    .title-banner {
+      text-align: center;
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 1.85rem;
+      color: var(--parchment);
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px rgba(192, 66, 255, 0.6);
+      line-height: 1.1;
+    }
+
+    .title-banner p {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 20, 16, 0.85);
+      border: 1px solid #283c2f;
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .hud-val {
+      font-family: 'Cinzel', serif;
+      font-weight: 900;
+      color: var(--toxic-green);
+      font-size: 1rem;
+      text-shadow: 0 0 6px var(--toxic-glow);
+    }
+
+    .hud-val.alt {
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 6px var(--pumpkin-glow);
+    }
+
+    .hud-val.purple {
+      color: var(--spectral-purple);
+      text-shadow: 0 0 6px var(--spectral-glow);
+    }
+
+    /* Target Progress Indicator */
+    .progress-bar-wrap {
+      width: 100%;
+      background: rgba(10, 15, 12, 0.7);
+      border: 1px solid #1f2e24;
+      border-radius: 5px;
+      height: 7px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff7518, #39ff14);
+      box-shadow: 0 0 8px rgba(57, 255, 20, 0.7);
+      transition: width 0.15s ease-out;
+    }
+
+    /* Shooting Gallery Canvas Container */
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 400 / 460;
+      background: #090e0c;
+      border: 2px solid #2d4535;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 
+        0 8px 30px rgba(0, 0, 0, 0.9),
+        inset 0 0 35px rgba(0, 0, 0, 0.7);
+      cursor: crosshair;
+    }
+
+    #huntCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    /* Legend / Controls Bar */
+    .legend-bar {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      background: rgba(15, 23, 18, 0.6);
+      border: 1px solid #243529;
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    .legend-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .controls-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    /* Modals (Victory / Defeat) */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(5px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-chamber {
+      background: #0f1612;
+      border: 2px solid #2e4435;
+      border-radius: 12px;
+      max-width: 390px;
+      width: 100%;
+      padding: 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.95);
+      position: relative;
+    }
+
+    .modal-chamber.victory {
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 35px var(--toxic-glow);
+    }
+
+    .modal-chamber.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 35px var(--blood-glow);
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2.1rem;
+      letter-spacing: 2px;
+    }
+
+    .modal-chamber.victory .modal-title {
+      color: var(--toxic-green);
+      text-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .modal-chamber.defeat .modal-title {
+      color: var(--blood-red);
+      text-shadow: 0 0 12px var(--blood-glow);
+    }
+
+    .modal-text {
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: var(--parchment);
+    }
+
+    .secret-code-box {
+      background: #080c09;
+      border: 1px dashed var(--toxic-green);
+      border-radius: 8px;
+      padding: 10px;
+      margin: 4px 0;
+    }
+
+    .code-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--toxic-green);
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .btn-action {
+      background: linear-gradient(180deg, #1b2820 0%, #101a14 100%);
+      border: 1px solid #2d4535;
+      border-radius: 8px;
+      color: var(--parchment);
+      padding: 11px 16px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      border-color: #7983f5;
+      color: #fff;
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 14px rgba(88, 101, 242, 0.6);
+    }
+
+    .btn-action.discord.copied {
+      background: #23a55a;
+      border-color: #57f287;
+    }
+
+    .btn-action.retry {
+      border-color: var(--pumpkin-orange);
+      color: var(--pumpkin-orange);
+    }
+
+    .btn-action.retry:hover {
+      background: rgba(255, 117, 24, 0.15);
+      box-shadow: 0 0 10px var(--pumpkin-glow);
+    }
+
+    /* Toast */
+    .spooky-toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(40px);
+      background: rgba(14, 20, 16, 0.95);
+      border: 1px solid var(--toxic-green);
+      color: var(--toxic-green);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 0 0 15px var(--toxic-glow);
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 200;
+    }
+
+    .spooky-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>←</span>
+        <span>Krypta</span>
+      </a>
+      <div class="header-badges">
+        <span class="day-badge">DÍA 15 • XV</span>
+        <button class="audio-btn" id="soundToggleBtn">🔊 Audio</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <h1>Tiro a la Bruja</h1>
+      <p>Apunta y derriba a las brujas y criaturas que cruzan la luna llena</p>
+    </div>
+
+    <div class="hud-bar">
+      <div class="hud-item">
+        <span class="hud-label">Derribados</span>
+        <span class="hud-val" id="hitsDisplay">0 / 20</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Puntaje</span>
+        <span class="hud-val purple" id="scoreDisplay">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Precisión</span>
+        <span class="hud-val alt" id="accuracyDisplay">100%</span>
+      </div>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="huntCanvas" width="400" height="460"></canvas>
+    </div>
+
+    <div class="legend-bar">
+      <div class="legend-chip"><span>🧙‍♀️ Bruja (+100)</span></div>
+      <div class="legend-chip"><span>🐦‍⬛ Cuervo (+60)</span></div>
+      <div class="legend-chip"><span>🦇 Murciélago (+80)</span></div>
+      <div class="legend-chip"><span>🎃 Calabaza (+150)</span></div>
+      <div class="legend-chip"><span style="color: #ff6680;">🐈‍⬛ Gato (-50)</span></div>
+    </div>
+
+    <div class="controls-hint">
+      🖱️ <strong>Click</strong> para disparar | 📱 <strong>Toca la pantalla</strong> directamente sobre el objetivo
+    </div>
+  </div>
+
+  <!-- VICTORY MODAL -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-chamber victory">
+      <h2 class="modal-title">¡Aquelarre Dispersado!</h2>
+      <p class="modal-text">
+        ¡Puntería legendaria! Has derribado a las 20 criaturas malditas despejando la luna llena del cementerio.
+      </p>
+
+      <div class="secret-code-box">
+        <div class="code-label">Palabra Secreta del Maleficio</div>
+        <div class="code-display" id="secretCode">LUNA-DE-BRUJAS</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action retry" id="btnRestartVictory">
+        <span>🔄</span>
+        <span>Jugar de Nuevo</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action" style="text-decoration: none;">
+        <span>🏛️</span>
+        <span>Volver al Cementerio</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="spooky-toast" id="toast">¡Maleficio cargado!</div>
+
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO CONTROLLER
+       ========================================================================== */
+    class WitchHuntAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Ballesta / Disparo de plata
+      playShoot() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(380, now);
+        osc.frequency.exponentialRampToValueAtTime(70, now + 0.1);
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      }
+
+      // Impacto en Bruja (Risa interumpida / Chime)
+      playHitWitch() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(540, now);
+        osc.frequency.linearRampToValueAtTime(820, now + 0.08);
+        osc.frequency.linearRampToValueAtTime(260, now + 0.22);
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+
+      // Impacto en Cuervo / Murciélago
+      playHitCritter() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.15);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.15);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+
+      // Explosión de Calabaza
+      playExplode() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+
+      // Disparo al Gato Negro (Maullido / Hiss de penalización)
+      playHitCat() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(680, now);
+        osc.frequency.linearRampToValueAtTime(420, now + 0.15);
+        osc.frequency.linearRampToValueAtTime(740, now + 0.3);
+
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+
+      // Victoria
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [261, 329, 392, 523, 659].forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.1);
+
+          gain.gain.setValueAtTime(0.25, now + i * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8 + i * 0.1);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.1);
+          osc.stop(now + 0.8 + i * 0.1);
+        });
+      }
+    }
+
+    const sound = new WitchHuntAudio();
+
+    /* ==========================================================================
+       GAME CONSTANTS & TARGETS
+       ========================================================================== */
+    const canvas = document.getElementById('huntCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const C_WIDTH = 400;
+    const C_HEIGHT = 460;
+    const TARGET_HITS = 20; // 20 hits to win
+    const SECRET_KEYWORD = "LUNA-DE-BRUJAS";
+
+    // Fixed timestep 60Hz loop
+    const STEP_MS = 1000 / 60;
+    let animLoopId = null;
+    let lastFrameTime = performance.now();
+    let accumulator = 0;
+
+    /* Game State */
+    let hits = 0;
+    let score = 0;
+    let totalShots = 0;
+    let targetsHit = 0;
+    let isVictory = false;
+
+    let targets = [];
+    let particles = [];
+    let floatingTexts = [];
+    let crosshair = { x: C_WIDTH / 2, y: C_HEIGHT / 2, visible: false, recoil: 0 };
+
+    let spawnTimer = 0;
+    const SPAWN_INTERVAL = 45; // Spawns a new target roughly every 0.75s
+
+    /* DOM elements */
+    const hitsDisplay = document.getElementById('hitsDisplay');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const accuracyDisplay = document.getElementById('accuracyDisplay');
+    const progressBar = document.getElementById('progressBar');
+    const victoryModal = document.getElementById('victoryModal');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const vignette = document.getElementById('vignette');
+
+    /* ==========================================================================
+       TARGET TYPES & SPAWNING
+       ========================================================================== */
+    const TARGET_TYPES = {
+      witch: {
+        icon: '🧙‍♀️',
+        name: 'Bruja',
+        points: 100,
+        radius: 26,
+        baseSpeed: 1.6,
+        penalty: false
+      },
+      crow: {
+        icon: '🐦‍⬛',
+        name: 'Cuervo',
+        points: 60,
+        radius: 20,
+        baseSpeed: 2.2,
+        penalty: false
+      },
+      bat: {
+        icon: '🦇',
+        name: 'Murciélago',
+        points: 80,
+        radius: 22,
+        baseSpeed: 2.6,
+        penalty: false
+      },
+      pumpkin: {
+        icon: '🎃',
+        name: 'Calabaza Mística',
+        points: 150,
+        radius: 24,
+        baseSpeed: 1.4,
+        penalty: false
+      },
+      cat: {
+        icon: '🐈‍⬛',
+        name: 'Gato Protector',
+        points: -50,
+        radius: 22,
+        baseSpeed: 1.9,
+        penalty: true
+      }
+    };
+
+    function spawnTarget() {
+      const roll = Math.random();
+      let typeKey = 'witch';
+
+      if (roll < 0.35) typeKey = 'witch';
+      else if (roll < 0.60) typeKey = 'crow';
+      else if (roll < 0.78) typeKey = 'bat';
+      else if (roll < 0.90) typeKey = 'pumpkin';
+      else typeKey = 'cat'; // 10% protector cat
+
+      const def = TARGET_TYPES[typeKey];
+      const fromLeft = Math.random() < 0.5;
+      const startX = fromLeft ? -def.radius - 15 : C_WIDTH + def.radius + 15;
+      const speedX = (fromLeft ? 1 : -1) * (def.baseSpeed + Math.random() * 0.7);
+
+      // Height between upper sky and graveyard horizon (60px to 320px)
+      const startY = 70 + Math.random() * 240;
+
+      targets.push({
+        type: typeKey,
+        icon: def.icon,
+        points: def.points,
+        radius: def.radius,
+        penalty: def.penalty,
+        x: startX,
+        y: startY,
+        baseY: startY,
+        vx: speedX,
+        vy: 0,
+        sineOffset: Math.random() * Math.PI * 2,
+        sineSpeed: 0.04 + Math.random() * 0.03,
+        amplitude: 15 + Math.random() * 25,
+        alive: true,
+        facingRight: fromLeft
+      });
+    }
+
+    /* ==========================================================================
+       SETUP & RESET
+       ========================================================================== */
+    function initGame() {
+      if (animLoopId) {
+        cancelAnimationFrame(animLoopId);
+        animLoopId = null;
+      }
+
+      hits = 0;
+      score = 0;
+      totalShots = 0;
+      targetsHit = 0;
+      isVictory = false;
+
+      targets = [];
+      particles = [];
+      floatingTexts = [];
+      spawnTimer = 0;
+
+      victoryModal.classList.remove('active');
+      vignette.classList.remove('danger');
+
+      updateHUD();
+
+      // Spawn initial 3 targets
+      spawnTarget();
+      spawnTarget();
+      spawnTarget();
+
+      lastFrameTime = performance.now();
+      accumulator = 0;
+      animLoopId = requestAnimationFrame(gameLoop);
+    }
+
+    function updateHUD() {
+      hitsDisplay.textContent = `${hits} / ${TARGET_HITS}`;
+      scoreDisplay.textContent = score;
+
+      const acc = totalShots > 0 ? Math.round((targetsHit / totalShots) * 100) : 100;
+      accuracyDisplay.textContent = `${acc}%`;
+
+      const progress = Math.min(100, (hits / TARGET_HITS) * 100);
+      progressBar.style.width = `${progress}%`;
+    }
+
+    /* ==========================================================================
+       SHOOTING & COLLISION LOGIC
+       ========================================================================== */
+    function handleShoot(clientX, clientY) {
+      if (isVictory) return;
+      sound.init();
+      sound.playShoot();
+
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const clickX = (clientX - rect.left) * scaleX;
+      const clickY = (clientY - rect.top) * scaleY;
+
+      crosshair.x = clickX;
+      crosshair.y = clickY;
+      crosshair.visible = true;
+      crosshair.recoil = 8;
+
+      totalShots++;
+
+      // Spawn shot sparks
+      spawnShotFlash(clickX, clickY);
+
+      // Check hit from top-drawn targets (reverse order)
+      let hitTarget = null;
+      for (let i = targets.length - 1; i >= 0; i--) {
+        const t = targets[i];
+        if (!t.alive) continue;
+
+        const dist = Math.hypot(clickX - t.x, clickY - t.y);
+        // Generous shot tolerance (+10px) so mobile taps feel great
+        if (dist <= t.radius + 10) {
+          hitTarget = t;
+          break;
+        }
+      }
+
+      if (hitTarget) {
+        targetsHit++;
+        hitTarget.alive = false;
+
+        if (hitTarget.penalty) {
+          // Hit the cat! Penalty
+          sound.playHitCat();
+          score = Math.max(0, score + hitTarget.points);
+          showToast("⚠️ ¡Cuidado! Era el gato protector (-50 pts)");
+          vignette.classList.add('danger');
+          setTimeout(() => vignette.classList.remove('danger'), 300);
+          spawnFloatingText(hitTarget.x, hitTarget.y, `${hitTarget.points}`, '#ff2a4b');
+          spawnParticles(hitTarget.x, hitTarget.y, '#ff2a4b', 14);
+        } else {
+          // Success hit!
+          hits++;
+          score += hitTarget.points;
+
+          if (hitTarget.type === 'witch') {
+            sound.playHitWitch();
+            spawnParticles(hitTarget.x, hitTarget.y, '#c042ff', 18);
+            spawnFloatingText(hitTarget.x, hitTarget.y, `+${hitTarget.points}`, '#c042ff');
+          } else if (hitTarget.type === 'pumpkin') {
+            sound.playExplode();
+            spawnParticles(hitTarget.x, hitTarget.y, '#ff7518', 22);
+            spawnFloatingText(hitTarget.x, hitTarget.y, `+${hitTarget.points} ¡BOOM!`, '#ff7518');
+
+            // Pumpkin blast hits any adjacent target within 75px
+            targets.forEach(other => {
+              if (other.alive && Math.hypot(other.x - hitTarget.x, other.y - hitTarget.y) <= 75) {
+                other.alive = false;
+                hits++;
+                score += other.points;
+                spawnParticles(other.x, other.y, '#ffd24d', 14);
+                spawnFloatingText(other.x, other.y, `+${other.points}`, '#ffd24d');
+              }
+            });
+          } else {
+            sound.playHitCritter();
+            spawnParticles(hitTarget.x, hitTarget.y, '#39ff14', 14);
+            spawnFloatingText(hitTarget.x, hitTarget.y, `+${hitTarget.points}`, '#39ff14');
+          }
+
+          if (hits >= TARGET_HITS) {
+            triggerVictory();
+          }
+        }
+      }
+
+      updateHUD();
+    }
+
+    function triggerVictory() {
+      isVictory = true;
+      sound.playVictory();
+
+      try {
+        localStorage.setItem('krypt_day_15_cleared', 'true');
+      } catch(e){}
+
+      setTimeout(() => {
+        victoryModal.classList.add('active');
+      }, 600);
+    }
+
+    /* ==========================================================================
+       MAIN LOOP & PHYSICS (Fixed Timestep 60Hz)
+       ========================================================================== */
+    function gameLoop(now) {
+      let dt = now - lastFrameTime;
+      if (dt > 100) dt = 100;
+      lastFrameTime = now;
+      accumulator += dt;
+
+      while (accumulator >= STEP_MS) {
+        updatePhysics();
+        accumulator -= STEP_MS;
+      }
+
+      draw();
+      animLoopId = requestAnimationFrame(gameLoop);
+    }
+
+    function updatePhysics() {
+      if (isVictory) return;
+
+      // 1. Spawning
+      spawnTimer++;
+      if (spawnTimer >= SPAWN_INTERVAL && targets.length < 7) {
+        spawnTimer = 0;
+        spawnTarget();
+      }
+
+      // 2. Move targets along sine wave paths
+      targets.forEach(t => {
+        t.x += t.vx;
+        t.sineOffset += t.sineSpeed;
+        t.y = t.baseY + Math.sin(t.sineOffset) * t.amplitude;
+      });
+
+      // Filter out offscreen or dead targets
+      targets = targets.filter(t => {
+        if (!t.alive) return false;
+        if (t.vx > 0 && t.x > C_WIDTH + 60) return false;
+        if (t.vx < 0 && t.x < -60) return false;
+        return true;
+      });
+
+      // 3. Update particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.alpha -= 0.035;
+        if (pt.alpha <= 0) particles.splice(i, 1);
+      }
+
+      // 4. Update floating score texts
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y += ft.vy;
+        ft.alpha -= 0.025;
+        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+      }
+
+      // 5. Crosshair recoil relaxation
+      if (crosshair.recoil > 0) crosshair.recoil *= 0.85;
+    }
+
+    /* ==========================================================================
+       PARTICLES & VISUAL FX
+       ========================================================================== */
+    function spawnShotFlash(x, y) {
+      for (let i = 0; i < 6; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 4 + 2;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          color: '#ffffff',
+          size: Math.random() * 3 + 1,
+          alpha: 1
+        });
+      }
+    }
+
+    function spawnParticles(x, y, color, count = 12) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 3.5 + 1.2;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color: color,
+          size: Math.random() * 4 + 2,
+          alpha: 1
+        });
+      }
+    }
+
+    function spawnFloatingText(x, y, text, color) {
+      floatingTexts.push({
+        x: x,
+        y: y - 10,
+        text: text,
+        color: color,
+        vy: -1.5,
+        alpha: 1
+      });
+    }
+
+    /* ==========================================================================
+       RENDERING
+       ========================================================================== */
+    function draw() {
+      ctx.clearRect(0, 0, C_WIDTH, C_HEIGHT);
+
+      // 1. Spooky Night Sky Background
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, C_HEIGHT);
+      skyGrad.addColorStop(0, '#0d0818');
+      skyGrad.addColorStop(0.65, '#161e1a');
+      skyGrad.addColorStop(1, '#080d09');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, C_WIDTH, C_HEIGHT);
+
+      // 2. Giant Blood/Gold Full Moon
+      const moonX = C_WIDTH / 2;
+      const moonY = 135;
+      const moonRadius = 65;
+
+      // Outer Moon Glow
+      const glowGrad = ctx.createRadialGradient(moonX, moonY, moonRadius * 0.5, moonX, moonY, moonRadius * 1.8);
+      glowGrad.addColorStop(0, 'rgba(255, 210, 77, 0.45)');
+      glowGrad.addColorStop(0.5, 'rgba(255, 117, 24, 0.2)');
+      glowGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = glowGrad;
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, moonRadius * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Moon Body
+      ctx.fillStyle = '#ffeaa7';
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Moon Craters
+      ctx.fillStyle = 'rgba(200, 160, 80, 0.25)';
+      ctx.beginPath();
+      ctx.arc(moonX - 22, moonY - 14, 14, 0, Math.PI * 2);
+      ctx.arc(moonX + 18, moonY + 20, 18, 0, Math.PI * 2);
+      ctx.arc(moonX + 24, moonY - 18, 9, 0, Math.PI * 2);
+      ctx.arc(moonX - 10, moonY + 28, 11, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. Cemetery Silhouette Horizon (Tombstones and bare dead trees)
+      ctx.fillStyle = '#0a100c';
+      ctx.beginPath();
+      ctx.moveTo(0, C_HEIGHT);
+      ctx.lineTo(0, 395);
+      // Small hills & tombstones silhouette
+      ctx.lineTo(40, 390);
+      ctx.lineTo(40, 375); // tomb 1
+      ctx.lineTo(55, 375);
+      ctx.lineTo(55, 392);
+      ctx.lineTo(110, 388);
+      ctx.lineTo(115, 365); // cross 1
+      ctx.lineTo(125, 365);
+      ctx.lineTo(125, 388);
+      ctx.lineTo(200, 392);
+      ctx.lineTo(260, 384);
+      ctx.lineTo(265, 368); // tomb 2
+      ctx.lineTo(285, 368);
+      ctx.lineTo(285, 386);
+      ctx.lineTo(340, 390);
+      ctx.lineTo(345, 360); // cross 2
+      ctx.lineTo(355, 360);
+      ctx.lineTo(355, 392);
+      ctx.lineTo(C_WIDTH, 395);
+      ctx.lineTo(C_WIDTH, C_HEIGHT);
+      ctx.closePath();
+      ctx.fill();
+
+      // Cemetery fence posts
+      ctx.strokeStyle = '#18241d';
+      ctx.lineWidth = 2;
+      for (let x = 15; x < C_WIDTH; x += 30) {
+        ctx.beginPath();
+        ctx.moveTo(x, 390);
+        ctx.lineTo(x, 370);
+        ctx.stroke();
+      }
+
+      // 4. Draw Flying Targets
+      targets.forEach(t => {
+        if (!t.alive) return;
+        ctx.save();
+        ctx.translate(t.x, t.y);
+        if (!t.facingRight) {
+          ctx.scale(-1, 1);
+        }
+
+        // Draw target emoji sprite
+        ctx.font = `${t.radius * 1.5}px Montserrat`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(t.icon, 0, 0);
+
+        // Faint target glow aura
+        ctx.beginPath();
+        ctx.arc(0, 0, t.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = t.penalty ? 'rgba(255, 42, 75, 0.4)' : 'rgba(57, 255, 20, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.restore();
+      });
+
+      // 5. Draw Particles
+      particles.forEach(pt => {
+        ctx.fillStyle = pt.color;
+        ctx.globalAlpha = Math.max(0, pt.alpha);
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+
+      // 6. Draw Floating Score Texts
+      floatingTexts.forEach(ft => {
+        ctx.save();
+        ctx.font = 'bold 15px Montserrat';
+        ctx.fillStyle = ft.color;
+        ctx.globalAlpha = Math.max(0, ft.alpha);
+        ctx.textAlign = 'center';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      });
+
+      // 7. Draw Custom Crosshair
+      if (crosshair.visible) {
+        const r = 18 + crosshair.recoil;
+        ctx.save();
+        ctx.strokeStyle = '#39ff14';
+        ctx.lineWidth = 1.8;
+        ctx.shadowColor = '#39ff14';
+        ctx.shadowBlur = 6;
+
+        // Circle
+        ctx.beginPath();
+        ctx.arc(crosshair.x, crosshair.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Crosshairs
+        ctx.beginPath();
+        ctx.moveTo(crosshair.x - r - 5, crosshair.y);
+        ctx.lineTo(crosshair.x - r + 6, crosshair.y);
+        ctx.moveTo(crosshair.x + r - 6, crosshair.y);
+        ctx.lineTo(crosshair.x + r + 5, crosshair.y);
+        ctx.moveTo(crosshair.x, crosshair.y - r - 5);
+        ctx.lineTo(crosshair.x, crosshair.y - r + 6);
+        ctx.moveTo(crosshair.x, crosshair.y + r - 6);
+        ctx.lineTo(crosshair.x, crosshair.y + r + 5);
+        ctx.stroke();
+
+        // Center dot
+        ctx.fillStyle = '#ff2a4b';
+        ctx.beginPath();
+        ctx.arc(crosshair.x, crosshair.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    /* ==========================================================================
+       USER INPUTS (Desktop Mouse & Mobile Touch)
+       ========================================================================== */
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      handleShoot(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      crosshair.x = (e.clientX - rect.left) * scaleX;
+      crosshair.y = (e.clientY - rect.top) * scaleY;
+      crosshair.visible = true;
+    });
+
+    canvas.addEventListener('pointerleave', () => {
+      crosshair.visible = false;
+    });
+
+    // Restarts
+    document.getElementById('btnRestartVictory').addEventListener('click', initGame);
+
+    /* Discord Copy */
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 15 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    /* Audio Toggle & Toast */
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // Start
+    initGame();
+  </script>
+</body>
+</html>

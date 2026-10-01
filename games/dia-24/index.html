@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 24: El Descenso al Abismo - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --board-border: #283c2f;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --spectral-purple: #c042ff;
+      --spectral-glow: rgba(192, 66, 255, 0.55);
+      --spectral-cyan: #00e5ff;
+      --spectral-cyan-glow: rgba(0, 229, 255, 0.55);
+      --moon-gold: #ffd24d;
+      --moon-glow: rgba(255, 210, 77, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(45, 20, 50, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 85%, rgba(12, 28, 20, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 14px 12px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.18;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    .vignette-overlay.flash-gold {
+      box-shadow: inset 0 0 140px rgba(255, 210, 77, 0.85);
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: #fff;
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--spectral-cyan);
+      box-shadow: 0 0 10px var(--spectral-cyan-glow);
+      color: #fff;
+    }
+
+    /* Titles */
+    .title-banner {
+      text-align: center;
+    }
+
+    .curse-day {
+      font-size: 0.72rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--spectral-cyan);
+      font-weight: 800;
+      text-shadow: 0 0 8px var(--spectral-cyan-glow);
+    }
+
+    .curse-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.45rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #fff;
+      text-shadow: 0 0 12px var(--pumpkin-glow);
+      margin-top: -2px;
+    }
+
+    .curse-subtitle {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 22, 17, 0.85);
+      border: 1px solid #283c2f;
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .hud-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .hud-value {
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .hud-value.depth {
+      color: var(--moon-gold);
+      text-shadow: 0 0 8px var(--moon-glow);
+    }
+
+    .hud-hearts {
+      display: flex;
+      gap: 3px;
+      font-size: 0.95rem;
+    }
+
+    /* Ammo Gauge */
+    .ammo-gauge {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .ammo-pip {
+      width: 5px;
+      height: 14px;
+      background: #39ff14;
+      border-radius: 2px;
+      box-shadow: 0 0 6px var(--toxic-glow);
+      transition: all 0.15s ease;
+    }
+
+    .ammo-pip.empty {
+      background: #1a2c1f;
+      box-shadow: none;
+      opacity: 0.35;
+    }
+
+    /* Canvas Arena */
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      background: #080c0a;
+      border: 2px solid var(--board-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.85), inset 0 0 40px rgba(0, 0, 0, 0.8);
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* Mobile Controls Bar */
+    .mobile-controls-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 0;
+    }
+
+    .touch-btn {
+      background: rgba(20, 32, 25, 0.8);
+      border: 1px solid #334d3b;
+      color: var(--parchment);
+      border-radius: 8px;
+      font-size: 1.25rem;
+      font-weight: 900;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      transition: background 0.1s ease;
+    }
+
+    .touch-btn:active {
+      background: #274533;
+      border-color: var(--toxic-green);
+    }
+
+    .touch-btn.dir {
+      flex: 1;
+    }
+
+    .touch-btn.fire {
+      flex: 1.8;
+      background: linear-gradient(135deg, #7a2214, #44120a);
+      border-color: var(--pumpkin-orange);
+      color: #fff;
+      font-family: 'Cinzel', serif;
+      font-size: 0.88rem;
+      letter-spacing: 1px;
+      box-shadow: 0 0 10px var(--pumpkin-glow);
+    }
+
+    .touch-btn.fire:active {
+      background: linear-gradient(135deg, #a52f1b, #59160d);
+    }
+
+    /* Start Overlay */
+    .arena-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7, 10, 8, 0.88);
+      backdrop-filter: blur(4px);
+      padding: 20px;
+      text-align: center;
+      gap: 12px;
+      z-index: 20;
+      transition: opacity 0.25s ease;
+    }
+
+    .arena-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .overlay-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2.1rem;
+      letter-spacing: 2px;
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 14px var(--pumpkin-glow);
+    }
+
+    .overlay-desc {
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: var(--parchment);
+      max-width: 320px;
+    }
+
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(15, 25, 20, 0.85);
+      border: 1px solid #283c2f;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #1c683b, #0f4024);
+      color: #fff;
+      border: 1px solid var(--toxic-green);
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 0 15px var(--toxic-glow);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 22px var(--toxic-glow);
+      background: linear-gradient(135deg, #24844c, #145530);
+    }
+
+    /* Modals (Victory / Defeat) */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 16px;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 380px;
+      background: #0f1612;
+      border: 2px solid #32503d;
+      border-radius: 12px;
+      padding: 22px 18px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.9);
+      position: relative;
+      animation: modalPop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .modal-box.victory {
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 30px var(--moon-glow);
+    }
+
+    .modal-box.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 30px var(--blood-glow);
+    }
+
+    @keyframes modalPop {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-icon {
+      font-size: 2.4rem;
+      filter: drop-shadow(0 0 10px var(--moon-gold));
+    }
+
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .modal-desc {
+      font-size: 0.82rem;
+      color: var(--parchment);
+      line-height: 1.45;
+    }
+
+    /* Secret Parchment Scroll */
+    .secret-scroll {
+      width: 100%;
+      background: linear-gradient(180deg, #1b281f 0%, #111a14 100%);
+      border: 1px dashed var(--toxic-green);
+      border-radius: 8px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scroll-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--toxic-green);
+      font-weight: 800;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', monospace;
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #fff;
+      text-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 16px rgba(88, 101, 242, 0.7);
+    }
+
+    .btn-action.discord.copied {
+      background: #23a55a;
+    }
+
+    .btn-action.advance {
+      background: linear-gradient(135deg, #274b35, #142a1e);
+      color: var(--parchment);
+      border: 1px solid #3e684d;
+    }
+
+    .btn-action.advance:hover {
+      border-color: var(--toxic-green);
+      color: #fff;
+    }
+
+    .btn-action.retry {
+      background: linear-gradient(135deg, #7a1d2e, #47101a);
+      color: #fff;
+      border: 1px solid var(--blood-red);
+      box-shadow: 0 0 14px var(--blood-glow);
+    }
+
+    .btn-action.retry:hover {
+      background: linear-gradient(135deg, #962539, #5e1623);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #142017;
+      border: 1px solid var(--toxic-green);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      box-shadow: 0 0 16px var(--toxic-glow);
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient FX -->
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <!-- Game Shell -->
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>⚰️</span>
+        <span>Cementerio</span>
+      </a>
+
+      <div class="header-controls">
+        <button class="btn-icon" id="soundToggleBtn">🔊 Audio</button>
+        <button class="btn-icon" id="restartBtn">🔄 Reiniciar</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <div class="curse-day">Día XXIV • Maleficio de la Fosa</div>
+      <h1 class="curse-title">El Descenso al Abismo</h1>
+      <div class="curse-subtitle">Cae por la fosa ancestral disparando ráfagas sagradas para flotar</div>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-item">
+        <span class="hud-label">Profundidad</span>
+        <span class="hud-value depth" id="depthDisplay">0m / 300m</span>
+      </div>
+
+      <div class="hud-item">
+        <span class="hud-label">Munición</span>
+        <div class="ammo-gauge" id="ammoGauge">
+          <!-- 8 ammo pips rendered via JS -->
+        </div>
+      </div>
+
+      <div class="hud-item">
+        <span class="hud-label">Vidas</span>
+        <div class="hud-hearts" id="heartsContainer">
+          <span>❤️</span><span>❤️</span><span>❤️</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas Wrapper -->
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="gameCanvas" width="420" height="540"></canvas>
+
+      <!-- Start Overlay -->
+      <div class="arena-overlay" id="startOverlay">
+        <h2 class="overlay-title">EL DESCENSO AL ABISMO</h2>
+        <p class="overlay-desc">
+          Bajo la cripta se abre una fosa vertical sin fin. Tus <strong>Botas Sagradas</strong> disparan proyectiles hacia abajo para frenar tu caída y reventar a los monstruos.
+        </p>
+
+        <div class="legend-row">
+          <div class="legend-item">🦇 <span>Murciélago (Pisa/Dispara)</span></div>
+          <div class="legend-item">💀 <span>Cráneo (Pisa/Dispara)</span></div>
+          <div class="legend-item">🔴 <span>Gárgola Cornuda (¡Solo Disparo!)</span></div>
+        </div>
+
+        <button class="btn-start" id="btnStartGame">
+          <span>🕳️</span>
+          <span>Iniciar Descenso</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Virtual Controls -->
+    <div class="mobile-controls-bar">
+      <button class="touch-btn dir" id="btnTouchLeft">◄</button>
+      <button class="touch-btn dir" id="btnTouchRight">►</button>
+      <button class="touch-btn fire" id="btnTouchFire">🔥 Disparar / Saltar</button>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">🕳️✨</div>
+      <h2 class="modal-title">¡Has Tocado Fondo!</h2>
+      <p class="modal-desc">
+        Descendiste los 300 metros de la fosa maldita aterrizando ileso sobre el Altar de las Profundidades.
+      </p>
+
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display">ABISMO-PROFUNDO</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action advance" id="btnContinueEndless">
+        <span>♾️</span>
+        <span>Descenso Infinito</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box defeat">
+      <div class="modal-icon">💀💥</div>
+      <h2 class="modal-title">¡Caída Mortal!</h2>
+      <p class="modal-desc">
+        Las criaturas de la fosa acabaron con tus vidas en el abismo.
+      </p>
+
+      <div style="font-size: 0.9rem; color: var(--parchment);">
+        Profundidad alcanzada: <strong id="defeatDepth" style="color: var(--moon-gold);">0m</strong>
+      </div>
+
+      <button class="btn-action retry" id="btnRetry">
+        <span>🔄</span>
+        <span>Reintentar Descenso</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Huir al Cementerio</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Audio and Game Logic -->
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO CONTROLLER
+       ========================================================================== */
+    class DownwellAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playJump() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(540, now + 0.1);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.11);
+      }
+
+      playShoot() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Gunblast + punch
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(450, now);
+        osc.frequency.exponentialRampToValueAtTime(60, now + 0.1);
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.11);
+      }
+
+      playStomp() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(620, now + 0.12);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.13);
+      }
+
+      playReload() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1100, now + 0.05);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+
+      playHurt() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.25);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.26);
+      }
+
+      playGem() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [659.25, 987.77];
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + i * 0.04);
+          gain.gain.setValueAtTime(0.12, now + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.12);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.13);
+        });
+      }
+
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const fanfare = [
+          { f: 523.25, t: 0.0, d: 0.25 },
+          { f: 659.25, t: 0.15, d: 0.25 },
+          { f: 783.99, t: 0.3, d: 0.35 },
+          { f: 1046.50, t: 0.5, d: 0.75 }
+        ];
+        fanfare.forEach(n => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(n.f, now + n.t);
+          gain.gain.setValueAtTime(0.24, now + n.t);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + n.t);
+          osc.stop(now + n.t + n.d + 0.05);
+        });
+      }
+
+      playClick() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.05);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+    }
+
+    const sound = new DownwellAudio();
+
+    /* ==========================================================================
+       CONSTANTS & CONFIG
+       ========================================================================== */
+    const SECRET_KEYWORD = "ABISMO-PROFUNDO";
+    const TARGET_DEPTH_METERS = 300;
+    const PIXELS_PER_METER = 32;
+    const TARGET_DEPTH_Y = TARGET_DEPTH_METERS * PIXELS_PER_METER; // 9600px
+    const MAX_AMMO = 8;
+    const MAX_LIVES = 3;
+
+    /* DOM References */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const depthDisplay = document.getElementById('depthDisplay');
+    const ammoGauge = document.getElementById('ammoGauge');
+    const heartsContainer = document.getElementById('heartsContainer');
+    const startOverlay = document.getElementById('startOverlay');
+    const btnStartGame = document.getElementById('btnStartGame');
+    const vignette = document.getElementById('vignette');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const defeatDepth = document.getElementById('defeatDepth');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    const btnContinueEndless = document.getElementById('btnContinueEndless');
+    const btnRetry = document.getElementById('btnRetry');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const toast = document.getElementById('toast');
+
+    const btnTouchLeft = document.getElementById('btnTouchLeft');
+    const btnTouchRight = document.getElementById('btnTouchRight');
+    const btnTouchFire = document.getElementById('btnTouchFire');
+
+    /* ==========================================================================
+       GAME ENGINE STATE
+       ========================================================================== */
+    let isPlaying = false;
+    let isGameOver = false;
+    let hasWon = false;
+    let isEndless = false;
+
+    let lives = MAX_LIVES;
+    let ammo = MAX_AMMO;
+    let currentDepthMeters = 0;
+    let cameraY = 0;
+
+    // Player Object
+    const player = {
+      x: 210,
+      y: 100,
+      w: 18,
+      h: 24,
+      vx: 0,
+      vy: 0,
+      speed: 3.8,
+      gravity: 0.38,
+      maxFallSpeed: 7.2,
+      onGround: false,
+      invulnerableTimer: 0
+    };
+
+    // World Entities
+    let platforms = [];
+    let enemies = [];
+    let bullets = [];
+    let gems = [];
+    let particles = [];
+    let floatingTexts = [];
+
+    let nextGenY = 300;
+
+    // Key input state
+    const keys = { left: false, right: false, fire: false };
+
+    /* ==========================================================================
+       PROCEDURAL LEVEL GENERATION
+       ========================================================================== */
+    function generateWorldSegment(startY, endY) {
+      let currentY = startY;
+
+      while (currentY < endY) {
+        // If near end of story depth, spawn final Altar
+        if (!isEndless && currentY >= TARGET_DEPTH_Y) {
+          // Ancient Vault Sanctuary Floor
+          platforms.push({
+            x: 20,
+            y: TARGET_DEPTH_Y + 120,
+            w: 380,
+            h: 30,
+            isAltar: true
+          });
+          return;
+        }
+
+        // Distance between platform layers
+        currentY += 100 + Math.random() * 60;
+
+        // Pattern 1: Left & Right ledges
+        if (Math.random() < 0.45) {
+          const w1 = 70 + Math.random() * 60;
+          platforms.push({ x: 18, y: currentY, w: w1, h: 14 });
+          const w2 = 70 + Math.random() * 60;
+          platforms.push({ x: 402 - w2, y: currentY, w: w2, h: 14 });
+        } 
+        // Pattern 2: Center floating slab
+        else if (Math.random() < 0.75) {
+          const w = 110 + Math.random() * 90;
+          const x = 50 + Math.random() * (320 - w);
+          platforms.push({ x: x, y: currentY, w: w, h: 14 });
+        }
+        // Pattern 3: Stepped platforms
+        else {
+          platforms.push({ x: 30, y: currentY, w: 90, h: 14 });
+          platforms.push({ x: 280, y: currentY + 40, w: 90, h: 14 });
+        }
+
+        // Spawn Enemies
+        if (Math.random() < 0.65) {
+          spawnRandomEnemy(currentY - 20);
+        }
+
+        // Spawn Gems
+        if (Math.random() < 0.5) {
+          gems.push({
+            x: 60 + Math.random() * 300,
+            y: currentY - 30,
+            r: 7,
+            collected: false
+          });
+        }
+      }
+    }
+
+    function spawnRandomEnemy(y) {
+      const x = 50 + Math.random() * 320;
+      const rand = Math.random();
+
+      if (rand < 0.45) {
+        // Bat: flies horizontally
+        enemies.push({
+          type: 'bat',
+          icon: '🦇',
+          x: x,
+          y: y,
+          w: 22,
+          h: 18,
+          vx: Math.random() < 0.5 ? -1.2 : 1.2,
+          vy: 0,
+          hp: 1,
+          canStomp: true
+        });
+      } else if (rand < 0.75) {
+        // Skull: bobs vertically
+        enemies.push({
+          type: 'skull',
+          icon: '💀',
+          x: x,
+          y: y,
+          w: 20,
+          h: 22,
+          vx: 0,
+          vy: -0.8,
+          baseY: y,
+          hp: 2,
+          canStomp: true
+        });
+      } else {
+        // Spiked Gargoyle: red spikes on head, CANNOT be stomped!
+        enemies.push({
+          type: 'spiked',
+          icon: '🔴',
+          x: x,
+          y: y,
+          w: 24,
+          h: 24,
+          vx: Math.random() < 0.5 ? -0.8 : 0.8,
+          vy: 0,
+          hp: 3,
+          canStomp: false
+        });
+      }
+    }
+
+    /* ==========================================================================
+       PLAYER LOGIC & GUNBOOTS
+       ========================================================================== */
+    function fireGunboots() {
+      if (player.onGround) {
+        // Jump off ground
+        player.vy = -7.4;
+        player.onGround = false;
+        sound.playJump();
+        createGroundPuff(player.x, player.y + player.h);
+        return;
+      }
+
+      // In air: Shoot downwards with Gunboots
+      if (ammo <= 0) return;
+
+      ammo--;
+      updateAmmoUI();
+      sound.playShoot();
+
+      // Upward recoil counter-acting gravity (floating effect)
+      player.vy = Math.min(-2.8, player.vy - 3.2);
+
+      // Spawn 2 bullets firing downwards with slight spread
+      bullets.push({
+        x: player.x - 4,
+        y: player.y + player.h + 2,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: 11,
+        life: 25
+      });
+
+      bullets.push({
+        x: player.x + 4,
+        y: player.y + player.h + 2,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: 11,
+        life: 25
+      });
+
+      // Muzzle spark particles
+      for (let i = 0; i < 6; i++) {
+        particles.push(new Particle(
+          player.x, player.y + player.h, '#ffd24d', 2.5,
+          (Math.random() - 0.5) * 4, Math.random() * 3 + 2, 12
+        ));
+      }
+    }
+
+    function rechargeAmmo() {
+      if (ammo < MAX_AMMO) {
+        ammo = MAX_AMMO;
+        sound.playReload();
+        updateAmmoUI();
+      }
+    }
+
+    function updatePlayer(dtFactor) {
+      // Horizontal movement
+      if (keys.left) {
+        player.vx = -player.speed;
+      } else if (keys.right) {
+        player.vx = player.speed;
+      } else {
+        player.vx *= 0.7; // friction
+      }
+
+      // Gravity
+      player.vy += player.gravity * dtFactor;
+      if (player.vy > player.maxFallSpeed) player.vy = player.maxFallSpeed;
+
+      // Apply speeds
+      player.x += player.vx * dtFactor;
+      player.y += player.vy * dtFactor;
+
+      // Constrain within well walls (18px left wall, 402px right wall)
+      const halfW = player.w / 2;
+      if (player.x - halfW < 18) {
+        player.x = 18 + halfW;
+        player.vx = 0;
+      } else if (player.x + halfW > 402) {
+        player.x = 402 - halfW;
+        player.vx = 0;
+      }
+
+      // Platform Collisions (Only when falling downwards)
+      let groundedThisFrame = false;
+      for (const plat of platforms) {
+        if (
+          player.vy >= 0 &&
+          player.y + player.h >= plat.y &&
+          player.y + player.h <= plat.y + plat.h + player.vy + 2 &&
+          player.x + halfW >= plat.x &&
+          player.x - halfW <= plat.x + plat.w
+        ) {
+          player.y = plat.y - player.h;
+          player.vy = 0;
+          groundedThisFrame = true;
+
+          // Check if landed on final Vault Altar!
+          if (plat.isAltar && !hasWon) {
+            handleVictory();
+            return;
+          }
+          break;
+        }
+      }
+
+      if (groundedThisFrame) {
+        if (!player.onGround) {
+          rechargeAmmo();
+        }
+        player.onGround = true;
+      } else {
+        player.onGround = false;
+      }
+
+      // Invulnerability flicker timer
+      if (player.invulnerableTimer > 0) {
+        player.invulnerableTimer -= dtFactor;
+      }
+
+      // Camera smoothly tracks player downward
+      const targetCamY = player.y - 200;
+      if (targetCamY > cameraY) {
+        cameraY += (targetCamY - cameraY) * 0.15 * dtFactor;
+      }
+
+      // Update depth counter
+      currentDepthMeters = Math.max(0, Math.floor(player.y / PIXELS_PER_METER));
+      depthDisplay.textContent = hasWon 
+        ? `${TARGET_DEPTH_METERS}m (¡Altar Sagrado!)` 
+        : `${Math.min(currentDepthMeters, TARGET_DEPTH_METERS)}m / ${TARGET_DEPTH_METERS}m`;
+
+      // Check if need to generate next segment
+      if (cameraY + 800 > nextGenY) {
+        generateWorldSegment(nextGenY, nextGenY + 700);
+        nextGenY += 700;
+      }
+    }
+
+    /* ==========================================================================
+       BULLETS, ENEMIES & STOMPING LOGIC
+       ========================================================================== */
+    function updateBullets(dtFactor) {
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx * dtFactor;
+        b.y += b.vy * dtFactor;
+        b.life -= dtFactor;
+
+        // Check collision with platforms
+        let hit = false;
+        for (const plat of platforms) {
+          if (b.x >= plat.x && b.x <= plat.x + plat.w && b.y >= plat.y && b.y <= plat.y + plat.h) {
+            hit = true;
+            break;
+          }
+        }
+
+        // Check collision with enemies
+        for (let j = enemies.length - 1; j >= 0; j--) {
+          const e = enemies[j];
+          if (
+            b.x >= e.x - e.w / 2 &&
+            b.x <= e.x + e.w / 2 &&
+            b.y >= e.y - e.h / 2 &&
+            b.y <= e.y + e.h / 2
+          ) {
+            e.hp--;
+            hit = true;
+            createBloodSparks(e.x, e.y, '#ffd24d');
+
+            if (e.hp <= 0) {
+              enemies.splice(j, 1);
+              createDeathParticles(e.x, e.y);
+            }
+            break;
+          }
+        }
+
+        if (hit || b.life <= 0) {
+          bullets.splice(i, 1);
+        }
+      }
+    }
+
+    function updateEnemies(dtFactor) {
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+
+        if (e.type === 'bat' || e.type === 'spiked') {
+          e.x += e.vx * dtFactor;
+          if (e.x - e.w / 2 < 20 || e.x + e.w / 2 > 400) {
+            e.vx = -e.vx;
+          }
+        } else if (e.type === 'skull') {
+          e.y += e.vy * dtFactor;
+          if (Math.abs(e.y - e.baseY) > 28) {
+            e.vy = -e.vy;
+          }
+        }
+
+        // Collision with Player
+        if (
+          player.invulnerableTimer <= 0 &&
+          player.x + player.w / 2 >= e.x - e.w / 2 &&
+          player.x - player.w / 2 <= e.x + e.w / 2 &&
+          player.y + player.h >= e.y - e.h / 2 &&
+          player.y <= e.y + e.h / 2
+        ) {
+          // Check if Player is falling ON TOP of enemy (STOMP!)
+          if (player.vy > 0 && player.y + player.h <= e.y + 4 && e.canStomp) {
+            // STOMP HIT!
+            sound.playStomp();
+            player.vy = -6.5; // bounce up
+            rechargeAmmo();
+            enemies.splice(i, 1);
+            createDeathParticles(e.x, e.y);
+            floatingTexts.push(new FloatingText("¡PISOTÓN!", e.x, e.y - 12, '#39ff14', 1.2));
+            continue;
+          } else {
+            // Player takes damage!
+            hurtPlayer();
+          }
+        }
+      }
+    }
+
+    function updateGems(dtFactor) {
+      for (let i = gems.length - 1; i >= 0; i--) {
+        const g = gems[i];
+        if (g.collected) continue;
+
+        const dist = Math.hypot(player.x - g.x, (player.y + player.h / 2) - g.y);
+        if (dist <= g.r + player.w / 2) {
+          g.collected = true;
+          sound.playGem();
+          gems.splice(i, 1);
+          floatingTexts.push(new FloatingText("+💎", g.x, g.y, '#00e5ff', 1.0));
+        }
+      }
+    }
+
+    function hurtPlayer() {
+      lives--;
+      player.invulnerableTimer = 60;
+      sound.playHurt();
+      vignette.classList.add('danger');
+      setTimeout(() => vignette.classList.remove('danger'), 350);
+      updateHeartsUI();
+
+      if (lives <= 0) {
+        handleGameOver();
+      }
+    }
+
+    function handleGameOver() {
+      isGameOver = true;
+      isPlaying = false;
+      defeatDepth.textContent = `${currentDepthMeters}m`;
+      defeatModal.classList.add('active');
+    }
+
+    function handleVictory() {
+      hasWon = true;
+      isPlaying = false;
+      sound.playVictory();
+      localStorage.setItem('krypt_day_24_cleared', 'true');
+      vignette.classList.add('flash-gold');
+      setTimeout(() => vignette.classList.remove('flash-gold'), 600);
+      showToast("🌟 ¡HAS TOCADO EL FONDO DEL ABISMO! Maleficio dominado.");
+
+      setTimeout(() => {
+        victoryModal.classList.add('active');
+      }, 700);
+    }
+
+    /* ==========================================================================
+       PARTICLE & TEXT FX
+       ========================================================================== */
+    class Particle {
+      constructor(x, y, color, size, vx, vy, life) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.size = size;
+        this.vx = vx;
+        this.vy = vy;
+        this.maxLife = life;
+        this.life = life;
+      }
+
+      update(dtFactor) {
+        this.x += this.vx * dtFactor;
+        this.y += this.vy * dtFactor;
+        this.life -= dtFactor;
+      }
+
+      draw(c, camY) {
+        if (this.life <= 0) return;
+        const progress = this.life / this.maxLife;
+        c.save();
+        c.globalAlpha = progress;
+        c.fillStyle = this.color;
+        c.beginPath();
+        c.arc(this.x, this.y - camY, this.size * progress, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    class FloatingText {
+      constructor(text, x, y, color, scale = 1.0) {
+        this.text = text;
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.scale = scale;
+        this.alpha = 1.0;
+      }
+
+      update(dtFactor) {
+        this.y -= 1.1 * dtFactor;
+        this.alpha -= 0.025 * dtFactor;
+      }
+
+      draw(c, camY) {
+        if (this.alpha <= 0) return;
+        c.save();
+        c.globalAlpha = this.alpha;
+        c.font = `900 ${Math.round(14 * this.scale)}px 'Cinzel', serif`;
+        c.textAlign = 'center';
+        c.fillStyle = this.color;
+        c.shadowColor = this.color;
+        c.shadowBlur = 6;
+        c.fillText(this.text, this.x, this.y - camY);
+        c.restore();
+      }
+    }
+
+    function createGroundPuff(x, y) {
+      for (let i = 0; i < 6; i++) {
+        particles.push(new Particle(x, y, '#2e4537', 3, (Math.random() - 0.5) * 3, -Math.random() * 1.5, 12));
+      }
+    }
+
+    function createBloodSparks(x, y, color) {
+      for (let i = 0; i < 6; i++) {
+        particles.push(new Particle(x, y, color, 2.5, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, 14));
+      }
+    }
+
+    function createDeathParticles(x, y) {
+      for (let i = 0; i < 14; i++) {
+        particles.push(new Particle(x, y, '#ff2a4b', 3.5, (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, 20));
+      }
+    }
+
+    /* ==========================================================================
+       MAIN DRAWING & RENDER LOOP
+       ========================================================================== */
+    let lastTimestamp = performance.now();
+
+    function gameLoop(now) {
+      const dt = Math.min(32, now - lastTimestamp);
+      lastTimestamp = now;
+      const dtFactor = dt / 16.666;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (isPlaying && !isGameOver) {
+        updatePlayer(dtFactor);
+        updateBullets(dtFactor);
+        updateEnemies(dtFactor);
+        updateGems(dtFactor);
+      }
+
+      // Draw Environment
+      drawWellWalls(ctx, cameraY);
+      drawPlatforms(ctx, cameraY);
+
+      // Draw Entities
+      gems.forEach(g => drawGem(ctx, g, cameraY));
+      bullets.forEach(b => drawBullet(ctx, b, cameraY));
+      enemies.forEach(e => drawEnemy(ctx, e, cameraY));
+      drawPlayer(ctx, cameraY);
+
+      // Draw Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.update(dtFactor);
+        p.draw(ctx, cameraY);
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      // Draw Floating Texts
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.update(dtFactor);
+        ft.draw(ctx, cameraY);
+        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function drawWellWalls(c, camY) {
+      // Deep stone bricks on left and right borders
+      c.fillStyle = '#111a14';
+      c.fillRect(0, 0, 18, canvas.height);
+      c.fillRect(402, 0, 18, canvas.height);
+
+      c.strokeStyle = '#23382b';
+      c.lineWidth = 2;
+      c.strokeRect(0, 0, 18, canvas.height);
+      c.strokeRect(402, 0, 18, canvas.height);
+
+      // Brick pattern texture
+      c.strokeStyle = 'rgba(40, 65, 50, 0.4)';
+      c.lineWidth = 1;
+      const offset = camY % 30;
+      for (let y = -offset; y < canvas.height; y += 30) {
+        c.beginPath();
+        c.moveTo(0, y); c.lineTo(18, y);
+        c.moveTo(402, y); c.lineTo(420, y);
+        c.stroke();
+      }
+    }
+
+    function drawPlatforms(c, camY) {
+      for (const plat of platforms) {
+        const drawY = plat.y - camY;
+        if (drawY < -50 || drawY > canvas.height + 50) continue;
+
+        if (plat.isAltar) {
+          // Final Gold Altar
+          c.fillStyle = '#223829';
+          c.fillRect(plat.x, drawY, plat.w, plat.h);
+          c.strokeStyle = '#ffd24d';
+          c.lineWidth = 3;
+          c.strokeRect(plat.x, drawY, plat.w, plat.h);
+
+          c.font = '20px Montserrat';
+          c.textAlign = 'center';
+          c.fillText('✨ ⚰️ ALTAR DE LAS PROFUNDIDADES ⚰️ ✨', plat.x + plat.w / 2, drawY + 22);
+        } else {
+          // Regular Crypt Stone Slabs
+          c.fillStyle = '#1c2d23';
+          c.fillRect(plat.x, drawY, plat.w, plat.h);
+          c.strokeStyle = '#32503d';
+          c.lineWidth = 2;
+          c.strokeRect(plat.x, drawY, plat.w, plat.h);
+
+          // Mossy top edge
+          c.fillStyle = '#2e5b38';
+          c.fillRect(plat.x + 2, drawY, plat.w - 4, 3);
+        }
+      }
+    }
+
+    function drawPlayer(c, camY) {
+      const drawY = player.y - camY;
+      c.save();
+      c.translate(player.x, drawY);
+
+      // Invulnerability flicker
+      if (player.invulnerableTimer > 0 && Math.floor(player.invulnerableTimer / 4) % 2 === 0) {
+        c.globalAlpha = 0.4;
+      }
+
+      // Knight Body
+      c.fillStyle = '#eae2ce';
+      c.beginPath();
+      c.roundRect(-player.w / 2, 0, player.w, player.h - 6, 4);
+      c.fill();
+      c.strokeStyle = '#283c2f';
+      c.lineWidth = 1.5;
+      c.stroke();
+
+      // Visor / eyes
+      c.fillStyle = '#0a100d';
+      c.fillRect(-5, 6, 10, 3);
+
+      // Gunboots on feet
+      c.fillStyle = '#39ff14';
+      c.shadowColor = '#39ff14';
+      c.shadowBlur = player.onGround ? 0 : 8;
+      c.fillRect(-player.w / 2, player.h - 6, 7, 6);
+      c.fillRect(player.w / 2 - 7, player.h - 6, 7, 6);
+
+      c.restore();
+    }
+
+    function drawEnemy(c, e, camY) {
+      const drawY = e.y - camY;
+      if (drawY < -50 || drawY > canvas.height + 50) return;
+
+      c.save();
+      c.translate(e.x, drawY);
+
+      // Enemy Icon
+      c.font = '22px Montserrat';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(e.icon, 0, 0);
+
+      // Spiked enemy extra warning crown
+      if (e.type === 'spiked') {
+        c.font = '12px Montserrat';
+        c.fillText('⚠️', 0, -18);
+      }
+
+      c.restore();
+    }
+
+    function drawBullet(c, b, camY) {
+      const drawY = b.y - camY;
+      c.save();
+      c.fillStyle = '#ffd24d';
+      c.shadowColor = '#ff7518';
+      c.shadowBlur = 8;
+      c.beginPath();
+      c.arc(b.x, drawY, 3, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+    }
+
+    function drawGem(c, g, camY) {
+      const drawY = g.y - camY;
+      if (drawY < -40 || drawY > canvas.height + 40) return;
+
+      c.save();
+      c.font = '16px Montserrat';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('💎', g.x, drawY);
+      c.restore();
+    }
+
+    /* ==========================================================================
+       UI UPDATES
+       ========================================================================== */
+    function updateAmmoUI() {
+      ammoGauge.innerHTML = '';
+      for (let i = 0; i < MAX_AMMO; i++) {
+        const pip = document.createElement('div');
+        pip.className = `ammo-pip ${i >= ammo ? 'empty' : ''}`;
+        ammoGauge.appendChild(pip);
+      }
+    }
+
+    function updateHeartsUI() {
+      let str = '';
+      for (let i = 0; i < MAX_LIVES; i++) {
+        str += i < lives ? '❤️' : '🖤';
+      }
+      heartsContainer.innerHTML = str;
+    }
+
+    /* ==========================================================================
+       USER INPUT HANDLING (KEYBOARD & TOUCH)
+       ========================================================================== */
+    window.addEventListener('keydown', (e) => {
+      sound.init();
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        keys.left = true;
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        keys.right = true;
+      } else if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        e.preventDefault();
+        fireGunboots();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        keys.left = false;
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        keys.right = false;
+      }
+    });
+
+    // Touch Virtual Buttons
+    btnTouchLeft.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
+    btnTouchLeft.addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
+    btnTouchLeft.addEventListener('mousedown', () => { keys.left = true; });
+    btnTouchLeft.addEventListener('mouseup', () => { keys.left = false; });
+
+    btnTouchRight.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
+    btnTouchRight.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
+    btnTouchRight.addEventListener('mousedown', () => { keys.right = true; });
+    btnTouchRight.addEventListener('mouseup', () => { keys.right = false; });
+
+    btnTouchFire.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      sound.init();
+      fireGunboots();
+    });
+    btnTouchFire.addEventListener('mousedown', () => {
+      sound.init();
+      fireGunboots();
+    });
+
+    /* ==========================================================================
+       START, RESTART & BUTTON LISTENERS
+       ========================================================================== */
+    function restartGame() {
+      sound.init();
+      sound.playClick();
+
+      isPlaying = true;
+      isGameOver = false;
+      hasWon = false;
+      isEndless = false;
+
+      lives = MAX_LIVES;
+      ammo = MAX_AMMO;
+      cameraY = 0;
+      currentDepthMeters = 0;
+
+      player.x = 210;
+      player.y = 100;
+      player.vx = 0;
+      player.vy = 0;
+      player.onGround = false;
+      player.invulnerableTimer = 0;
+
+      platforms = [
+        { x: 140, y: 150, w: 140, h: 14 } // Starting platform
+      ];
+      enemies = [];
+      bullets = [];
+      gems = [];
+      particles = [];
+      floatingTexts = [];
+
+      nextGenY = 250;
+      generateWorldSegment(250, 1000);
+
+      startOverlay.classList.add('hidden');
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      vignette.classList.remove('danger', 'flash-gold');
+
+      updateAmmoUI();
+      updateHeartsUI();
+      showToast("🕳️ ¡Comienza el descenso! Dispara para flotar.");
+    }
+
+    btnStartGame.addEventListener('click', restartGame);
+    restartBtn.addEventListener('click', restartGame);
+    btnRetry.addEventListener('click', restartGame);
+
+    btnContinueEndless.addEventListener('click', () => {
+      sound.init();
+      sound.playClick();
+      isEndless = true;
+      isPlaying = true;
+      hasWon = false;
+      victoryModal.classList.remove('active');
+      generateWorldSegment(nextGenY, nextGenY + 1200);
+      nextGenY += 1200;
+      showToast("♾️ Modo Descenso Infinito activado. ¿Hasta dónde caerás?");
+    });
+
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    // Discord Copy
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 24 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // Init UI & Loop
+    updateAmmoUI();
+    updateHeartsUI();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 12: Cruce del Río Estigia - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #050806;
+      --board-border: #2e4435;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --spectral-blue: #00e5ff;
+      --spectral-glow: rgba(0, 229, 255, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(35, 60, 45, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 85%, rgba(15, 28, 20, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 16px 12px;
+    }
+
+    /* Ambient fog and scanlines */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.25;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.25) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: var(--toxic-green);
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 6px;
+    }
+
+    .day-badge {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: var(--pumpkin-orange);
+      background: rgba(255, 117, 24, 0.12);
+      border: 1px solid var(--pumpkin-orange);
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+
+    .audio-btn {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-family: 'Montserrat', sans-serif;
+      transition: all 0.2s;
+    }
+
+    .audio-btn:hover {
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+    }
+
+    /* Title */
+    .title-banner {
+      text-align: center;
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 1.85rem;
+      color: var(--toxic-green);
+      text-shadow: 0 0 12px var(--toxic-glow), 2px 2px 0px #000;
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .title-banner p {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    /* HUD Bar: Rescued souls, Target, Lives */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 22, 17, 0.88);
+      border: 1px solid #273a2e;
+      border-radius: 10px;
+      padding: 6px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 60px;
+    }
+
+    .hud-label {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .hud-val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+
+    .val-rescued {
+      color: var(--toxic-green);
+      text-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .val-target {
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 8px var(--pumpkin-glow);
+    }
+
+    .souls-row {
+      display: flex;
+      gap: 4px;
+      font-size: 1rem;
+    }
+
+    .soul-icon {
+      color: var(--blood-red);
+      filter: drop-shadow(0 0 4px var(--blood-glow));
+      transition: opacity 0.3s;
+    }
+
+    .soul-icon.lost {
+      opacity: 0.15;
+      filter: grayscale(1);
+    }
+
+    /* Canvas Frame */
+    .canvas-frame {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 9 / 11;
+      background: #000;
+      border: 3px solid #293d30;
+      border-radius: 12px;
+      box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.9),
+        0 0 15px rgba(41, 61, 48, 0.4);
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Mobile D-Pad */
+    .dpad-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      margin-top: 4px;
+    }
+
+    .dpad-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .dpad-btn {
+      width: 52px;
+      height: 46px;
+      background: rgba(22, 36, 27, 0.9);
+      border: 2px solid #36503e;
+      border-radius: 10px;
+      color: var(--parchment);
+      font-size: 1.25rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      transition: all 0.1s ease;
+      touch-action: manipulation;
+    }
+
+    .dpad-btn:active, .dpad-btn.pressed {
+      background: var(--toxic-green);
+      color: #000;
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 14px var(--toxic-glow);
+      transform: scale(0.92);
+    }
+
+    /* Modals (Victory / Defeat) */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 8, 6, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: linear-gradient(180deg, #1b261e 0%, #101612 100%);
+      border: 2px solid var(--toxic-green);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 440px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 25px var(--toxic-glow);
+      transform: scale(0.92);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-card.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 25px var(--blood-glow);
+    }
+
+    .modal-emblem {
+      font-size: 3.2rem;
+      margin-bottom: 6px;
+    }
+
+    .modal-card h2 {
+      font-family: 'Creepster', cursive;
+      font-size: 2.2rem;
+      color: var(--toxic-green);
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+      text-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .modal-card.defeat h2 {
+      color: var(--blood-red);
+      text-shadow: 0 0 10px var(--blood-glow);
+    }
+
+    .modal-flavor {
+      font-family: 'MedievalSharp', cursive;
+      color: #b5c7bb;
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+      line-height: 1.35;
+    }
+
+    /* Discord Secret Code Box */
+    .discord-code-box {
+      background: rgba(10, 16, 12, 0.9);
+      border: 1px dashed var(--pumpkin-orange);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .discord-code-title {
+      font-size: 0.72rem;
+      color: var(--pumpkin-orange);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .discord-code-val {
+      font-family: 'Courier New', monospace;
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: var(--parchment);
+      letter-spacing: 3px;
+      background: #000;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: inline-block;
+      border: 1px solid #3d2a1b;
+      margin-bottom: 8px;
+    }
+
+    .btn-discord-copy {
+      width: 100%;
+      background: #5865F2;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+    }
+
+    .btn-discord-copy:hover {
+      background: #4752c4;
+      transform: translateY(-2px);
+    }
+
+    .btn-discord-copy.copied {
+      background: #23a55a;
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .btn-restart {
+      background: linear-gradient(180deg, #2b3d30 0%, #1c2b20 100%);
+      border: 1px solid var(--toxic-green);
+      color: var(--parchment);
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-restart:hover {
+      background: var(--toxic-green);
+      color: #000;
+      box-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .btn-hub {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 8px;
+      display: inline-block;
+      transition: color 0.2s;
+    }
+
+    .btn-hub:hover {
+      color: var(--pumpkin-orange);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      background: rgba(14, 22, 17, 0.95);
+      border: 1px solid var(--toxic-green);
+      color: var(--parchment);
+      padding: 9px 18px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 200;
+    }
+
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>🏛️</span>
+        <span>Volver a la Krypta</span>
+      </a>
+      <div class="header-badges">
+        <span class="day-badge">DÍA 12</span>
+        <button id="soundToggleBtn" class="audio-btn">🔊 Audio</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <h1>CRUCE DEL RÍO ESTIGIA</h1>
+      <p>Guía al no-muerto sobre ataúdes flotantes • Rescata 2 almas</p>
+    </div>
+
+    <!-- HUD -->
+    <div class="hud-bar">
+      <div class="hud-stat">
+        <span class="hud-label">Rescatadas</span>
+        <span class="hud-val val-rescued" id="rescuedDisplay">0 / 2</span>
+      </div>
+
+      <div class="hud-stat">
+        <span class="hud-label">Meta Victoria</span>
+        <span class="hud-val val-target">2 Almas</span>
+      </div>
+
+      <div class="hud-stat">
+        <span class="hud-label">Vidas</span>
+        <div class="souls-row">
+          <span class="soul-icon" id="soul-1">☠</span>
+          <span class="soul-icon" id="soul-2">☠</span>
+          <span class="soul-icon" id="soul-3">☠</span>
+          <span class="soul-icon" id="soul-4">☠</span>
+          <span class="soul-icon" id="soul-5">☠</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 360 x 440 Canvas Frame -->
+    <div class="canvas-frame" id="canvasFrame">
+      <canvas id="gameCanvas" width="360" height="440"></canvas>
+    </div>
+
+    <!-- Virtual D-Pad -->
+    <div class="dpad-container" id="dpadContainer">
+      <button class="dpad-btn" id="dpadUp" title="Arriba">▲</button>
+      <div class="dpad-row">
+        <button class="dpad-btn" id="dpadLeft" title="Izquierda">◀</button>
+        <button class="dpad-btn" id="dpadDown" title="Abajo">▼</button>
+        <button class="dpad-btn" id="dpadRight" title="Derecha">▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-overlay" id="victoryModal">
+    <div class="modal-card">
+      <div class="modal-emblem">🧟</div>
+      <h2>¡ESTIGIA SUPERADO!</h2>
+      <p class="modal-flavor">Has cruzado las dos almas a través de las aguas malditas y los carruajes de la muerte.</p>
+
+      <div class="discord-code-box">
+        <div class="discord-code-title">Palabra Clave para Discord:</div>
+        <div class="discord-code-val">RIO-DE-ALMAS</div>
+        <button class="btn-discord-copy" id="copyDiscordBtn">
+          <span>📋</span>
+          <span>Copiar para Discord</span>
+        </button>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-restart" id="btnRestartVictory">🔄 Jugar de Nuevo</button>
+        <a href="../../index.html" class="btn-hub">🏛️ Volver a la Krypta</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="modal-overlay" id="defeatModal">
+    <div class="modal-card defeat">
+      <div class="modal-emblem">💀</div>
+      <h2>ALMAS DEVORADAS</h2>
+      <p class="modal-flavor">Las corrientes de azufre del Estigia han engullido a tus caminantes. No quedan más almas.</p>
+
+      <div class="modal-actions">
+        <button class="btn-restart" id="btnRestartDefeat">🩸 Intentar Nuevamente</button>
+        <a href="../../index.html" class="btn-hub">🏛️ Escapar a la Krypta</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ==========================================================================
+       SYNTHESIZED AUDIO (Web Audio API)
+       ========================================================================== */
+    class FrogAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playHop() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(440, now + 0.07);
+
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+
+      playDrown() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.35);
+
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+
+      playSplat() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.25);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.25);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+
+      playRescue() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + (idx * 0.07);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.25);
+        });
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const notes = [329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + (idx * 0.1);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.5);
+        });
+      }
+    }
+
+    const sound = new FrogAudio();
+
+    /* ==========================================================================
+       GRID & GAME CONSTANTS
+       ========================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const C_WIDTH = 360;
+    const C_HEIGHT = 440;
+    const ROWS = 11;
+    const COLS = 9;
+    const CELL_W = C_WIDTH / COLS; // 40px
+    const CELL_H = C_HEIGHT / ROWS; // 40px
+    const MAX_LIVES = 5; // 5 souls / lives for comfortable margin
+    const TARGET_RESCUED = 2; // 2 souls needed to win
+    const SECRET_KEYWORD = "RIO-DE-ALMAS";
+
+    /* Row Layout:
+       Row 0: Crypt Sanctuaries (Victory goals)
+       Row 1, 2, 3, 4: River Styx (Must ride coffins/floating crypts)
+       Row 5: Central Lapis Island (Safe haven)
+       Row 6, 7, 8, 9: Shadow Road (Must dodge carriages/scythes)
+       Row 10: Graveyard Shore (Start / Safe)
+    */
+
+    let player = {
+      gridX: 4,
+      gridY: 10,
+      x: 4 * CELL_W,
+      y: 10 * CELL_H,
+      alive: true
+    };
+
+    let sanctuaries = [
+      { col: 1, rescued: false },
+      { col: 4, rescued: false },
+      { col: 7, rescued: false }
+    ];
+
+    let roadLanes = [];
+    let riverLanes = [];
+
+    let lives = MAX_LIVES;
+    let rescuedCount = 0;
+    let isGameOver = false;
+    let isVictory = false;
+
+    // Fixed 60Hz physics timestep & track boundaries
+    const STEP_MS = 1000 / 60; // 16.666 ms
+    const TRACK_MIN = -100;
+    const TRACK_MAX = C_WIDTH + 100; // 460
+    const TRACK_SPAN = TRACK_MAX - TRACK_MIN; // 560
+
+    let animLoopId = null;
+    let lastFrameTime = performance.now();
+    let accumulator = 0;
+
+    /* DOM */
+    const rescuedDisplay = document.getElementById('rescuedDisplay');
+    const vignette = document.getElementById('vignette');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+
+    /* ==========================================================================
+       SETUP & RESET
+       ========================================================================== */
+    function initGame() {
+      if (animLoopId) {
+        cancelAnimationFrame(animLoopId);
+        animLoopId = null;
+      }
+
+      lives = MAX_LIVES;
+      rescuedCount = 0;
+      isGameOver = false;
+      isVictory = false;
+
+      sanctuaries.forEach(s => s.rescued = false);
+      updateHUD();
+
+      vignette.classList.remove('danger');
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+
+      resetPlayer();
+      setupLanes();
+
+      lastFrameTime = performance.now();
+      accumulator = 0;
+      animLoopId = requestAnimationFrame(gameLoop);
+    }
+
+    function resetPlayer() {
+      player.gridX = 4;
+      player.gridY = 10;
+      player.x = player.gridX * CELL_W;
+      player.y = player.gridY * CELL_H;
+      player.alive = true;
+    }
+
+    function setupLanes() {
+      // 2 items per lane evenly spaced across 560px span (spacing = 280px).
+      // Guaranteed constant 235px clear road space between items - they NEVER bunch up!
+      // Speeds are calibrated to a gentle, serene 20-25 px/second drift.
+      roadLanes = [
+        {
+          row: 9,
+          speed: 0.85, // lively rightward drift (~7s to cross screen)
+          width: 45,
+          offset: 60, // Column 4 is wide open at start
+          color: '#ff2a4b',
+          icon: '🐎',
+          label: 'Esqueleto',
+          items: [{ x: 0 }, { x: 0 }]
+        },
+        {
+          row: 8,
+          speed: -1.05, // energetic leftward drift (~5.7s to cross screen)
+          width: 46,
+          offset: 150,
+          color: '#c042ff',
+          icon: '⚔️',
+          label: 'Guadaña',
+          items: [{ x: 0 }, { x: 0 }, { x: 0 }]
+        },
+        {
+          row: 7,
+          speed: 0.95, // brisk rightward drift (~6.3s to cross screen)
+          width: 45,
+          offset: 180,
+          color: '#ff7518',
+          icon: '🔥',
+          label: 'Cráneo Ígneo',
+          items: [{ x: 0 }, { x: 0 }, { x: 0 }]
+        },
+        {
+          row: 6,
+          speed: -1.15, // fast leftward drift (~5.2s to cross screen)
+          width: 50,
+          offset: 170,
+          color: '#39ff14',
+          icon: '⚰️',
+          label: 'Carruaje',
+          items: [{ x: 0 }, { x: 0 }, { x: 0 }]
+        }
+      ];
+
+      // River floating platforms: wide, responsive and enjoyable
+      riverLanes = [
+        {
+          row: 4,
+          speed: 0.85, // brisk right
+          width: 115, // extra wide platform
+          offset: 180, // Platform centered for comfortable landing
+          icon: '⚰️',
+          label: 'Ataúd',
+          items: [{ x: 0 }, { x: 0 }]
+        },
+        {
+          row: 3,
+          speed: -0.95, // brisk left
+          width: 125, // extra wide trunk
+          offset: 200,
+          icon: '🪵',
+          label: 'Tronco',
+          items: [{ x: 0 }, { x: 0 }]
+        },
+        {
+          row: 2,
+          speed: 1.05, // energetic right
+          width: 110, // extra wide slab
+          offset: 160,
+          icon: '🪨',
+          label: 'Lápida',
+          items: [{ x: 0 }, { x: 0 }]
+        },
+        {
+          row: 1,
+          speed: -0.90, // brisk left
+          width: 120, // extra wide coffin
+          offset: 190,
+          icon: '⚰️',
+          label: 'Ataúd',
+          items: [{ x: 0 }, { x: 0 }]
+        }
+      ];
+
+      // Initialize item positions based on offset
+      [...roadLanes, ...riverLanes].forEach(lane => {
+        const itemSpacing = TRACK_SPAN / lane.items.length;
+        lane.items.forEach((item, idx) => {
+          let pos = (lane.offset + idx * itemSpacing) % TRACK_SPAN;
+          if (pos < 0) pos += TRACK_SPAN;
+          item.x = TRACK_MIN + pos;
+        });
+      });
+    }
+
+    function updateHUD() {
+      rescuedDisplay.textContent = `${rescuedCount} / ${TARGET_RESCUED}`;
+      for (let i = 1; i <= MAX_LIVES; i++) {
+        const soul = document.getElementById(`soul-${i}`);
+        if (i <= lives) {
+          soul.classList.remove('lost');
+        } else {
+          soul.classList.add('lost');
+        }
+      }
+    }
+
+    /* ==========================================================================
+       MOVEMENT & HOP CONTROLS
+       ========================================================================== */
+    function movePlayer(dx, dy) {
+      if (isGameOver || isVictory || !player.alive) return;
+      sound.init();
+
+      const newGridX = player.gridX + dx;
+      const newGridY = player.gridY + dy;
+
+      // Keep within bounds
+      if (newGridX < 0 || newGridX >= COLS || newGridY < 0 || newGridY >= ROWS) return;
+
+      player.gridX = newGridX;
+      player.gridY = newGridY;
+      player.x = player.gridX * CELL_W;
+      player.y = player.gridY * CELL_H;
+      sound.playHop();
+
+      // Check arrival at sanctuary (Row 0)
+      if (player.gridY === 0) {
+        checkSanctuaryArrival();
+      }
+    }
+
+    function checkSanctuaryArrival() {
+      // Find closest sanctuary within 1 col distance to be super generous
+      const matchSanctuary = sanctuaries.find(s => Math.abs(s.col - player.gridX) <= 1 && !s.rescued);
+
+      if (matchSanctuary) {
+        // Snap player to sanctuary col
+        player.gridX = matchSanctuary.col;
+        player.x = player.gridX * CELL_W;
+        matchSanctuary.rescued = true;
+        rescuedCount++;
+        updateHUD();
+        sound.playRescue();
+        showToast("✨ ¡Alma consagrada en el mausoleo!");
+
+        if (rescuedCount >= TARGET_RESCUED) {
+          handleVictory();
+        } else {
+          resetPlayer();
+        }
+      } else {
+        // Jumped into wall or already taken sanctuary -> death
+        handleDeath('splat');
+      }
+    }
+
+    function handleDeath(type) {
+      if (!player.alive || isGameOver || isVictory) return;
+      player.alive = false;
+
+      if (type === 'drown') {
+        sound.playDrown();
+        showToast("🌊 ¡El alma se ahogó en el Río Estigia!");
+      } else {
+        sound.playSplat();
+        showToast("💥 ¡Aplastado por el carruaje de sombras!");
+      }
+
+      vignette.classList.add('danger');
+      lives--;
+      updateHUD();
+
+      if (lives <= 0) {
+        isGameOver = true;
+        setTimeout(() => {
+          defeatModal.classList.add('active');
+        }, 700);
+      } else {
+        setTimeout(() => {
+          vignette.classList.remove('danger');
+          resetPlayer();
+        }, 700);
+      }
+    }
+
+    function handleVictory() {
+      isVictory = true;
+      sound.playVictory();
+
+      try {
+        localStorage.setItem('krypt_day_12_cleared', 'true');
+      } catch(e){}
+
+      setTimeout(() => {
+        victoryModal.classList.add('active');
+      }, 600);
+    }
+
+    /* ==========================================================================
+       MAIN LOOP & PHYSICS (Fixed Timestep 60Hz Accumulator)
+       ========================================================================== */
+    function gameLoop(now) {
+      let dt = now - lastFrameTime;
+      if (dt > 100) dt = 100; // clamp lag spikes
+      lastFrameTime = now;
+      accumulator += dt;
+
+      while (accumulator >= STEP_MS) {
+        updatePhysics();
+        accumulator -= STEP_MS;
+      }
+
+      draw();
+      animLoopId = requestAnimationFrame(gameLoop);
+    }
+
+    function updatePhysics() {
+      if (isGameOver || isVictory) return;
+
+      // 1. Move road hazards
+      roadLanes.forEach(lane => {
+        lane.offset += lane.speed;
+        if (lane.offset >= TRACK_SPAN) lane.offset -= TRACK_SPAN;
+        if (lane.offset < 0) lane.offset += TRACK_SPAN;
+
+        const itemSpacing = TRACK_SPAN / lane.items.length;
+        lane.items.forEach((item, idx) => {
+          let pos = (lane.offset + idx * itemSpacing) % TRACK_SPAN;
+          if (pos < 0) pos += TRACK_SPAN;
+          item.x = TRACK_MIN + pos;
+
+          // Check collision with player if in this road row
+          if (player.alive && player.gridY === lane.row) {
+            const playerBox = { left: player.x + 10, right: player.x + CELL_W - 10 };
+            const itemBox = { left: item.x + 8, right: item.x + lane.width - 8 };
+
+            if (playerBox.right > itemBox.left && playerBox.left < itemBox.right) {
+              handleDeath('splat');
+            }
+          }
+        });
+      });
+
+      // 2. Move river platforms
+      riverLanes.forEach(lane => {
+        lane.offset += lane.speed;
+        if (lane.offset >= TRACK_SPAN) lane.offset -= TRACK_SPAN;
+        if (lane.offset < 0) lane.offset += TRACK_SPAN;
+
+        const itemSpacing = TRACK_SPAN / lane.items.length;
+        lane.items.forEach((item, idx) => {
+          let pos = (lane.offset + idx * itemSpacing) % TRACK_SPAN;
+          if (pos < 0) pos += TRACK_SPAN;
+          item.x = TRACK_MIN + pos;
+        });
+
+        // If player is on this river row
+        if (player.alive && player.gridY === lane.row) {
+          let ridingItem = null;
+          const playerCenter = player.x + CELL_W / 2;
+
+          for (let item of lane.items) {
+            if (playerCenter >= item.x - 14 && playerCenter <= item.x + lane.width + 14) {
+              ridingItem = item;
+              break;
+            }
+          }
+
+          if (ridingItem) {
+            // Carry player with platform speed!
+            player.x += lane.speed;
+            player.gridX = Math.round(player.x / CELL_W);
+
+            // Check if carried off screen
+            if (player.x < -20 || player.x > C_WIDTH - 20) {
+              handleDeath('drown');
+            }
+          } else {
+            // Drown! Player fell in water
+            handleDeath('drown');
+          }
+        }
+      });
+    }
+
+    /* ==========================================================================
+       CANVAS RENDERING
+       ========================================================================== */
+    function draw() {
+      ctx.clearRect(0, 0, C_WIDTH, C_HEIGHT);
+
+      // 1. Draw Zones (Rows 0 to 10)
+      for (let r = 0; r < ROWS; r++) {
+        const y = r * CELL_H;
+
+        if (r === 0) {
+          // Crypt Sanctuaries Goal
+          ctx.fillStyle = '#0f1712';
+          ctx.fillRect(0, y, C_WIDTH, CELL_H);
+          ctx.fillStyle = '#1c2e22';
+          ctx.fillRect(0, y + CELL_H - 4, C_WIDTH, 4);
+
+          // Draw the 3 sanctuary portals
+          sanctuaries.forEach(s => {
+            const sx = s.col * CELL_W;
+            ctx.fillStyle = s.rescued ? '#1a3d24' : '#142019';
+            ctx.fillRect(sx + 3, y + 4, CELL_W - 6, CELL_H - 8);
+            ctx.strokeStyle = s.rescued ? 'var(--toxic-green)' : '#2e4936';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(sx + 3, y + 4, CELL_W - 6, CELL_H - 8);
+
+            ctx.font = '18px Montserrat';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(s.rescued ? '🧟' : '🏛️', sx + CELL_W / 2, y + CELL_H / 2);
+          });
+        } else if (r >= 1 && r <= 4) {
+          // River Styx (Blood & Dark Soul Water)
+          const riverGrad = ctx.createLinearGradient(0, y, 0, y + CELL_H);
+          riverGrad.addColorStop(0, '#100609');
+          riverGrad.addColorStop(0.5, '#260a12');
+          riverGrad.addColorStop(1, '#100609');
+          ctx.fillStyle = riverGrad;
+          ctx.fillRect(0, y, C_WIDTH, CELL_H);
+
+          // Water ripples
+          ctx.strokeStyle = 'rgba(255, 42, 75, 0.15)';
+          ctx.lineWidth = 1;
+          for (let x = 0; x < C_WIDTH; x += 30) {
+            ctx.beginPath();
+            ctx.arc(x + (Date.now() / 40) % 30, y + CELL_H / 2, 8, 0, Math.PI);
+            ctx.stroke();
+          }
+        } else if (r === 5) {
+          // Central Lapis Island (Safe)
+          ctx.fillStyle = '#17271c';
+          ctx.fillRect(0, y, C_WIDTH, CELL_H);
+          ctx.strokeStyle = '#2b4432';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(0, y, C_WIDTH, CELL_H);
+          drawGrassDeco(y);
+        } else if (r >= 6 && r <= 9) {
+          // Shadow Road
+          ctx.fillStyle = '#0b110d';
+          ctx.fillRect(0, y, C_WIDTH, CELL_H);
+
+          // Road dashed lane dividers
+          ctx.strokeStyle = 'rgba(255, 117, 24, 0.25)';
+          ctx.setLineDash([8, 8]);
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(C_WIDTH, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else if (r === 10) {
+          // Graveyard Shore (Start / Safe)
+          ctx.fillStyle = '#17271c';
+          ctx.fillRect(0, y, C_WIDTH, CELL_H);
+          ctx.strokeStyle = '#2b4432';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(0, y, C_WIDTH, CELL_H);
+          drawGrassDeco(y);
+        }
+      }
+
+      // 2. Draw River Platforms
+      riverLanes.forEach(lane => {
+        const y = lane.row * CELL_H;
+        lane.items.forEach(item => {
+          // Floating coffin/log body
+          ctx.fillStyle = '#261b14';
+          ctx.fillRect(item.x, y + 4, lane.width, CELL_H - 8);
+          ctx.strokeStyle = '#4a3424';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(item.x, y + 4, lane.width, CELL_H - 8);
+
+          // Icon / details
+          ctx.font = '16px Montserrat';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(lane.icon, item.x + lane.width / 2, y + CELL_H / 2);
+        });
+      });
+
+      // 3. Draw Road Hazards
+      roadLanes.forEach(lane => {
+        const y = lane.row * CELL_H;
+        lane.items.forEach(item => {
+          ctx.font = '20px Montserrat';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(lane.icon, item.x + lane.width / 2, y + CELL_H / 2);
+        });
+      });
+
+      // 4. Draw Player Zombie
+      if (player.alive) {
+        ctx.font = '22px Montserrat';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🧟', player.x + CELL_W / 2, player.y + CELL_H / 2);
+      }
+    }
+
+    function drawGrassDeco(y) {
+      ctx.fillStyle = '#253c2c';
+      for (let x = 12; x < C_WIDTH; x += 36) {
+        ctx.fillRect(x, y + 14, 3, 8);
+        ctx.fillRect(x + 4, y + 10, 3, 12);
+        ctx.fillRect(x + 8, y + 16, 3, 6);
+      }
+    }
+
+    /* ==========================================================================
+       USER INPUT HANDLERS (Keyboard, Mobile D-Pad, Canvas Swipe)
+       ========================================================================== */
+    window.addEventListener('keydown', (e) => {
+      const code = e.code;
+      if (code === 'ArrowUp' || code === 'KeyW') {
+        e.preventDefault(); movePlayer(0, -1);
+      } else if (code === 'ArrowDown' || code === 'KeyS') {
+        e.preventDefault(); movePlayer(0, 1);
+      } else if (code === 'ArrowLeft' || code === 'KeyA') {
+        e.preventDefault(); movePlayer(-1, 0);
+      } else if (code === 'ArrowRight' || code === 'KeyD') {
+        e.preventDefault(); movePlayer(1, 0);
+      }
+    });
+
+    const setupBtn = (id, dx, dy) => {
+      const btn = document.getElementById(id);
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        movePlayer(dx, dy);
+        btn.classList.add('pressed');
+        setTimeout(() => btn.classList.remove('pressed'), 130);
+      });
+    };
+
+    setupBtn('dpadUp', 0, -1);
+    setupBtn('dpadDown', 0, 1);
+    setupBtn('dpadLeft', -1, 0);
+    setupBtn('dpadRight', 1, 0);
+
+    // Canvas Swipe Gestures
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', (e) => {
+      if (e.changedTouches.length > 0) {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        const absX = Math.abs(dx);
+        const absY = Math.abs(dy);
+
+        if (Math.max(absX, absY) > 20) {
+          if (absX > absY) {
+            movePlayer(dx > 0 ? 1 : -1, 0);
+          } else {
+            movePlayer(0, dy > 0 ? 1 : -1);
+          }
+        }
+      }
+    }, { passive: true });
+
+    // Restarts
+    document.getElementById('btnRestartVictory').addEventListener('click', initGame);
+    document.getElementById('btnRestartDefeat').addEventListener('click', initGame);
+
+    /* Discord Copy */
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 12 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    /* Audio & Toast Helpers */
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // Start
+    initGame();
+  </script>
+</body>
+</html>

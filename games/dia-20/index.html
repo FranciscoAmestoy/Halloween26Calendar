@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 20: Corta las Raíces - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --board-border: #283c2f;
+      --parchment: #ece2ce;
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --spectral-purple: #c042ff;
+      --spectral-glow: rgba(192, 66, 255, 0.55);
+      --spectral-cyan: #00e5ff;
+      --spectral-cyan-glow: rgba(0, 229, 255, 0.55);
+      --moon-gold: #ffd24d;
+      --moon-glow: rgba(255, 210, 77, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(60, 20, 70, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 85%, rgba(12, 35, 22, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 14px 12px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.18;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.3) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 150px rgba(255, 42, 75, 0.9);
+    }
+
+    .vignette-overlay.toxic {
+      box-shadow: inset 0 0 150px rgba(57, 255, 20, 0.85);
+    }
+
+    .vignette-overlay.frenzy {
+      box-shadow: inset 0 0 140px rgba(255, 210, 77, 0.75);
+    }
+
+    /* Game Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: #fff;
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-icon {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--spectral-cyan);
+      box-shadow: 0 0 10px var(--spectral-cyan-glow);
+      color: #fff;
+    }
+
+    /* Game Titles */
+    .title-banner {
+      text-align: center;
+    }
+
+    .curse-day {
+      font-size: 0.72rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--spectral-cyan);
+      font-weight: 800;
+      text-shadow: 0 0 8px var(--spectral-cyan-glow);
+    }
+
+    .curse-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.45rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #fff;
+      text-shadow: 0 0 12px var(--pumpkin-glow);
+      margin-top: -2px;
+    }
+
+    .curse-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 22, 17, 0.85);
+      border: 1px solid #283c2f;
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .hud-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .hud-value {
+      font-family: 'Cinzel', serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .hud-value.score {
+      color: var(--pumpkin-orange);
+      text-shadow: 0 0 10px var(--pumpkin-glow);
+    }
+
+    .hud-lives {
+      display: flex;
+      gap: 4px;
+      font-size: 1rem;
+      letter-spacing: 2px;
+    }
+
+    .life-skull {
+      opacity: 1;
+      filter: drop-shadow(0 0 4px rgba(255, 42, 75, 0.6));
+      transition: all 0.3s ease;
+    }
+
+    .life-skull.lost {
+      opacity: 0.2;
+      filter: grayscale(1);
+      transform: scale(0.85);
+    }
+
+    /* Progress Goal Bar */
+    .progress-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      background: rgba(18, 30, 23, 0.8);
+      border: 1px solid #2d4535;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--spectral-purple), var(--spectral-cyan), var(--toxic-green));
+      box-shadow: 0 0 8px var(--toxic-glow);
+      transition: width 0.2s ease-out;
+    }
+
+    /* Frenzy Banner */
+    .frenzy-indicator {
+      display: none;
+      width: 100%;
+      padding: 4px 8px;
+      background: linear-gradient(90deg, rgba(255, 210, 77, 0.2), rgba(255, 117, 24, 0.3), rgba(255, 210, 77, 0.2));
+      border: 1px solid var(--moon-gold);
+      border-radius: 6px;
+      text-align: center;
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--moon-gold);
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px var(--moon-glow);
+      animation: pulseFrenzy 0.8s infinite alternate ease-in-out;
+    }
+
+    .frenzy-indicator.active {
+      display: block;
+    }
+
+    @keyframes pulseFrenzy {
+      0% { transform: scale(0.99); opacity: 0.85; }
+      100% { transform: scale(1.02); opacity: 1; }
+    }
+
+    /* Canvas Arena */
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      background: #0b110e;
+      border: 2px solid var(--board-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.85), inset 0 0 30px rgba(0, 0, 0, 0.6);
+      touch-action: none; /* Prevent scrolling when slashing */
+      cursor: crosshair;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* Overlay Start / Pause / Instructions */
+    .arena-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7, 10, 8, 0.82);
+      backdrop-filter: blur(4px);
+      padding: 20px;
+      text-align: center;
+      gap: 12px;
+      z-index: 20;
+      transition: opacity 0.25s ease;
+    }
+
+    .arena-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .overlay-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      color: var(--toxic-green);
+      text-shadow: 0 0 14px var(--toxic-glow);
+    }
+
+    .overlay-desc {
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: var(--parchment);
+      max-width: 320px;
+    }
+
+    .targets-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(15, 25, 20, 0.85);
+      border: 1px solid #283c2f;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #1c683b, #0f4024);
+      color: #fff;
+      border: 1px solid var(--toxic-green);
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 0 15px var(--toxic-glow);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 22px var(--toxic-glow);
+      background: linear-gradient(135deg, #24844c, #145530);
+    }
+
+    /* Modal dialogs (Victory / Defeat) */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 16px;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 380px;
+      background: #0f1612;
+      border: 2px solid #32503d;
+      border-radius: 12px;
+      padding: 22px 18px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.9);
+      position: relative;
+      animation: modalPop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .modal-box.victory {
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 30px var(--moon-glow);
+    }
+
+    .modal-box.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 30px var(--blood-glow);
+    }
+
+    @keyframes modalPop {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-icon {
+      font-size: 2.4rem;
+      filter: drop-shadow(0 0 10px var(--moon-gold));
+    }
+
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .modal-desc {
+      font-size: 0.82rem;
+      color: var(--parchment);
+      line-height: 1.45;
+    }
+
+    /* Secret Parchment Scroll */
+    .secret-scroll {
+      width: 100%;
+      background: linear-gradient(180deg, #1b281f 0%, #111a14 100%);
+      border: 1px dashed var(--toxic-green);
+      border-radius: 8px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scroll-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--toxic-green);
+      font-weight: 800;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', monospace;
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #fff;
+      text-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 16px rgba(88, 101, 242, 0.7);
+    }
+
+    .btn-action.discord.copied {
+      background: #23a55a;
+    }
+
+    .btn-action.advance {
+      background: linear-gradient(135deg, #274b35, #142a1e);
+      color: var(--parchment);
+      border: 1px solid #3e684d;
+    }
+
+    .btn-action.advance:hover {
+      border-color: var(--toxic-green);
+      color: #fff;
+    }
+
+    .btn-action.retry {
+      background: linear-gradient(135deg, #7a1d2e, #47101a);
+      color: #fff;
+      border: 1px solid var(--blood-red);
+      box-shadow: 0 0 14px var(--blood-glow);
+    }
+
+    .btn-action.retry:hover {
+      background: linear-gradient(135deg, #962539, #5e1623);
+    }
+
+    /* Mobile Controls Hint */
+    .controls-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.85;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #142017;
+      border: 1px solid var(--toxic-green);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      box-shadow: 0 0 16px var(--toxic-glow);
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient effects -->
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <!-- Main Shell -->
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>⚰️</span>
+        <span>Cementerio</span>
+      </a>
+
+      <div class="header-controls">
+        <button class="btn-icon" id="soundToggleBtn">🔊 Audio</button>
+        <button class="btn-icon" id="restartBtn">🔄 Reiniciar</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <div class="curse-day">Día XX • Maleficio de Ultratumba</div>
+      <h1 class="curse-title">Corta las Raíces</h1>
+      <div class="curse-subtitle">Rebana las ofrendas malditas y esquiva el veneno mortal</div>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-item">
+        <span class="hud-label">Puntos</span>
+        <span class="hud-value score" id="scoreDisplay">0</span>
+      </div>
+
+      <div class="hud-item">
+        <span class="hud-label">Vidas</span>
+        <div class="hud-lives" id="livesContainer">
+          <span class="life-skull" id="life1">💀</span>
+          <span class="life-skull" id="life2">💀</span>
+          <span class="life-skull" id="life3">💀</span>
+        </div>
+      </div>
+
+      <div class="hud-item">
+        <span class="hud-label">Combo</span>
+        <span class="hud-value" id="comboDisplay">x1</span>
+      </div>
+    </div>
+
+    <!-- Progress to Victory -->
+    <div class="progress-container">
+      <div class="progress-meta">
+        <span>Purificación de Raíces</span>
+        <span id="progressText">0 / 500 Pts</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <!-- Frenzy Alert -->
+    <div class="frenzy-indicator" id="frenzyIndicator">
+      ⚡ ¡FRENESÍ ESPECTRAL ACTIVADO! TIEMPO RALENTIZADO (x2 PUNTOS) ⚡
+    </div>
+
+    <!-- Canvas Arena -->
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="gameCanvas" width="420" height="540"></canvas>
+
+      <!-- Start Overlay -->
+      <div class="arena-overlay" id="startOverlay">
+        <h2 class="overlay-title">CORTA LAS RAÍCES</h2>
+        <p class="overlay-desc">
+          Las raíces malditas del camposanto emergen liberando ofrendas arcanas. 
+          Desliza tu filo espiritual para rebanarlas antes de que caigan.
+        </p>
+
+        <div class="targets-legend">
+          <div class="legend-item">🎃 <span>Calabaza (+10)</span></div>
+          <div class="legend-item">👁️ <span>Ojo (+15)</span></div>
+          <div class="legend-item">💀 <span>Calavera (+20)</span></div>
+          <div class="legend-item">🍎 <span>Manzana (Frenesí)</span></div>
+          <div class="legend-item" style="color: #ff5555;">🧪 <span>Veneno (-1 Vida)</span></div>
+        </div>
+
+        <button class="btn-start" id="btnStartGame">
+          <span>⚔️</span>
+          <span>Desenvainar Filo</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="controls-hint">
+      <span>🖱️</span>
+      <span>Arrastra con el ratón o desliza con el dedo para cortar en ráfaga</span>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">⚔️✨</div>
+      <h2 class="modal-title">¡Raíces Purificadas!</h2>
+      <p class="modal-desc">
+        Has segado todas las ramas malditas y los espíritus vegetales se retiran a las profundidades de la tierra.
+      </p>
+
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display">CORTE-ESPECTRAL</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action advance" id="btnContinueInfinite">
+        <span>♾️</span>
+        <span>Continuar en Modo Infinito</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box defeat">
+      <div class="modal-icon">🧪💀</div>
+      <h2 class="modal-title">¡Envenenamiento Mortal!</h2>
+      <p class="modal-desc">
+        El veneno de los frascos malditos corrompió tu filo y tus calaveras de alma se extinguieron.
+      </p>
+
+      <div style="font-size: 0.9rem; color: var(--parchment); margin-bottom: 6px;">
+        Puntuación alcanzada: <strong id="defeatScore" style="color: var(--pumpkin-orange);">0</strong> pts
+      </div>
+
+      <button class="btn-action retry" id="btnRetry">
+        <span>🔄</span>
+        <span>Reintentar Purificación</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Huir al Cementerio</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Audio and Game Logic -->
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO CONTROLLER
+       ========================================================================== */
+    class SlasherAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playSwoosh() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(380, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.12);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1200, now);
+        filter.frequency.exponentialRampToValueAtTime(300, now + 0.12);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.13);
+      }
+
+      playSliceFruit() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        // High slice crisp snap
+        const snapOsc = this.ctx.createOscillator();
+        const snapGain = this.ctx.createGain();
+        snapOsc.type = 'triangle';
+        snapOsc.frequency.setValueAtTime(800 + Math.random() * 200, now);
+        snapOsc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+        snapGain.gain.setValueAtTime(0.25, now);
+        snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        snapOsc.connect(snapGain);
+        snapGain.connect(this.ctx.destination);
+        snapOsc.start(now);
+        snapOsc.stop(now + 0.09);
+
+        // Squish body
+        const squish = this.ctx.createOscillator();
+        const sGain = this.ctx.createGain();
+        squish.type = 'sine';
+        squish.frequency.setValueAtTime(280, now);
+        squish.frequency.exponentialRampToValueAtTime(80, now + 0.14);
+        sGain.gain.setValueAtTime(0.2, now);
+        sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+        squish.connect(sGain);
+        sGain.connect(this.ctx.destination);
+        squish.start(now);
+        squish.stop(now + 0.15);
+      }
+
+      playSliceSkull() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 0.1);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.11);
+      }
+
+      playCombo(count) {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const baseFreq = 440 + Math.min(count, 5) * 80;
+        const freqs = [baseFreq, baseFreq * 1.25, baseFreq * 1.5];
+
+        freqs.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now + i * 0.04);
+          gain.gain.setValueAtTime(0.15, now + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.23);
+        });
+      }
+
+      playPoisonShatter() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        // Glass crack / explosion
+        const noiseBuffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.25, this.ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseBuffer.length; i++) {
+          output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.06));
+        }
+        const whiteNoise = this.ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        const nGain = this.ctx.createGain();
+        nGain.gain.setValueAtTime(0.35, now);
+        nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        whiteNoise.connect(nGain);
+        nGain.connect(this.ctx.destination);
+        whiteNoise.start(now);
+
+        // Low toxic thud
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.32);
+      }
+
+      playFrenzyStart() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const chord = [329.63, 440.0, 554.37, 659.25, 880.0];
+        chord.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + i * 0.05);
+          gain.gain.setValueAtTime(0.18, now + i * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.45);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.05);
+          osc.stop(now + i * 0.05 + 0.5);
+        });
+      }
+
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [
+          { f: 523.25, t: 0.0, d: 0.25 },
+          { f: 659.25, t: 0.15, d: 0.25 },
+          { f: 783.99, t: 0.3, d: 0.35 },
+          { f: 1046.50, t: 0.5, d: 0.7 }
+        ];
+        notes.forEach(n => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(n.f, now + n.t);
+          gain.gain.setValueAtTime(0.24, now + n.t);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + n.t);
+          osc.stop(now + n.t + n.d + 0.05);
+        });
+      }
+
+      playClick() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.05);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+    }
+
+    const sound = new SlasherAudio();
+
+    /* ==========================================================================
+       GAME CONSTANTS & CONFIGURATION
+       ========================================================================== */
+    const SECRET_KEYWORD = "CORTE-ESPECTRAL";
+    const TARGET_VICTORY_SCORE = 500;
+    const MAX_LIVES = 3;
+
+    // Target Types Definitions
+    const TARGET_TYPES = {
+      PUMPKIN: {
+        id: 'pumpkin',
+        emoji: '🎃',
+        color: '#ff7518',
+        innerColor: '#ff9838',
+        points: 10,
+        radius: 26,
+        sliceSfx: 'fruit',
+        weight: 42
+      },
+      EYE: {
+        id: 'eye',
+        emoji: '👁️',
+        color: '#00e5ff',
+        innerColor: '#c042ff',
+        points: 15,
+        radius: 22,
+        sliceSfx: 'fruit',
+        weight: 25
+      },
+      SKULL: {
+        id: 'skull',
+        emoji: '💀',
+        color: '#eae0ce',
+        innerColor: '#9c8e76',
+        points: 20,
+        radius: 24,
+        sliceSfx: 'skull',
+        weight: 18
+      },
+      GOLD_APPLE: {
+        id: 'gold_apple',
+        emoji: '🍎',
+        color: '#ffd24d',
+        innerColor: '#ff7518',
+        points: 30,
+        radius: 24,
+        isFrenzy: true,
+        sliceSfx: 'fruit',
+        weight: 7
+      },
+      POISON: {
+        id: 'poison',
+        emoji: '🧪',
+        color: '#39ff14',
+        innerColor: '#ff2a4b',
+        points: 0,
+        radius: 25,
+        isHazard: true,
+        sliceSfx: 'poison',
+        weight: 15
+      }
+    };
+
+    /* ==========================================================================
+       DOM ELEMENTS
+       ========================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startOverlay = document.getElementById('startOverlay');
+    const btnStartGame = document.getElementById('btnStartGame');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const comboDisplay = document.getElementById('comboDisplay');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const frenzyIndicator = document.getElementById('frenzyIndicator');
+    const vignette = document.getElementById('vignette');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+    const defeatScore = document.getElementById('defeatScore');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    const btnContinueInfinite = document.getElementById('btnContinueInfinite');
+    const btnRetry = document.getElementById('btnRetry');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const toast = document.getElementById('toast');
+
+    const lifeSkulls = [
+      document.getElementById('life1'),
+      document.getElementById('life2'),
+      document.getElementById('life3')
+    ];
+
+    /* ==========================================================================
+       GAME STATE
+       ========================================================================== */
+    let isPlaying = false;
+    let isGameOver = false;
+    let hasWon = false;
+    let isInfiniteMode = false;
+
+    let score = 0;
+    let lives = MAX_LIVES;
+    let currentCombo = 0;
+    let lastSliceTime = 0;
+    let comboResetTimer = null;
+
+    // Frenzy power-up mode
+    let isFrenzyActive = false;
+    let frenzyTimer = null;
+    let frenzyEndTime = 0;
+
+    // Active entities
+    let flyingTargets = [];
+    let slicedHalves = [];
+    let particles = [];
+    let floatingTexts = [];
+
+    // Blade trail points: array of {x, y, age}
+    let bladePoints = [];
+    let isSlashing = false;
+    let lastBladePos = null;
+
+    // Spawn parameters
+    let spawnTimer = 0;
+    let nextSpawnInterval = 1200; // ms
+    let minSpeedY = -12;
+    let maxSpeedY = -15.5;
+
+    // Background floating roots & embers
+    let bgRoots = [];
+    let bgEmbers = [];
+
+    /* ==========================================================================
+       SETUP & RESIZE
+       ========================================================================== */
+    function initBackgroundArt() {
+      bgRoots = [];
+      // Generate creepy background root curves
+      for (let i = 0; i < 5; i++) {
+        bgRoots.push({
+          x1: 20 + i * 85,
+          y1: 540,
+          cp1x: 10 + i * 85 + (Math.random() * 40 - 20),
+          cp1y: 350 + Math.random() * 60,
+          cp2x: 20 + i * 85 + (Math.random() * 60 - 30),
+          cp2y: 180 + Math.random() * 80,
+          x2: 30 + i * 85 + (Math.random() * 40 - 20),
+          y2: 40 + Math.random() * 80,
+          thickness: 3 + Math.random() * 4
+        });
+      }
+
+      // Embers
+      bgEmbers = [];
+      for (let i = 0; i < 30; i++) {
+        bgEmbers.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: 1 + Math.random() * 2,
+          speedY: -0.2 - Math.random() * 0.4,
+          speedX: Math.random() * 0.3 - 0.15,
+          alpha: 0.15 + Math.random() * 0.4
+        });
+      }
+    }
+
+    initBackgroundArt();
+
+    /* ==========================================================================
+       PHYSICS CLASSES
+       ========================================================================== */
+    class FlyingTarget {
+      constructor(typeDef, startX, startVx, startVy) {
+        this.type = typeDef;
+        this.x = startX;
+        this.y = canvas.height + 30;
+        this.vx = startVx;
+        this.vy = startVy;
+        this.gravity = 0.28;
+        this.rotation = Math.random() * Math.PI * 2;
+        this.vRot = (Math.random() * 0.08 - 0.04);
+        this.radius = typeDef.radius;
+        this.isSliced = false;
+        this.wobblePhase = Math.random() * 10;
+      }
+
+      update(dtFactor) {
+        const effGravity = isFrenzyActive ? this.gravity * 0.55 : this.gravity;
+        const effVx = isFrenzyActive ? this.vx * 0.6 : this.vx;
+        const effVy = isFrenzyActive ? this.vy * 0.6 : this.vy;
+
+        this.x += effVx * dtFactor;
+        this.y += effVy * dtFactor;
+        this.vy += effGravity * dtFactor;
+        this.rotation += this.vRot * dtFactor;
+        this.wobblePhase += 0.05 * dtFactor;
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+        c.rotate(this.rotation);
+
+        // Soft backglow
+        c.beginPath();
+        c.arc(0, 0, this.radius + 6, 0, Math.PI * 2);
+        c.fillStyle = this.type.id === 'poison' 
+          ? 'rgba(57, 255, 20, 0.22)' 
+          : (this.type.isFrenzy ? 'rgba(255, 210, 77, 0.3)' : 'rgba(192, 66, 255, 0.18)');
+        c.fill();
+
+        // Target Body Drawing
+        if (this.type.id === 'pumpkin') {
+          // Pumpkin Body
+          c.fillStyle = this.type.color;
+          c.beginPath();
+          c.ellipse(0, 2, this.radius, this.radius * 0.85, 0, 0, Math.PI * 2);
+          c.fill();
+
+          // Pumpkin Ribs
+          c.strokeStyle = '#c44800';
+          c.lineWidth = 2;
+          c.beginPath();
+          c.ellipse(0, 2, this.radius * 0.5, this.radius * 0.85, 0, 0, Math.PI * 2);
+          c.stroke();
+
+          // Green stem
+          c.fillStyle = '#2f7535';
+          c.fillRect(-3, -this.radius * 0.9, 6, 8);
+
+          // Eerie carved face
+          c.fillStyle = '#220b00';
+          // Eyes
+          c.beginPath();
+          c.moveTo(-10, -3); c.lineTo(-4, -1); c.lineTo(-8, 3); c.closePath();
+          c.moveTo(10, -3); c.lineTo(4, -1); c.lineTo(8, 3); c.closePath();
+          c.fill();
+          // Mouth
+          c.beginPath();
+          c.moveTo(-10, 8);
+          c.lineTo(-6, 12); c.lineTo(-2, 9); c.lineTo(2, 12); c.lineTo(6, 9); c.lineTo(10, 11);
+          c.lineTo(7, 14); c.lineTo(-7, 14);
+          c.closePath();
+          c.fill();
+
+        } else if (this.type.id === 'eye') {
+          // Arcane eyeball
+          c.fillStyle = '#f0f3f6';
+          c.beginPath();
+          c.arc(0, 0, this.radius, 0, Math.PI * 2);
+          c.fill();
+
+          // Veins
+          c.strokeStyle = 'rgba(255, 42, 75, 0.6)';
+          c.lineWidth = 1.2;
+          c.beginPath();
+          c.moveTo(-this.radius + 4, 0); c.lineTo(-8, 3);
+          c.moveTo(this.radius - 4, -2); c.lineTo(8, -4);
+          c.stroke();
+
+          // Iris
+          c.fillStyle = '#00e5ff';
+          c.beginPath();
+          c.arc(0, 0, this.radius * 0.52, 0, Math.PI * 2);
+          c.fill();
+
+          // Pupil
+          c.fillStyle = '#0a0d14';
+          c.beginPath();
+          c.arc(0, 0, this.radius * 0.25, 0, Math.PI * 2);
+          c.fill();
+
+          // Reflection glint
+          c.fillStyle = '#fff';
+          c.beginPath();
+          c.arc(-4, -4, 3, 0, Math.PI * 2);
+          c.fill();
+
+        } else if (this.type.id === 'skull') {
+          // Cranium
+          c.fillStyle = '#eae2ce';
+          c.beginPath();
+          c.arc(0, -3, this.radius * 0.85, 0, Math.PI * 2);
+          c.fill();
+
+          // Jaw
+          c.fillRect(-this.radius * 0.42, 6, this.radius * 0.84, 11);
+
+          // Eye sockets
+          c.fillStyle = '#111512';
+          c.beginPath();
+          c.arc(-7, -1, 5, 0, Math.PI * 2);
+          c.arc(7, -1, 5, 0, Math.PI * 2);
+          c.fill();
+
+          // Nose cavity
+          c.beginPath();
+          c.moveTo(0, 4); c.lineTo(-2, 7); c.lineTo(2, 7); c.closePath();
+          c.fill();
+
+          // Teeth
+          c.strokeStyle = '#2d332d';
+          c.lineWidth = 1.5;
+          c.beginPath();
+          c.moveTo(-7, 12); c.lineTo(7, 12);
+          c.moveTo(-4, 9); c.lineTo(-4, 15);
+          c.moveTo(0, 9); c.lineTo(0, 15);
+          c.moveTo(4, 9); c.lineTo(4, 15);
+          c.stroke();
+
+        } else if (this.type.id === 'gold_apple') {
+          // Golden frenzy apple
+          c.fillStyle = '#ffd24d';
+          c.beginPath();
+          c.arc(-6, 0, this.radius * 0.75, 0, Math.PI * 2);
+          c.arc(6, 0, this.radius * 0.75, 0, Math.PI * 2);
+          c.fill();
+
+          // Top stem & leaf
+          c.strokeStyle = '#5a3d16';
+          c.lineWidth = 2.5;
+          c.beginPath();
+          c.moveTo(0, -this.radius * 0.7);
+          c.quadraticCurveTo(4, -this.radius * 1.1, 8, -this.radius * 1.05);
+          c.stroke();
+
+          // Shimmer ring
+          c.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+          c.lineWidth = 1.5;
+          c.beginPath();
+          c.arc(-4, -4, 6, 0, Math.PI * 0.8);
+          c.stroke();
+
+        } else if (this.type.id === 'poison') {
+          // Toxic Poison Flask
+          c.fillStyle = '#1c261e';
+          // Neck
+          c.fillRect(-6, -this.radius * 0.95, 12, 12);
+          // Cork
+          c.fillStyle = '#825830';
+          c.fillRect(-8, -this.radius * 1.1, 16, 6);
+
+          // Round Glass body
+          c.fillStyle = 'rgba(20, 40, 25, 0.85)';
+          c.beginPath();
+          c.arc(0, 4, this.radius * 0.75, 0, Math.PI * 2);
+          c.fill();
+          c.strokeStyle = '#39ff14';
+          c.lineWidth = 2;
+          c.stroke();
+
+          // Toxic glowing liquid inside
+          c.fillStyle = '#39ff14';
+          c.beginPath();
+          c.arc(0, 7, this.radius * 0.6, 0.2, Math.PI - 0.2);
+          c.fill();
+
+          // Skull emblem on flask
+          c.fillStyle = '#fff';
+          c.font = '13px Montserrat';
+          c.textAlign = 'center';
+          c.textBaseline = 'middle';
+          c.fillText('☠️', 0, 4);
+        }
+
+        c.restore();
+      }
+    }
+
+    class SlicedHalf {
+      constructor(typeDef, x, y, vx, vy, isLeft, rot, cutAngle) {
+        this.type = typeDef;
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.isLeft = isLeft;
+        this.rotation = rot;
+        this.vRot = isLeft ? -0.12 - Math.random() * 0.08 : 0.12 + Math.random() * 0.08;
+        this.radius = typeDef.radius;
+        this.cutAngle = cutAngle;
+        this.alpha = 1.0;
+        this.gravity = 0.38;
+      }
+
+      update(dtFactor) {
+        this.x += this.vx * dtFactor;
+        this.y += this.vy * dtFactor;
+        this.vy += this.gravity * dtFactor;
+        this.rotation += this.vRot * dtFactor;
+        this.alpha -= 0.015 * dtFactor;
+      }
+
+      draw(c) {
+        if (this.alpha <= 0) return;
+        c.save();
+        c.globalAlpha = Math.max(0, this.alpha);
+        c.translate(this.x, this.y);
+        c.rotate(this.rotation);
+
+        // Clip to one half along vertical separator
+        c.beginPath();
+        if (this.isLeft) {
+          c.rect(-this.radius * 1.5, -this.radius * 1.5, this.radius * 1.5, this.radius * 3);
+        } else {
+          c.rect(0, -this.radius * 1.5, this.radius * 1.5, this.radius * 3);
+        }
+        c.clip();
+
+        // Draw object base
+        c.fillStyle = this.type.color;
+        c.beginPath();
+        c.arc(0, 0, this.radius, 0, Math.PI * 2);
+        c.fill();
+
+        // Draw clean slice face interior
+        c.fillStyle = this.type.innerColor || '#ff9838';
+        c.beginPath();
+        c.ellipse(0, 0, 4, this.radius * 0.85, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.restore();
+      }
+    }
+
+    class Particle {
+      constructor(x, y, color, size, vx, vy, life) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.size = size;
+        this.vx = vx;
+        this.vy = vy;
+        this.maxLife = life;
+        this.life = life;
+        this.gravity = 0.22;
+      }
+
+      update(dtFactor) {
+        this.x += this.vx * dtFactor;
+        this.y += this.vy * dtFactor;
+        this.vy += this.gravity * dtFactor;
+        this.life -= dtFactor;
+      }
+
+      draw(c) {
+        if (this.life <= 0) return;
+        const progress = this.life / this.maxLife;
+        c.save();
+        c.globalAlpha = progress;
+        c.fillStyle = this.color;
+        c.beginPath();
+        c.arc(this.x, this.y, this.size * progress, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    class FloatingText {
+      constructor(text, x, y, color, scale = 1.0) {
+        this.text = text;
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.scale = scale;
+        this.alpha = 1.0;
+        this.vy = -1.8;
+      }
+
+      update(dtFactor) {
+        this.y += this.vy * dtFactor;
+        this.alpha -= 0.02 * dtFactor;
+      }
+
+      draw(c) {
+        if (this.alpha <= 0) return;
+        c.save();
+        c.globalAlpha = this.alpha;
+        c.font = `900 ${Math.round(18 * this.scale)}px 'Cinzel', serif`;
+        c.textAlign = 'center';
+        c.fillStyle = this.color;
+        c.shadowColor = this.color;
+        c.shadowBlur = 8;
+        c.fillText(this.text, this.x, this.y);
+        c.restore();
+      }
+    }
+
+    /* ==========================================================================
+       TARGET SPAWNER ENGINE
+       ========================================================================== */
+    function spawnWave() {
+      if (!isPlaying || isGameOver) return;
+
+      // Determine wave count (1 to 3 objects simultaneously)
+      const count = isFrenzyActive ? (2 + Math.floor(Math.random() * 3)) : (1 + (Math.random() < 0.4 ? 1 : 0));
+
+      for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+          if (!isPlaying || isGameOver) return;
+
+          // Pick type based on weights
+          const type = pickRandomTargetType();
+
+          // Pick start position: horizontally distributed
+          const startX = 60 + Math.random() * (canvas.width - 120);
+          
+          // Target trajectory towards center
+          const targetCenterX = canvas.width / 2 + (Math.random() * 100 - 50);
+          const startVx = (targetCenterX - startX) * 0.018 + (Math.random() * 2 - 1);
+          const startVy = minSpeedY - Math.random() * (Math.abs(maxSpeedY - minSpeedY));
+
+          flyingTargets.push(new FlyingTarget(type, startX, startVx, startVy));
+        }, i * 160);
+      }
+
+      // Schedule next wave
+      const nextTime = isFrenzyActive ? (550 + Math.random() * 400) : (1000 + Math.random() * 800);
+      setTimeout(spawnWave, nextTime);
+    }
+
+    function pickRandomTargetType() {
+      // Calculate total weight
+      const types = Object.values(TARGET_TYPES);
+      let totalWeight = types.reduce((acc, t) => acc + t.weight, 0);
+
+      // If frenzy is active, lower poison weight and raise fruit
+      let rand = Math.random() * totalWeight;
+      for (const t of types) {
+        if (rand < t.weight) {
+          return t;
+        }
+        rand -= t.weight;
+      }
+      return TARGET_TYPES.PUMPKIN;
+    }
+
+    /* ==========================================================================
+       LINE INTERSECTION & SLICING LOGIC
+       ========================================================================== */
+    // Distance from point P to line segment AB
+    function distToSegment(px, py, ax, ay, bx, by) {
+      const l2 = (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
+      if (l2 === 0) return Math.hypot(px - ax, py - ay);
+      let t = ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(px - (ax + t * (bx - ax)), py - (ay + t * (by - ay)));
+    }
+
+    function checkBladeIntersections(p1, p2) {
+      if (!p1 || !p2) return;
+      const now = performance.now();
+      let slicedThisStroke = 0;
+
+      for (let i = flyingTargets.length - 1; i >= 0; i--) {
+        const target = flyingTargets[i];
+        if (target.isSliced) continue;
+
+        const dist = distToSegment(target.x, target.y, p1.x, p1.y, p2.x, p2.y);
+        if (dist <= target.radius + 6) {
+          // SLICE HIT!
+          target.isSliced = true;
+          flyingTargets.splice(i, 1);
+          slicedThisStroke++;
+
+          handleTargetSliced(target, p1, p2);
+        }
+      }
+
+      if (slicedThisStroke > 0) {
+        // Multi-hit combo calculation
+        currentCombo += slicedThisStroke;
+        lastSliceTime = now;
+
+        if (comboResetTimer) clearTimeout(comboResetTimer);
+        comboResetTimer = setTimeout(() => {
+          if (currentCombo > 1) {
+            triggerComboReward(currentCombo);
+          }
+          currentCombo = 0;
+          updateHUD();
+        }, 320);
+
+        updateHUD();
+      }
+    }
+
+    function handleTargetSliced(target, p1, p2) {
+      const cutAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+      // Check Hazard (Poison Flask)
+      if (target.type.isHazard) {
+        sound.playPoisonShatter();
+        loseLife();
+        createExplosionParticles(target.x, target.y, '#39ff14', 35);
+        createExplosionParticles(target.x, target.y, '#ff2a4b', 20);
+        floatingTexts.push(new FloatingText("¡VENENO MORTAL!", target.x, target.y - 15, '#ff2a4b', 1.2));
+        vignette.classList.add('toxic');
+        setTimeout(() => vignette.classList.remove('toxic'), 450);
+        return;
+      }
+
+      // Check Special Frenzy Apple
+      if (target.type.isFrenzy) {
+        activateFrenzy();
+      }
+
+      // Normal Fruit Slice SFX
+      if (target.type.sliceSfx === 'skull') {
+        sound.playSliceSkull();
+      } else {
+        sound.playSliceFruit();
+      }
+
+      // Spawn Sliced Halves flying outward
+      const perpAngle = cutAngle + Math.PI / 2;
+      const speedOut = 4.5 + Math.random() * 2;
+      const leftVx = target.vx + Math.cos(perpAngle) * speedOut;
+      const leftVy = target.vy + Math.sin(perpAngle) * speedOut - 2;
+      const rightVx = target.vx - Math.cos(perpAngle) * speedOut;
+      const rightVy = target.vy - Math.sin(perpAngle) * speedOut - 2;
+
+      slicedHalves.push(new SlicedHalf(target.type, target.x, target.y, leftVx, leftVy, true, target.rotation, cutAngle));
+      slicedHalves.push(new SlicedHalf(target.type, target.x, target.y, rightVx, rightVy, false, target.rotation, cutAngle));
+
+      // Splatter particles
+      createExplosionParticles(target.x, target.y, target.type.color, 16);
+      createExplosionParticles(target.x, target.y, target.type.innerColor || '#ffffff', 8);
+
+      // Add Score
+      const earned = isFrenzyActive ? target.type.points * 2 : target.type.points;
+      score += earned;
+      floatingTexts.push(new FloatingText(`+${earned}`, target.x, target.y - 10, target.type.color, 1.0));
+
+      checkVictoryCondition();
+    }
+
+    function triggerComboReward(comboCount) {
+      sound.playCombo(comboCount);
+      let bonus = 0;
+      let title = `¡COMBO x${comboCount}!`;
+
+      if (comboCount === 2) bonus = 10;
+      else if (comboCount === 3) bonus = 25;
+      else if (comboCount === 4) { bonus = 50; title = `¡CORTE ESPECTRAL x${comboCount}!`; }
+      else { bonus = 80; title = `¡DIVINIDAD DE FILO x${comboCount}!`; }
+
+      score += bonus;
+      floatingTexts.push(new FloatingText(`${title} (+${bonus})`, canvas.width / 2, 220, '#ffd24d', 1.35));
+      checkVictoryCondition();
+    }
+
+    function createExplosionParticles(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = 2 + Math.random() * 6;
+        const size = 2 + Math.random() * 4;
+        const life = 20 + Math.random() * 25;
+        particles.push(new Particle(
+          x, y, color, size,
+          Math.cos(angle) * spd,
+          Math.sin(angle) * spd - 1,
+          life
+        ));
+      }
+    }
+
+    /* ==========================================================================
+       LIVES, FRENZY & VICTORY LOGIC
+       ========================================================================== */
+    function loseLife() {
+      lives = Math.max(0, lives - 1);
+      currentCombo = 0;
+      updateHUD();
+
+      vignette.classList.add('danger');
+      setTimeout(() => vignette.classList.remove('danger'), 350);
+
+      if (lives <= 0) {
+        handleGameOver();
+      }
+    }
+
+    function activateFrenzy() {
+      sound.playFrenzyStart();
+      isFrenzyActive = true;
+      frenzyIndicator.classList.add('active');
+      vignette.classList.add('frenzy');
+      showToast("⚡ ¡FRENESÍ ESPECTRAL! Puntos x2 y tiempo ralentizado.");
+
+      if (frenzyTimer) clearTimeout(frenzyTimer);
+      frenzyTimer = setTimeout(() => {
+        isFrenzyActive = false;
+        frenzyIndicator.classList.remove('active');
+        vignette.classList.remove('frenzy');
+      }, 5000);
+    }
+
+    function checkVictoryCondition() {
+      if (hasWon && !isInfiniteMode) return;
+
+      if (!hasWon && score >= TARGET_VICTORY_SCORE) {
+        hasWon = true;
+        sound.playVictory();
+        localStorage.setItem('krypt_day_20_cleared', 'true');
+        showToast("🌟 ¡HAS PURIFICADO LAS RAÍCES! Maleficio dominado.");
+
+        setTimeout(() => {
+          victoryModal.classList.add('active');
+        }, 600);
+      }
+    }
+
+    function handleGameOver() {
+      isGameOver = true;
+      isPlaying = false;
+      defeatScore.textContent = score;
+      defeatModal.classList.add('active');
+    }
+
+    function restartGame() {
+      sound.init();
+      sound.playClick();
+
+      isPlaying = true;
+      isGameOver = false;
+      hasWon = false;
+      score = 0;
+      lives = MAX_LIVES;
+      currentCombo = 0;
+      isFrenzyActive = false;
+
+      flyingTargets = [];
+      slicedHalves = [];
+      particles = [];
+      floatingTexts = [];
+      bladePoints = [];
+
+      startOverlay.classList.add('hidden');
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      frenzyIndicator.classList.remove('active');
+      vignette.classList.remove('frenzy', 'toxic', 'danger');
+
+      updateHUD();
+      spawnWave();
+    }
+
+    function updateHUD() {
+      scoreDisplay.textContent = score;
+      comboDisplay.textContent = currentCombo > 1 ? `x${currentCombo}` : 'x1';
+
+      // Update life skulls
+      lifeSkulls.forEach((el, idx) => {
+        el.classList.toggle('lost', idx >= lives);
+      });
+
+      // Update victory progress bar
+      const pct = Math.min(100, Math.round((score / TARGET_VICTORY_SCORE) * 100));
+      progressFill.style.width = `${pct}%`;
+      progressText.textContent = hasWon 
+        ? `${score} Pts (¡Superado!)` 
+        : `${score} / ${TARGET_VICTORY_SCORE} Pts`;
+    }
+
+    /* ==========================================================================
+       MAIN ANIMATION LOOP
+       ========================================================================== */
+    let lastTimestamp = performance.now();
+
+    function gameLoop(now) {
+      const dt = Math.min(32, now - lastTimestamp);
+      lastTimestamp = now;
+      const dtFactor = dt / 16.666;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw background atmospheric roots
+      drawAtmosphere(ctx);
+
+      // Update & Draw Flying Targets
+      for (let i = flyingTargets.length - 1; i >= 0; i--) {
+        const target = flyingTargets[i];
+        target.update(dtFactor);
+        target.draw(ctx);
+
+        // Remove if fallen below screen
+        if (target.y > canvas.height + 60 && target.vy > 0) {
+          flyingTargets.splice(i, 1);
+        }
+      }
+
+      // Update & Draw Sliced Halves
+      for (let i = slicedHalves.length - 1; i >= 0; i--) {
+        const half = slicedHalves[i];
+        half.update(dtFactor);
+        half.draw(ctx);
+        if (half.alpha <= 0 || half.y > canvas.height + 60) {
+          slicedHalves.splice(i, 1);
+        }
+      }
+
+      // Update & Draw Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.update(dtFactor);
+        p.draw(ctx);
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+
+      // Update & Draw Floating Texts
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.update(dtFactor);
+        ft.draw(ctx);
+        if (ft.alpha <= 0) {
+          floatingTexts.splice(i, 1);
+        }
+      }
+
+      // Update & Draw Blade Trail
+      updateBladeTrail(now);
+      drawBladeTrail(ctx);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function drawAtmosphere(c) {
+      // Creepy background roots
+      c.save();
+      c.strokeStyle = '#15241b';
+      c.lineCap = 'round';
+      bgRoots.forEach(root => {
+        c.lineWidth = root.thickness;
+        c.beginPath();
+        c.moveTo(root.x1, root.y1);
+        c.bezierCurveTo(root.cp1x, root.cp1y, root.cp2x, root.cp2y, root.x2, root.y2);
+        c.stroke();
+      });
+
+      // Embers
+      c.fillStyle = '#ff7518';
+      bgEmbers.forEach(e => {
+        e.y += e.speedY;
+        e.x += e.speedX;
+        if (e.y < 0) e.y = canvas.height;
+        if (e.x < 0) e.x = canvas.width;
+        if (e.x > canvas.width) e.x = 0;
+
+        c.globalAlpha = e.alpha;
+        c.beginPath();
+        c.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+        c.fill();
+      });
+      c.restore();
+    }
+
+    /* ==========================================================================
+       BLADE TRAIL ENGINE
+       ========================================================================== */
+    function updateBladeTrail(now) {
+      // Discard points older than 180ms
+      bladePoints = bladePoints.filter(p => now - p.time < 180);
+    }
+
+    function drawBladeTrail(c) {
+      if (bladePoints.length < 2) return;
+      const now = performance.now();
+
+      c.save();
+      c.lineCap = 'round';
+      c.lineJoin = 'round';
+
+      for (let i = 1; i < bladePoints.length; i++) {
+        const p1 = bladePoints[i - 1];
+        const p2 = bladePoints[i];
+        const age = now - p2.time;
+        const progress = 1 - Math.min(1, age / 180);
+
+        // Dynamic blade color: Golden during frenzy, spectral cyan/purple in standard
+        const strokeColor = isFrenzyActive 
+          ? `rgba(255, 210, 77, ${progress})` 
+          : `rgba(0, 229, 255, ${progress})`;
+        const coreColor = `rgba(255, 255, 255, ${progress})`;
+
+        // Outer glow
+        c.strokeStyle = strokeColor;
+        c.lineWidth = 14 * progress;
+        c.beginPath();
+        c.moveTo(p1.x, p1.y);
+        c.lineTo(p2.x, p2.y);
+        c.stroke();
+
+        // Inner sharp core
+        c.strokeStyle = coreColor;
+        c.lineWidth = 4 * progress;
+        c.beginPath();
+        c.moveTo(p1.x, p1.y);
+        c.lineTo(p2.x, p2.y);
+        c.stroke();
+      }
+
+      // Tip sparkle
+      const tip = bladePoints[bladePoints.length - 1];
+      c.fillStyle = '#ffffff';
+      c.shadowColor = isFrenzyActive ? '#ffd24d' : '#00e5ff';
+      c.shadowBlur = 12;
+      c.beginPath();
+      c.arc(tip.x, tip.y, 4, 0, Math.PI * 2);
+      c.fill();
+
+      c.restore();
+    }
+
+    /* ==========================================================================
+       INPUT CONTROLS (MOUSE & TOUCH)
+       ========================================================================== */
+    function getCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      let clientX = e.clientX;
+      let clientY = e.clientY;
+
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      }
+
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function onPointerStart(e) {
+      sound.init();
+      isSlashing = true;
+      const pos = getCanvasPos(e);
+      lastBladePos = pos;
+      bladePoints.push({ x: pos.x, y: pos.y, time: performance.now() });
+      sound.playSwoosh();
+    }
+
+    function onPointerMove(e) {
+      if (!isSlashing) return;
+      const pos = getCanvasPos(e);
+      const now = performance.now();
+
+      bladePoints.push({ x: pos.x, y: pos.y, time: now });
+
+      if (lastBladePos) {
+        const dx = pos.x - lastBladePos.x;
+        const dy = pos.y - lastBladePos.y;
+        const dist = Math.hypot(dx, dy);
+
+        // If blade moved fast enough, play swoosh occasionally
+        if (dist > 28 && Math.random() < 0.2) {
+          sound.playSwoosh();
+        }
+
+        // Check fruit intersection along the line
+        checkBladeIntersections(lastBladePos, pos);
+      }
+
+      lastBladePos = pos;
+    }
+
+    function onPointerEnd() {
+      isSlashing = false;
+      lastBladePos = null;
+    }
+
+    // Canvas Mouse Listeners
+    canvas.addEventListener('mousedown', onPointerStart);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerEnd);
+
+    // Canvas Touch Listeners (Mobile / Tablet)
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      onPointerStart(e);
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      onPointerMove(e);
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      onPointerEnd();
+    }, { passive: false });
+
+    /* ==========================================================================
+       BUTTON & MODAL LISTENERS
+       ========================================================================== */
+    btnStartGame.addEventListener('click', () => {
+      sound.init();
+      sound.playClick();
+      restartGame();
+    });
+
+    restartBtn.addEventListener('click', () => {
+      restartGame();
+    });
+
+    btnRetry.addEventListener('click', () => {
+      restartGame();
+    });
+
+    btnContinueInfinite.addEventListener('click', () => {
+      sound.init();
+      sound.playClick();
+      isInfiniteMode = true;
+      victoryModal.classList.remove('active');
+      showToast("♾️ Modo Infinito: ¡Consigue la puntuación más alta!");
+    });
+
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    /* Copy Discord Button */
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 20 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    /* Toast Helper */
+    let toastTimeout = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2500);
+    }
+
+    // Start render loop
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

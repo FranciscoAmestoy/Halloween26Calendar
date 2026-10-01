@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 22: Criptograma del Demonio - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --board-border: #283c2f;
+      --parchment: #ece2ce;
+      --parchment-glow: rgba(236, 226, 206, 0.4);
+      --text-muted: #859a8d;
+
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --pumpkin-orange: #ff7518;
+      --pumpkin-glow: rgba(255, 117, 24, 0.55);
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --spectral-purple: #c042ff;
+      --spectral-glow: rgba(192, 66, 255, 0.55);
+      --spectral-cyan: #00e5ff;
+      --spectral-cyan-glow: rgba(0, 229, 255, 0.55);
+      --moon-gold: #ffd24d;
+      --moon-glow: rgba(255, 210, 77, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 12%, rgba(55, 20, 65, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 88%, rgba(14, 32, 22, 0.6) 0%, transparent 70%);
+      padding: 8px 12px 14px 12px;
+    }
+
+    /* Ambient effects */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.2;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.28) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.flash-gold {
+      box-shadow: inset 0 0 140px rgba(255, 210, 77, 0.85);
+    }
+
+    .vignette-overlay.flash-cyan {
+      box-shadow: inset 0 0 140px rgba(0, 229, 255, 0.85);
+    }
+
+    /* Main Container Shell */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: #fff;
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 10px var(--toxic-glow);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--spectral-cyan);
+      box-shadow: 0 0 10px var(--spectral-cyan-glow);
+      color: #fff;
+    }
+
+    /* Title Banner */
+    .title-banner {
+      text-align: center;
+    }
+
+    .curse-day {
+      font-size: 0.72rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--spectral-cyan);
+      font-weight: 800;
+      text-shadow: 0 0 8px var(--spectral-cyan-glow);
+    }
+
+    .curse-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.45rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #fff;
+      text-shadow: 0 0 12px var(--blood-glow);
+      margin-top: -2px;
+    }
+
+    .curse-subtitle {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    /* Stage Stepper */
+    .stage-stepper {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .stepper-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      background: rgba(14, 22, 17, 0.75);
+      border: 1px solid #28392d;
+      padding: 4px 10px;
+      border-radius: 14px;
+      transition: all 0.25s ease;
+    }
+
+    .stepper-item.active {
+      color: var(--moon-gold);
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 10px var(--moon-glow);
+      background: rgba(30, 42, 32, 0.85);
+    }
+
+    .stepper-item.completed {
+      color: var(--toxic-green);
+      border-color: var(--toxic-green);
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 22, 17, 0.85);
+      border: 1px solid #283c2f;
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .hud-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .hud-value {
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .hud-value.progress {
+      color: var(--toxic-green);
+      text-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .hud-value.hints {
+      color: var(--moon-gold);
+      text-shadow: 0 0 8px var(--moon-glow);
+    }
+
+    /* Parchment Stone Slab */
+    .crypt-slab {
+      width: 100%;
+      background: linear-gradient(180deg, #141d17 0%, #0d1410 100%);
+      border: 2px solid #2c4233;
+      border-radius: 12px;
+      padding: 14px 12px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.85), inset 0 0 30px rgba(0, 0, 0, 0.7);
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    .crypt-slab::before {
+      content: '📜 TABLA DEL AVERNUS';
+      position: absolute;
+      top: -9px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #111a14;
+      border: 1px solid #2d4434;
+      padding: 1px 12px;
+      border-radius: 10px;
+      font-size: 0.62rem;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      font-weight: 800;
+    }
+
+    /* Cipher Flow Text */
+    .cipher-words-flow {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px 14px;
+      padding: 6px 2px;
+      width: 100%;
+    }
+
+    .cipher-word {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .cipher-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .cell-input-box {
+      width: 25px;
+      height: 30px;
+      background: rgba(18, 28, 22, 0.85);
+      border: 1px solid #2e4334;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: var(--moon-gold);
+      transition: all 0.18s ease;
+      box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+    }
+
+    .cell-glyph {
+      font-family: 'MedievalSharp', serif;
+      font-size: 1rem;
+      color: #ff4a68;
+      text-shadow: 0 0 6px rgba(255, 74, 104, 0.45);
+      line-height: 1;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Highlight matching glyphs */
+    .cipher-cell.same-glyph .cell-input-box {
+      border-color: var(--spectral-cyan);
+      box-shadow: 0 0 8px var(--spectral-cyan-glow);
+      background: rgba(15, 38, 35, 0.85);
+    }
+
+    .cipher-cell.same-glyph .cell-glyph {
+      color: var(--spectral-cyan);
+      text-shadow: 0 0 8px var(--spectral-cyan-glow);
+    }
+
+    /* Active selected cell */
+    .cipher-cell.active-focus .cell-input-box {
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 12px var(--moon-glow);
+      background: rgba(45, 38, 20, 0.9);
+      transform: translateY(-2px);
+    }
+
+    .cipher-cell.locked .cell-input-box {
+      color: var(--toxic-green);
+      text-shadow: 0 0 8px var(--toxic-glow);
+      border-color: #2b5536;
+    }
+
+    /* Action Ribbon (Hint, Erase, Reset) */
+    .action-ribbon {
+      width: 100%;
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-ribbon {
+      flex: 1;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.74rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+      background: rgba(20, 32, 25, 0.8);
+      border: 1px solid #2e4435;
+      color: var(--parchment);
+    }
+
+    .btn-ribbon:hover {
+      border-color: var(--moon-gold);
+      color: #fff;
+      box-shadow: 0 0 8px var(--moon-glow);
+    }
+
+    .btn-ribbon.hint {
+      border-color: #3b5845;
+      color: var(--moon-gold);
+    }
+
+    .btn-ribbon.hint:hover {
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 10px var(--moon-glow);
+    }
+
+    /* Virtual Keyboard */
+    .virtual-keyboard {
+      width: 100%;
+      background: rgba(12, 18, 14, 0.9);
+      border: 1px solid #233428;
+      border-radius: 10px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    }
+
+    .kb-row {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      width: 100%;
+    }
+
+    .kb-key {
+      flex: 1;
+      max-width: 36px;
+      height: 38px;
+      background: #17241c;
+      border: 1px solid #2d4435;
+      border-radius: 5px;
+      color: #fff;
+      font-family: 'Cinzel', serif;
+      font-size: 0.92rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .kb-key:hover {
+      background: #233a2c;
+      border-color: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-glow);
+      color: #fff;
+    }
+
+    .kb-key:active {
+      transform: scale(0.94);
+    }
+
+    .kb-key.action-key {
+      flex: 1.4;
+      max-width: 48px;
+      font-size: 0.8rem;
+      background: #2b1c20;
+      border-color: #4f2830;
+      color: #ff758c;
+    }
+
+    .kb-key.action-key:hover {
+      background: #44222a;
+      border-color: var(--blood-red);
+      box-shadow: 0 0 8px var(--blood-glow);
+      color: #fff;
+    }
+
+    .kb-key.used-key {
+      opacity: 0.35;
+      background: #111a14;
+      border-color: #1e2c22;
+      color: #72857a;
+    }
+
+    /* Modals (Intermediate Altar Clear & Final Victory) */
+    .overlay-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 16px;
+    }
+
+    .overlay-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 380px;
+      background: #0f1612;
+      border: 2px solid #32503d;
+      border-radius: 12px;
+      padding: 22px 18px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.9);
+      position: relative;
+      animation: modalPop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .modal-box.victory {
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 30px var(--moon-glow);
+    }
+
+    @keyframes modalPop {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-icon {
+      font-size: 2.4rem;
+      filter: drop-shadow(0 0 10px var(--moon-gold));
+    }
+
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .modal-desc {
+      font-size: 0.82rem;
+      color: var(--parchment);
+      line-height: 1.45;
+    }
+
+    .decoded-quote {
+      width: 100%;
+      background: rgba(22, 35, 26, 0.8);
+      border: 1px solid #37533f;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.88rem;
+      color: var(--moon-gold);
+      line-height: 1.4;
+      font-weight: 800;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Secret Parchment Scroll */
+    .secret-scroll {
+      width: 100%;
+      background: linear-gradient(180deg, #1b281f 0%, #111a14 100%);
+      border: 1px dashed var(--toxic-green);
+      border-radius: 8px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scroll-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--toxic-green);
+      font-weight: 800;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', monospace;
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #fff;
+      text-shadow: 0 0 12px var(--toxic-glow);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 16px rgba(88, 101, 242, 0.7);
+    }
+
+    .btn-action.discord.copied {
+      background: #23a55a;
+    }
+
+    .btn-action.advance {
+      background: linear-gradient(135deg, #274b35, #142a1e);
+      color: var(--parchment);
+      border: 1px solid #3e684d;
+    }
+
+    .btn-action.advance:hover {
+      border-color: var(--toxic-green);
+      color: #fff;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #142017;
+      border: 1px solid var(--toxic-green);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      box-shadow: 0 0 16px var(--toxic-glow);
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient FX -->
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+
+  <!-- Game Shell -->
+  <div class="game-shell">
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>⚰️</span>
+        <span>Cementerio</span>
+      </a>
+
+      <div class="header-controls">
+        <button class="btn-icon" id="soundToggleBtn">🔊 Audio</button>
+        <button class="btn-icon" id="restartBtn">🔄 Reiniciar</button>
+      </div>
+    </header>
+
+    <div class="title-banner">
+      <div class="curse-day">Día XXII • Maleficio de los Glifos</div>
+      <h1 class="curse-title">Criptograma del Demonio</h1>
+      <div class="curse-subtitle">Descifra el mensaje arcano reemplazando los glifos por las letras verdaderas</div>
+    </div>
+
+    <!-- Stepper Navigation -->
+    <div class="stage-stepper">
+      <div class="stepper-item active" id="step1">
+        <span>📜</span>
+        <span>I. El Umbral</span>
+      </div>
+      <div class="stepper-item" id="step2">
+        <span>📜</span>
+        <span>II. La Profecía</span>
+      </div>
+      <div class="stepper-item" id="step3">
+        <span>📜</span>
+        <span>III. Gran Maleficio</span>
+      </div>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-item">
+        <span class="hud-label">Pergamino</span>
+        <span class="hud-value" id="stageDisplay">I / III</span>
+      </div>
+
+      <div class="hud-item">
+        <span class="hud-label">Descifrado</span>
+        <span class="hud-value progress" id="progressDisplay">0%</span>
+      </div>
+
+      <div class="hud-item">
+        <span class="hud-label">Pistas</span>
+        <span class="hud-value hints" id="hintsDisplay">👁️ 2</span>
+      </div>
+    </div>
+
+    <!-- Parchment Tablet Slab -->
+    <div class="crypt-slab">
+      <div class="cipher-words-flow" id="cipherContainer">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Action Ribbon -->
+    <div class="action-ribbon">
+      <button class="btn-ribbon hint" id="btnHint">
+        <span>👁️</span>
+        <span>Revelar Letra</span>
+      </button>
+      <button class="btn-ribbon" id="btnErase">
+        <span>⌫</span>
+        <span>Borrar Letra</span>
+      </button>
+      <button class="btn-ribbon" id="btnResetScroll">
+        <span>🔄</span>
+        <span>Restablecer</span>
+      </button>
+    </div>
+
+    <!-- Virtual Keyboard -->
+    <div class="virtual-keyboard" id="virtualKeyboard">
+      <div class="kb-row" id="kbRow1"></div>
+      <div class="kb-row" id="kbRow2"></div>
+      <div class="kb-row" id="kbRow3"></div>
+    </div>
+  </div>
+
+  <!-- Stage Cleared Intermediate Modal -->
+  <div class="overlay-modal" id="stageModal">
+    <div class="modal-box">
+      <div class="modal-icon">📜✨</div>
+      <h2 class="modal-title" id="stageModalTitle">¡Pergamino Descifrado!</h2>
+      <p class="modal-desc">Has roto el cifrado rúnico de este papiro. Las palabras oscuras revelan su sentido:</p>
+      
+      <div class="decoded-quote" id="decodedQuoteDisplay">"..."</div>
+
+      <button class="btn-action advance" id="btnAdvanceStage">
+        <span>🕯️</span>
+        <span>Avanzar al Siguiente Pergamino</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Final Victory Modal -->
+  <div class="overlay-modal" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">📜🕯️✨</div>
+      <h2 class="modal-title">¡El Criptograma ha sido Roto!</h2>
+      <p class="modal-desc">
+        Has descifrado las tres escrituras sagradas profanadas. Los demonios del averno no pueden ocultar sus pactos ante tu sabiduría.
+      </p>
+
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display">GLIFO-PROFANADO</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action advance" id="btnInfiniteMode">
+        <span>♾️</span>
+        <span>Descifrar Pergaminos Infinitos</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Script Engine -->
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO CONTROLLER
+       ========================================================================== */
+    class CryptogramAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playSelect() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(350, now + 0.04);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      }
+
+      playType() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        // Parchment ink scratch / chisel tap
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(420 + Math.random() * 100, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.07);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+
+      playErase() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + 0.08);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+
+      playHint() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [587.33, 739.99, 880.0];
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + i * 0.06);
+          gain.gain.setValueAtTime(0.16, now + i * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.32);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.06);
+          osc.stop(now + i * 0.06 + 0.35);
+        });
+      }
+
+      playStageClear() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const chord = [440, 554.37, 659.25, 880];
+        chord.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now + i * 0.08);
+          gain.gain.setValueAtTime(0.2, now + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.45);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.08);
+          osc.stop(now + i * 0.08 + 0.5);
+        });
+      }
+
+      playGrandVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const fanfare = [
+          { f: 523.25, t: 0.0, d: 0.25 },
+          { f: 659.25, t: 0.15, d: 0.25 },
+          { f: 783.99, t: 0.3, d: 0.35 },
+          { f: 1046.50, t: 0.5, d: 0.75 }
+        ];
+        fanfare.forEach(n => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(n.f, now + n.t);
+          gain.gain.setValueAtTime(0.24, now + n.t);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + n.t);
+          osc.stop(now + n.t + n.d + 0.05);
+        });
+      }
+
+      playClick() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.05);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+    }
+
+    const sound = new CryptogramAudio();
+
+    /* ==========================================================================
+       PUZZLE SCENARIOS & RUNIC CIPHER SYMBOLS
+       ========================================================================== */
+    const SECRET_KEYWORD = "GLIFO-PROFANADO";
+
+    // 26 distinct ancient gothic runes / symbols
+    const RUNES_SET = [
+      'ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ',
+      'ᛁ', 'ᛃ', 'ᛈ', 'ᛉ', 'ᛊ', 'ᛏ', 'ᛒ', 'ᛖ', 'ᛗ', 'ᛚ',
+      'ᛜ', 'ᛞ', 'ᛟ', 'ᚰ', 'ᚱ', 'ᛥ'
+    ];
+
+    const STAGES = [
+      {
+        id: 1,
+        name: "I. El Umbral",
+        phrase: "LA SOMBRA DE LA MUERTE ACECHA EN LA NOCHE",
+        initialHintsCount: 2, // 'A' and 'E' pre-revealed
+        hintsAllowed: 2
+      },
+      {
+        id: 2,
+        name: "II. La Profecía",
+        phrase: "AQUELLOS QUE DESPIERTAN A LAS ANIMAS NUNCA DUERMEN EN PAZ",
+        initialHintsCount: 1, // 'N' pre-revealed
+        hintsAllowed: 2
+      },
+      {
+        id: 3,
+        name: "III. Gran Maleficio",
+        phrase: "SOLO EL VERDADERO FUEGO PURIFICA LAS CENIZAS DEL MALIGNO",
+        initialHintsCount: 0, // 0 pre-revealed
+        hintsAllowed: 2
+      }
+    ];
+
+    const INFINITE_PHRASES = [
+      "NO TODOS LOS MUERTOS DESCANSAN EN SUS TUMBAS",
+      "LA VOZ DE LA BRUJA RESUENA BAJO LA LUNA LLENA",
+      "CUANDO SUENAN LAS DOCE CAMPANADAS LA PUERTA SE ABRE",
+      "EL SUSURRO DE LAS CATACUMBAS NUNCA DEJA DE LLAMARTE",
+      "EN EL BOSQUE MALDITO LOS ARBOLES TIENEN OJOS QUE MIRAN"
+    ];
+
+    /* ==========================================================================
+       DOM REFERENCES
+       ========================================================================== */
+    const cipherContainer = document.getElementById('cipherContainer');
+    const stageDisplay = document.getElementById('stageDisplay');
+    const progressDisplay = document.getElementById('progressDisplay');
+    const hintsDisplay = document.getElementById('hintsDisplay');
+    const vignette = document.getElementById('vignette');
+    const step1El = document.getElementById('step1');
+    const step2El = document.getElementById('step2');
+    const step3El = document.getElementById('step3');
+
+    const btnHint = document.getElementById('btnHint');
+    const btnErase = document.getElementById('btnErase');
+    const btnResetScroll = document.getElementById('btnResetScroll');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const restartBtn = document.getElementById('restartBtn');
+
+    const stageModal = document.getElementById('stageModal');
+    const stageModalTitle = document.getElementById('stageModalTitle');
+    const decodedQuoteDisplay = document.getElementById('decodedQuoteDisplay');
+    const btnAdvanceStage = document.getElementById('btnAdvanceStage');
+
+    const victoryModal = document.getElementById('victoryModal');
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    const btnInfiniteMode = document.getElementById('btnInfiniteMode');
+    const toast = document.getElementById('toast');
+
+    /* ==========================================================================
+       GAME STATE
+       ========================================================================== */
+    let currentStageIndex = 0;
+    let currentPhrase = "";
+    let cipherMapping = {}; // Letter -> Glyph
+    let reverseMapping = {}; // Glyph -> True Letter
+    let userGuesses = {}; // Glyph -> User Assigned Letter
+    let lockedGlyphs = new Set(); // Glyphs revealed via hints
+    let availableHints = 2;
+    let isInfiniteMode = false;
+
+    // Focused cell index in the flat list of letters
+    let focusedIndex = 0;
+    let letterCellElements = [];
+
+    /* ==========================================================================
+       PUZZLE GENERATOR & CIPHER MAPPING
+       ========================================================================== */
+    function initStage(stageIdx) {
+      currentStageIndex = stageIdx;
+      const stage = STAGES[stageIdx];
+      currentPhrase = stage.phrase;
+      availableHints = stage.hintsAllowed;
+
+      updateStepperUI();
+      buildCipherMapping(currentPhrase);
+      initInitialHints(stage.initialHintsCount);
+
+      renderCipherGrid();
+      updateHUD();
+      updateVirtualKeyboard();
+    }
+
+    function buildCipherMapping(phrase) {
+      cipherMapping = {};
+      reverseMapping = {};
+      userGuesses = {};
+      lockedGlyphs.clear();
+
+      // Extract unique letters
+      const uniqueLetters = Array.from(new Set(phrase.replace(/[^A-Z]/g, '').split('')));
+      
+      // Shuffle runes
+      const shuffledRunes = [...RUNES_SET].sort(() => Math.random() - 0.5);
+
+      uniqueLetters.forEach((letter, i) => {
+        const glyph = shuffledRunes[i % shuffledRunes.length];
+        cipherMapping[letter] = glyph;
+        reverseMapping[glyph] = letter;
+      });
+    }
+
+    function initInitialHints(hintCount) {
+      if (hintCount <= 0) return;
+      // Get letters sorted by frequency
+      const counts = {};
+      for (const char of currentPhrase) {
+        if (/[A-Z]/.test(char)) {
+          counts[char] = (counts[char] || 0) + 1;
+        }
+      }
+
+      // Pick frequent letters (e.g. A, E)
+      const sortedLetters = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+      for (let i = 0; i < hintCount && i < sortedLetters.length; i++) {
+        const letter = sortedLetters[i];
+        const glyph = cipherMapping[letter];
+        userGuesses[glyph] = letter;
+        lockedGlyphs.add(glyph);
+      }
+    }
+
+    /* ==========================================================================
+       DOM RENDERING (WORDS & GLYPH CELLS)
+       ========================================================================== */
+    function renderCipherGrid() {
+      cipherContainer.innerHTML = '';
+      letterCellElements = [];
+
+      const words = currentPhrase.split(' ');
+
+      words.forEach((word) => {
+        const wordEl = document.createElement('div');
+        wordEl.className = 'cipher-word';
+
+        for (let i = 0; i < word.length; i++) {
+          const char = word[i];
+          if (/[A-Z]/.test(char)) {
+            const glyph = cipherMapping[char];
+            const cellEl = document.createElement('div');
+            cellEl.className = 'cipher-cell';
+            cellEl.dataset.glyph = glyph;
+            cellEl.dataset.index = letterCellElements.length;
+
+            const isLocked = lockedGlyphs.has(glyph);
+            const assignedLetter = userGuesses[glyph] || '';
+
+            if (isLocked) cellEl.classList.add('locked');
+
+            cellEl.innerHTML = `
+              <div class="cell-input-box">${assignedLetter}</div>
+              <div class="cell-glyph">${glyph}</div>
+            `;
+
+            cellEl.addEventListener('click', () => {
+              focusCellByIndex(parseInt(cellEl.dataset.index, 10));
+            });
+
+            wordEl.appendChild(cellEl);
+            letterCellElements.push(cellEl);
+          }
+        }
+
+        cipherContainer.appendChild(wordEl);
+      });
+
+      // Focus first unsolved cell
+      findAndFocusNextUnsolved(0);
+    }
+
+    function focusCellByIndex(idx) {
+      if (idx < 0 || idx >= letterCellElements.length) return;
+      sound.playSelect();
+      focusedIndex = idx;
+      updateCellFocusAndHighlights();
+    }
+
+    function updateCellFocusAndHighlights() {
+      const activeCell = letterCellElements[focusedIndex];
+      const activeGlyph = activeCell ? activeCell.dataset.glyph : null;
+
+      letterCellElements.forEach((cell, idx) => {
+        cell.classList.toggle('active-focus', idx === focusedIndex);
+        cell.classList.toggle('same-glyph', activeGlyph && cell.dataset.glyph === activeGlyph);
+      });
+    }
+
+    function findAndFocusNextUnsolved(startFrom = 0) {
+      for (let i = startFrom; i < letterCellElements.length; i++) {
+        const glyph = letterCellElements[i].dataset.glyph;
+        if (!userGuesses[glyph]) {
+          focusedIndex = i;
+          updateCellFocusAndHighlights();
+          return;
+        }
+      }
+      // If none ahead, search from beginning
+      for (let i = 0; i < startFrom; i++) {
+        const glyph = letterCellElements[i].dataset.glyph;
+        if (!userGuesses[glyph]) {
+          focusedIndex = i;
+          updateCellFocusAndHighlights();
+          return;
+        }
+      }
+      // Everything solved or current
+      focusedIndex = Math.min(focusedIndex, letterCellElements.length - 1);
+      updateCellFocusAndHighlights();
+    }
+
+    /* ==========================================================================
+       USER INPUT HANDLING (TYPING & KEYBOARD)
+       ========================================================================== */
+    function applyLetterToFocusedGlyph(letter) {
+      if (focusedIndex < 0 || focusedIndex >= letterCellElements.length) return;
+      const targetCell = letterCellElements[focusedIndex];
+      const glyph = targetCell.dataset.glyph;
+
+      // Do not overwrite locked hints
+      if (lockedGlyphs.has(glyph)) {
+        showToast("✨ Este glifo sagrado ya fue revelado como pista.");
+        findAndFocusNextUnsolved(focusedIndex + 1);
+        return;
+      }
+
+      sound.init();
+      sound.playType();
+
+      // Assign letter to this glyph globally
+      userGuesses[glyph] = letter;
+
+      // Update all DOM cells with this glyph
+      letterCellElements.forEach(cell => {
+        if (cell.dataset.glyph === glyph) {
+          const box = cell.querySelector('.cell-input-box');
+          box.textContent = letter;
+        }
+      });
+
+      updateVirtualKeyboard();
+      updateHUD();
+
+      // Check solved or advance to next
+      if (checkCompletion()) {
+        handleScrollCompleted();
+      } else {
+        findAndFocusNextUnsolved(focusedIndex + 1);
+      }
+    }
+
+    function eraseFocusedGlyph() {
+      if (focusedIndex < 0 || focusedIndex >= letterCellElements.length) return;
+      const targetCell = letterCellElements[focusedIndex];
+      const glyph = targetCell.dataset.glyph;
+
+      if (lockedGlyphs.has(glyph)) {
+        showToast("⚠️ No puedes borrar un glifo sagrado ya revelado.");
+        return;
+      }
+
+      sound.init();
+      sound.playErase();
+
+      delete userGuesses[glyph];
+
+      // Update all cells matching glyph
+      letterCellElements.forEach(cell => {
+        if (cell.dataset.glyph === glyph) {
+          const box = cell.querySelector('.cell-input-box');
+          box.textContent = '';
+        }
+      });
+
+      updateVirtualKeyboard();
+      updateHUD();
+    }
+
+    /* ==========================================================================
+       HINTS & COMPLETION CHECK
+       ========================================================================== */
+    function useHint() {
+      sound.init();
+      if (availableHints <= 0) {
+        showToast("⚠️ No te quedan más pistas en este pergamino.");
+        return;
+      }
+
+      // Find all unrevealed or incorrect glyphs
+      const pendingGlyphs = Object.keys(reverseMapping).filter(g => !lockedGlyphs.has(g));
+
+      if (pendingGlyphs.length === 0) {
+        showToast("✨ Todos los glifos ya han sido revelados.");
+        return;
+      }
+
+      // Pick a random unrevealed glyph
+      const chosenGlyph = pendingGlyphs[Math.floor(Math.random() * pendingGlyphs.length)];
+      const trueLetter = reverseMapping[chosenGlyph];
+
+      userGuesses[chosenGlyph] = trueLetter;
+      lockedGlyphs.add(chosenGlyph);
+      availableHints--;
+
+      sound.playHint();
+      showToast(`👁️ Pista revelada: Glifo '${chosenGlyph}' = '${trueLetter}'`);
+
+      // Update DOM
+      letterCellElements.forEach(cell => {
+        if (cell.dataset.glyph === chosenGlyph) {
+          cell.classList.add('locked');
+          const box = cell.querySelector('.cell-input-box');
+          box.textContent = trueLetter;
+        }
+      });
+
+      updateHUD();
+      updateVirtualKeyboard();
+
+      if (checkCompletion()) {
+        handleScrollCompleted();
+      } else {
+        findAndFocusNextUnsolved(focusedIndex);
+      }
+    }
+
+    function checkCompletion() {
+      // Check if every glyph matches its true letter
+      for (const [glyph, trueLetter] of Object.entries(reverseMapping)) {
+        if (userGuesses[glyph] !== trueLetter) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function handleScrollCompleted() {
+      vignette.classList.add('flash-cyan');
+      setTimeout(() => vignette.classList.remove('flash-cyan'), 450);
+
+      if (currentStageIndex < STAGES.length - 1 && !isInfiniteMode) {
+        sound.playStageClear();
+        stageModalTitle.textContent = `¡Pergamino ${STAGES[currentStageIndex].name} Descifrado!`;
+        decodedQuoteDisplay.textContent = `"${currentPhrase}"`;
+        stageModal.classList.add('active');
+        showToast("✨ ¡Pergamino descifrado con éxito!");
+      } else {
+        sound.playGrandVictory();
+        localStorage.setItem('krypt_day_22_cleared', 'true');
+        showToast("🌟 ¡EL CRIPTOGRAMA DEL DEMONIO HA SIDO RESUELTO!");
+        victoryModal.classList.add('active');
+      }
+    }
+
+    /* ==========================================================================
+       VIRTUAL KEYBOARD BUILDER
+       ========================================================================== */
+    function buildVirtualKeyboard() {
+      const row1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
+      const row2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ'];
+      const row3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M'];
+
+      const row1El = document.getElementById('kbRow1');
+      const row2El = document.getElementById('kbRow2');
+      const row3El = document.getElementById('kbRow3');
+
+      row1El.innerHTML = '';
+      row2El.innerHTML = '';
+      row3El.innerHTML = '';
+
+      row1.forEach(k => row1El.appendChild(createKeyButton(k)));
+      row2.forEach(k => row2El.appendChild(createKeyButton(k)));
+
+      // Row 3 with backspace key
+      row3.forEach(k => row3El.appendChild(createKeyButton(k)));
+
+      const backspaceBtn = document.createElement('button');
+      backspaceBtn.className = 'kb-key action-key';
+      backspaceBtn.innerHTML = '⌫';
+      backspaceBtn.addEventListener('click', () => {
+        eraseFocusedGlyph();
+      });
+      row3El.appendChild(backspaceBtn);
+    }
+
+    function createKeyButton(letter) {
+      const btn = document.createElement('button');
+      btn.className = 'kb-key';
+      btn.dataset.key = letter;
+      btn.textContent = letter;
+      btn.addEventListener('click', () => {
+        applyLetterToFocusedGlyph(letter);
+      });
+      return btn;
+    }
+
+    function updateVirtualKeyboard() {
+      const assignedLetters = new Set(Object.values(userGuesses));
+      const allKeyButtons = document.querySelectorAll('.kb-key[data-key]');
+      allKeyButtons.forEach(btn => {
+        const k = btn.dataset.key;
+        btn.classList.toggle('used-key', assignedLetters.has(k));
+      });
+    }
+
+    /* ==========================================================================
+       PHYSICAL KEYBOARD LISTENER
+       ========================================================================== */
+    window.addEventListener('keydown', (e) => {
+      if (stageModal.classList.contains('active')) {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          btnAdvanceStage.click();
+        }
+        return;
+      }
+
+      if (victoryModal.classList.contains('active')) return;
+
+      const key = e.key.toUpperCase();
+
+      if (/^[A-ZÑ]$/.test(key) && e.key.length === 1) {
+        e.preventDefault();
+        applyLetterToFocusedGlyph(key);
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        eraseFocusedGlyph();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        focusCellByIndex((focusedIndex + 1) % letterCellElements.length);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        focusCellByIndex((focusedIndex - 1 + letterCellElements.length) % letterCellElements.length);
+      } else if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        useHint();
+      }
+    });
+
+    /* ==========================================================================
+       UI UPDATES & HELPERS
+       ========================================================================== */
+    function updateHUD() {
+      stageDisplay.textContent = isInfiniteMode ? 'Infinito' : `${STAGES[currentStageIndex].name.split('.')[0]}`;
+      hintsDisplay.textContent = `👁️ ${availableHints}`;
+
+      // Calculate deciphered percentage
+      const totalGlyphs = Object.keys(reverseMapping).length;
+      let correctCount = 0;
+      for (const [glyph, trueLetter] of Object.entries(reverseMapping)) {
+        if (userGuesses[glyph] === trueLetter) correctCount++;
+      }
+      const pct = totalGlyphs > 0 ? Math.round((correctCount / totalGlyphs) * 100) : 0;
+      progressDisplay.textContent = `${pct}%`;
+    }
+
+    function updateStepperUI() {
+      [step1El, step2El, step3El].forEach((step, idx) => {
+        step.classList.remove('active', 'completed');
+        if (idx === currentStageIndex) {
+          step.classList.add('active');
+        } else if (idx < currentStageIndex) {
+          step.classList.add('completed');
+        }
+      });
+    }
+
+    /* Action Buttons */
+    btnHint.addEventListener('click', useHint);
+    btnErase.addEventListener('click', eraseFocusedGlyph);
+
+    btnResetScroll.addEventListener('click', () => {
+      sound.init();
+      sound.playClick();
+      // Keep only initial hints
+      userGuesses = {};
+      const stage = STAGES[currentStageIndex];
+      initInitialHints(stage.initialHintsCount);
+      renderCipherGrid();
+      updateHUD();
+      updateVirtualKeyboard();
+      showToast("🔄 Pergamino restablecido a su estado inicial.");
+    });
+
+    btnAdvanceStage.addEventListener('click', () => {
+      sound.init();
+      sound.playClick();
+      stageModal.classList.remove('active');
+      initStage(currentStageIndex + 1);
+    });
+
+    btnInfiniteMode.addEventListener('click', () => {
+      sound.init();
+      sound.playClick();
+      isInfiniteMode = true;
+      victoryModal.classList.remove('active');
+      const randomPhrase = INFINITE_PHRASES[Math.floor(Math.random() * INFINITE_PHRASES.length)];
+      currentPhrase = randomPhrase;
+      availableHints = 3;
+      buildCipherMapping(currentPhrase);
+      initInitialHints(1);
+      renderCipherGrid();
+      updateHUD();
+      updateVirtualKeyboard();
+      showToast("♾️ Modo Infinito: ¡Descifra profecías arcanas ilimitadas!");
+    });
+
+    restartBtn.addEventListener('click', () => {
+      sound.init();
+      sound.playClick();
+      initStage(0);
+      showToast("🔄 Criptograma reiniciado al Pergamino I.");
+    });
+
+    soundToggleBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        sound.init();
+        soundToggleBtn.textContent = '🔊 Audio';
+        showToast("🔊 Sonido activado");
+      } else {
+        soundToggleBtn.textContent = '🔇 Mute';
+        showToast("🔇 Sonido desactivado");
+      }
+    });
+
+    // Discord Copy
+    copyDiscordBtn.addEventListener('click', () => {
+      const text = `🎃 ¡He superado el Día 22 en La Krypta! Código: ||${SECRET_KEYWORD}||`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler ||código|| para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyDiscordBtn.classList.add('copied');
+        copyDiscordBtn.innerHTML = '<span>✓</span><span>¡Copiado con Spoiler!</span>';
+        showToast("✓ Mensaje copiado con spoiler para Discord");
+        setTimeout(() => {
+          copyDiscordBtn.classList.remove('copied');
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      });
+    });
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2500);
+    }
+
+    // Initialize Virtual Keyboard & Stage 0
+    buildVirtualKeyboard();
+    initStage(0);
+  </script>
+</body>
+</html>

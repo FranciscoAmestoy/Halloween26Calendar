@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 28: Autopista del Averno - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --board-border: #332014;
+      --parchment: #ece2ce;
+      --text-muted: #9e8979;
+
+      --flame-orange: #ff7518;
+      --flame-glow: rgba(255, 117, 24, 0.55);
+      --hell-red: #ff2a4b;
+      --hell-glow: rgba(255, 42, 75, 0.55);
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --spectral-blue: #00e5ff;
+      --spectral-glow: rgba(0, 229, 255, 0.55);
+      --moon-gold: #ffd24d;
+      --moon-glow: rgba(255, 210, 77, 0.55);
+      --road-color: #121415;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(65, 20, 10, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 85%, rgba(20, 10, 8, 0.7) 0%, transparent 70%);
+      padding: 8px 12px 14px 12px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.15;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.35) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    .vignette-overlay.turbo {
+      box-shadow: inset 0 0 140px rgba(0, 229, 255, 0.85);
+    }
+
+    /* Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(28, 20, 16, 0.6);
+      border: 1px solid #3d2b20;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: #fff;
+      border-color: var(--flame-orange);
+      box-shadow: 0 0 10px var(--flame-glow);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      background: rgba(28, 20, 16, 0.6);
+      border: 1px solid #3d2b20;
+      color: var(--parchment);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--moon-gold);
+      color: #fff;
+      box-shadow: 0 0 8px var(--moon-glow);
+    }
+
+    /* Title Banner */
+    .title-banner {
+      text-align: center;
+      margin-bottom: 2px;
+    }
+
+    .day-tag {
+      font-family: 'Cinzel', serif;
+      font-size: 0.72rem;
+      color: var(--flame-orange);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 800;
+      text-shadow: 0 0 8px var(--flame-glow);
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 2.15rem;
+      letter-spacing: 2.5px;
+      color: var(--moon-gold);
+      text-shadow: 0 0 12px var(--moon-glow);
+      line-height: 1.1;
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(20, 14, 11, 0.88);
+      border: 1px solid #3d2a1d;
+      border-radius: 8px;
+      padding: 6px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+    }
+
+    .hud-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .stat-value {
+      font-family: 'Cinzel', serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--parchment);
+    }
+
+    /* Hearts lives */
+    .lives-box {
+      display: flex;
+      gap: 4px;
+      font-size: 1.05rem;
+    }
+
+    .heart-icon {
+      filter: drop-shadow(0 0 4px var(--hell-glow));
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .heart-icon.lost {
+      opacity: 0.25;
+      filter: grayscale(1);
+      transform: scale(0.85);
+    }
+
+    /* Progress bar */
+    .distance-progress-box {
+      flex: 1;
+      min-width: 180px;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .distance-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(10, 8, 7, 0.9);
+      border: 1px solid #332014;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #ff7518, #ffd24d);
+      box-shadow: 0 0 10px var(--flame-glow);
+      transition: width 0.2s ease;
+    }
+
+    /* Canvas Sandbox */
+    .canvas-wrapper {
+      position: relative;
+      background: #0d0e0f;
+      border: 2px solid #332014;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+    }
+
+    #gameCanvas {
+      display: block;
+      background-color: var(--road-color);
+      width: 100%;
+      max-width: 520px;
+      height: 480px;
+      touch-action: none;
+    }
+
+    /* Floating Banners */
+    .floating-banner {
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      font-family: 'Creepster', cursive;
+      font-size: 2.4rem;
+      color: var(--flame-orange);
+      text-shadow: 0 0 15px var(--flame-glow), 0 4px 10px #000;
+      letter-spacing: 2px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 20;
+      text-align: center;
+      width: 100%;
+    }
+
+    .floating-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    /* Mobile On-screen Controls */
+    .mobile-controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 520px;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .btn-mobile-act {
+      flex: 1;
+      padding: 14px 6px;
+      background: linear-gradient(180deg, #241712 0%, #140d0a 100%);
+      border: 1px solid #3d251a;
+      border-radius: 8px;
+      color: var(--parchment);
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      transition: all 0.1s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-mobile-act:active {
+      transform: translateY(2px);
+      filter: brightness(1.2);
+      border-color: var(--flame-orange);
+    }
+
+    .btn-mobile-act.nitro {
+      border-color: var(--spectral-blue);
+      color: var(--spectral-blue);
+    }
+
+    .btn-mobile-act.nitro:active {
+      box-shadow: 0 0 15px var(--spectral-glow);
+    }
+
+    /* Bottom Info */
+    .bottom-bar {
+      width: 100%;
+      text-align: center;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      padding: 4px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(145deg, #1d130e 0%, #0d0907 100%);
+      border: 2px solid #3d2417;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 440px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      transform: translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-backdrop.active .modal-box {
+      transform: translateY(0);
+    }
+
+    .modal-box.victory {
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 35px rgba(255, 210, 77, 0.35);
+    }
+
+    .modal-box.defeat {
+      border-color: var(--hell-red);
+      box-shadow: 0 0 35px rgba(255, 42, 75, 0.35);
+    }
+
+    .modal-icon {
+      font-size: 3rem;
+      filter: drop-shadow(0 0 10px var(--moon-glow));
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2.2rem;
+      color: var(--moon-gold);
+      text-shadow: 0 0 10px var(--moon-glow);
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .modal-box.defeat .modal-title {
+      color: var(--hell-red);
+      text-shadow: 0 0 10px var(--hell-glow);
+    }
+
+    .modal-desc {
+      font-size: 0.88rem;
+      color: var(--parchment);
+      line-height: 1.5;
+    }
+
+    .secret-scroll {
+      background: rgba(28, 16, 12, 0.9);
+      border: 1px dashed var(--moon-gold);
+      border-radius: 8px;
+      padding: 12px 18px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .scroll-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: var(--moon-gold);
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px var(--moon-glow);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 12px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      color: #fff;
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 15px rgba(88, 101, 242, 0.6);
+    }
+
+    .btn-action.advance {
+      background: linear-gradient(135deg, #ff7518, #b83d00);
+      color: #fff;
+    }
+
+    .btn-action.advance:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 0 18px var(--flame-glow);
+    }
+
+    .btn-action.retry {
+      background: linear-gradient(135deg, #a81c32, #680f1d);
+      color: #fff;
+    }
+
+    .btn-action.retry:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 0 15px var(--hell-glow);
+    }
+
+    .modal-close-corner {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .modal-close-corner:hover {
+      color: #fff;
+    }
+
+    .how-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      text-align: left;
+      font-size: 0.84rem;
+      line-height: 1.4;
+      width: 100%;
+    }
+
+    .how-step-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      background: rgba(28, 16, 12, 0.95);
+      border: 1px solid var(--flame-orange);
+      color: var(--parchment);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.8), 0 0 15px var(--flame-glow);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+  <div class="toast" id="toast">Notificación</div>
+
+  <div class="game-shell">
+    <!-- Header Nav -->
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+
+      <div class="header-controls">
+        <button class="btn-icon" id="btnAudioToggle">
+          <span id="audioIcon">🔊</span>
+          <span id="audioLabel">Sonido</span>
+        </button>
+        <button class="btn-icon" id="btnHowTo">
+          <span>❓</span>
+          <span>¿Cómo Jugar?</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Title Banner -->
+    <div class="title-banner">
+      <div class="day-tag">Día 28 • XXVIII</div>
+      <h1>Autopista del Averno</h1>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-group">
+        <div class="hud-stat">
+          <span class="stat-label">Distancia</span>
+          <span class="stat-value" id="hudDistance">0m</span>
+        </div>
+        <div class="hud-stat">
+          <span class="stat-label">Velocidad</span>
+          <span class="stat-value" id="hudSpeed" style="color: var(--flame-orange);">120 km/h</span>
+        </div>
+      </div>
+
+      <div class="distance-progress-box">
+        <div class="distance-labels">
+          <span>Panteón</span>
+          <span id="goalLabel">Portal del Averno (1000m)</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div class="hud-group">
+        <div class="hud-stat">
+          <span class="stat-label">Vidas</span>
+          <div class="lives-box" id="livesBox">
+            <span class="heart-icon" id="hp0">❤️</span>
+            <span class="heart-icon" id="hp1">❤️</span>
+            <span class="heart-icon" id="hp2">❤️</span>
+          </div>
+        </div>
+        <div class="hud-stat">
+          <span class="stat-label">Puntos</span>
+          <span class="stat-value" id="hudScore" style="color: var(--moon-gold);">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas Sandbox -->
+    <div class="canvas-wrapper">
+      <canvas id="gameCanvas" width="460" height="520"></canvas>
+      <div class="floating-banner" id="floatingBanner">¡TURBO ESPECTRAL!</div>
+    </div>
+
+    <!-- Mobile Touch Controls -->
+    <div class="mobile-controls">
+      <button class="btn-mobile-act" id="btnMobileLeft">
+        <span>◀️</span>
+        <span>Izquierda</span>
+      </button>
+      <button class="btn-mobile-act nitro" id="btnMobileNitro">
+        <span>⚡</span>
+        <span>Turbo Nitro</span>
+      </button>
+      <button class="btn-mobile-act" id="btnMobileRight">
+        <span>▶️</span>
+        <span>Derecha</span>
+      </button>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="bottom-bar">
+      <span>[◀ / A] Izquierda • [▶ / D] Derecha • [▲ / W] Acelerar • [▼ / S] Frenar • [Espacio] Nitro</span>
+      <span>¡Sobrevive 1000 metros esquivando carruajes de ultratumba para escapar!</span>
+    </div>
+  </div>
+
+  <!-- How to Play Modal -->
+  <div class="modal-backdrop" id="helpModal">
+    <div class="modal-box">
+      <button class="modal-close-corner" id="btnCloseHelp">&times;</button>
+      <div class="modal-icon">🏎️🔥</div>
+      <h2 class="modal-title">Cómo Jugar</h2>
+      
+      <div class="how-step">
+        <div class="how-step-icon">🏎️</div>
+        <div><strong>Conducción Infernal:</strong> Usa las flechas <code>[◀]</code> y <code>[▶]</code> o <code>[A]</code> / <code>[D]</code> para cambiar ágilmente de carril por la autopista del averno.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">⚰️</div>
+        <div><strong>Peligros en la Pista:</strong> Esquiva carruajes fúnebres, carretas de huesos y manchas de brea hirviente que harán derrapar tu bólido. Tienes 3 vidas de blindaje.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">⚡</div>
+        <div><strong>Nitro y Puntos:</strong> Recoge orbes de azufre para cargar el turbo <code>[Espacio]</code> y arrasar a velocidad supersónica con estela de fuego azul.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">🏁</div>
+        <div><strong>Meta:</strong> Alcanza los <strong>1000 Metros</strong> hasta cruzar el Gran Portal del Averno para sellar la cripta del día.</div>
+      </div>
+
+      <button class="btn-action advance" id="btnStartPlaying">
+        <span>🏁</span>
+        <span>¡Encender Motores!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">🏁🔥</div>
+      <h2 class="modal-title">¡Averno Conquistado!</h2>
+      <p class="modal-desc">
+        Has cruzado el portal de fuego tras recorrer 1000 metros a toda velocidad por la autopista más oscura del inframundo.
+      </p>
+
+      <div style="font-size: 0.95rem; color: var(--parchment);">
+        Puntos Obtenidos: <strong id="vicScoreVal" style="color: var(--moon-gold);">0</strong>
+      </div>
+
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display">AUTOPISTA-INFERNAL</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action advance" id="btnContinueEndless">
+        <span>♾️</span>
+        <span>Modo Carretera Infinita</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(28,16,12,0.7);">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box defeat">
+      <div class="modal-icon">💥💀</div>
+      <h2 class="modal-title">¡Colisión Infernal!</h2>
+      <p class="modal-desc">
+        Tu bólido quedó destrozado contra los carruajes fúnebres del averno antes de cruzar la meta.
+      </p>
+
+      <div style="font-size: 0.95rem; color: var(--parchment);">
+        Distancia Recorrida: <strong id="defDistanceVal" style="color: var(--moon-gold);">0m</strong>
+      </div>
+
+      <button class="btn-action retry" id="btnRetry">
+        <span>🔄</span>
+        <span>Reintentar Carrera</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO SYNTHESIZER (MOTOR, CHIPS, SIRENAS, EXPLOSIÓN)
+       ========================================================================== */
+    class RacerAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.engineOsc = null;
+        this.engineGain = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      startEngine() {
+        if (!this.enabled || !this.ctx || this.engineOsc) return;
+        this.engineOsc = this.ctx.createOscillator();
+        this.engineGain = this.ctx.createGain();
+        this.engineOsc.type = 'sawtooth';
+        this.engineOsc.frequency.setValueAtTime(55, this.ctx.currentTime);
+        this.engineGain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(220, this.ctx.currentTime);
+
+        this.engineOsc.connect(filter);
+        filter.connect(this.engineGain);
+        this.engineGain.connect(this.ctx.destination);
+        this.engineOsc.start();
+      }
+
+      updateEnginePitch(speedRatio) {
+        if (!this.engineOsc || !this.ctx) return;
+        const targetFreq = 48 + speedRatio * 85;
+        this.engineOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.05);
+      }
+
+      stopEngine() {
+        if (this.engineOsc) {
+          try { this.engineOsc.stop(); } catch(e){}
+          this.engineOsc = null;
+        }
+      }
+
+      playSwerve() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(420, t);
+        osc.frequency.exponentialRampToValueAtTime(180, t + 0.12);
+        gain.gain.setValueAtTime(0.09, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.12);
+      }
+
+      playNitro() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        [350, 520, 780].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, t + i * 0.06);
+          osc.frequency.exponentialRampToValueAtTime(f * 1.5, t + i * 0.06 + 0.25);
+          gain.gain.setValueAtTime(0.18, t + i * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.06 + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.06);
+          osc.stop(t + i * 0.06 + 0.25);
+        });
+      }
+
+      playCrash() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, t);
+        osc.frequency.exponentialRampToValueAtTime(30, t + 0.35);
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.35);
+      }
+
+      playSoul() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, t);
+        osc.frequency.exponentialRampToValueAtTime(1174.66, t + 0.18);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.18);
+      }
+
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const notes = [440, 554.37, 659.25, 880];
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t + i * 0.12);
+          gain.gain.setValueAtTime(0.25, t + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.6);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.12);
+          osc.stop(t + i * 0.12 + 0.6);
+        });
+      }
+
+      playDefeat() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        [160, 130, 95].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, t + i * 0.15);
+          osc.frequency.exponentialRampToValueAtTime(f * 0.6, t + i * 0.15 + 0.3);
+          gain.gain.setValueAtTime(0.25, t + i * 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.15);
+          osc.stop(t + i * 0.15 + 0.3);
+        });
+      }
+    }
+
+    const audio = new RacerAudio();
+
+    /* ==========================================================================
+       GAME ENGINE & RACER LOOP
+       ========================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const vignette = document.getElementById('vignette');
+    const toast = document.getElementById('toast');
+    const floatingBanner = document.getElementById('floatingBanner');
+
+    const hudDistance = document.getElementById('hudDistance');
+    const hudSpeed = document.getElementById('hudSpeed');
+    const hudScore = document.getElementById('hudScore');
+    const progressFill = document.getElementById('progressFill');
+    const goalLabel = document.getElementById('goalLabel');
+    const heartIcons = [
+      document.getElementById('hp0'),
+      document.getElementById('hp1'),
+      document.getElementById('hp2')
+    ];
+
+    // Modals
+    const helpModal = document.getElementById('helpModal');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+
+    // Canvas Settings
+    const CANVAS_WIDTH = 460;
+    const CANVAS_HEIGHT = 520;
+    const ROAD_LEFT = 60;
+    const ROAD_RIGHT = 400;
+    const ROAD_WIDTH = ROAD_RIGHT - ROAD_LEFT; // 340px (3 lanes ~113px each)
+    const NUM_LANES = 3;
+    const LANE_WIDTH = ROAD_WIDTH / NUM_LANES;
+    const GOAL_DISTANCE = 1000; // 1000m to win
+
+    // Game State
+    let distance = 0;
+    let score = 0;
+    let lives = 3;
+    let baseSpeed = 7.5;
+    let currentSpeed = 7.5;
+    let isGameOver = false;
+    let isVictoryAchieved = false;
+    let isEndlessMode = false;
+    let isPaused = false;
+    let nitroTimer = 0;
+    let shakeDuration = 0;
+    let shakeIntensity = 0;
+    let roadStripeOffset = 0;
+
+    // Traffic, Pickups, and Particles
+    let enemies = [];
+    let pickups = [];
+    let particles = [];
+    let roadsideProps = [];
+    let spawnTimer = 45;
+
+    // Player Vehicle
+    const player = {
+      x: ROAD_LEFT + LANE_WIDTH + (LANE_WIDTH - 44) / 2, // Center lane
+      y: 400,
+      w: 44,
+      h: 76,
+      vx: 0,
+      targetLane: 1, // 0, 1, 2
+      invulnTimer: 0,
+      steerTilt: 0
+    };
+
+    // Pre-populate roadside gravestones and torches
+    for (let y = -50; y < CANVAS_HEIGHT + 100; y += 75) {
+      roadsideProps.push({
+        side: 0, // left
+        x: 18 + Math.random() * 20,
+        y: y,
+        type: Math.random() < 0.5 ? 'tomb' : 'torch'
+      });
+      roadsideProps.push({
+        side: 1, // right
+        x: 415 + Math.random() * 20,
+        y: y + 35,
+        type: Math.random() < 0.5 ? 'tomb' : 'torch'
+      });
+    }
+
+    // Input States
+    const keys = {
+      left: false,
+      right: false,
+      up: false,
+      down: false,
+      nitro: false
+    };
+
+    /* --- Visual Notifications & Shakes --- */
+    function showBanner(text, color = '#ff7518') {
+      floatingBanner.textContent = text;
+      floatingBanner.style.color = color;
+      floatingBanner.classList.add('show');
+      setTimeout(() => {
+        floatingBanner.classList.remove('show');
+      }, 1000);
+    }
+
+    function triggerScreenShake(intensity = 6, duration = 15) {
+      shakeIntensity = intensity;
+      shakeDuration = duration;
+    }
+
+    function flashVignette(cssClass) {
+      vignette.classList.add(cssClass);
+      setTimeout(() => {
+        vignette.classList.remove(cssClass);
+      }, 300);
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    function updateLivesHUD() {
+      for (let i = 0; i < 3; i++) {
+        if (i < lives) {
+          heartIcons[i].classList.remove('lost');
+        } else {
+          heartIcons[i].classList.add('lost');
+        }
+      }
+    }
+
+    /* --- Spawning Traffic & Items --- */
+    const ENEMY_TYPES = [
+      { name: 'hearse', w: 42, h: 80, color: '#16191c', speedMod: 0.65, label: '⚰️' },
+      { name: 'bone_wagon', w: 40, h: 72, color: '#4d3b2c', speedMod: 0.55, label: '🦴' },
+      { name: 'wraith_cycle', w: 30, h: 56, color: '#7a1b32', speedMod: 0.85, label: '🏍️' }
+    ];
+
+    function spawnTraffic() {
+      const lane = Math.floor(Math.random() * NUM_LANES);
+      const laneX = ROAD_LEFT + lane * LANE_WIDTH + (LANE_WIDTH - 42) / 2;
+
+      // Don't spawn if too close to another enemy in that lane
+      const tooClose = enemies.some(e => Math.abs(e.y - (-80)) < 120 && Math.abs(e.x - laneX) < 30);
+      if (tooClose) return;
+
+      const type = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
+      enemies.push({
+        x: laneX,
+        y: -90,
+        w: type.w,
+        h: type.h,
+        color: type.color,
+        speedMod: type.speedMod,
+        label: type.label,
+        type: type.name
+      });
+
+      // 40% chance to spawn an Alma or Nitro pickup in another lane
+      if (Math.random() < 0.4) {
+        const pLane = (lane + 1 + Math.floor(Math.random() * 2)) % NUM_LANES;
+        const pX = ROAD_LEFT + pLane * LANE_WIDTH + LANE_WIDTH / 2;
+        pickups.push({
+          x: pX,
+          y: -120,
+          radius: 12,
+          type: Math.random() < 0.75 ? 'soul' : 'nitro',
+          bob: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    function spawnSparks(x, y, color = '#ff7518', count = 10) {
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = 2 + Math.random() * 6;
+        particles.push({
+          x, y,
+          vx: Math.cos(a) * s,
+          vy: Math.sin(a) * s,
+          color,
+          radius: 2 + Math.random() * 2.5,
+          life: 1,
+          decay: 0.04 + Math.random() * 0.03
+        });
+      }
+    }
+
+    /* --- Damage, Game Over, and Victory --- */
+    function takeDamage() {
+      if (isGameOver || isPaused || player.invulnTimer > 0) return;
+
+      lives--;
+      audio.playCrash();
+      triggerScreenShake(10, 20);
+      flashVignette('danger');
+      player.invulnTimer = 65; // ~1 sec invulnerability
+      updateLivesHUD();
+      spawnSparks(player.x + player.w / 2, player.y + player.h / 2, '#ff2a4b', 18);
+
+      if (lives <= 0) {
+        gameOver();
+      }
+    }
+
+    function gameOver() {
+      isGameOver = true;
+      isPaused = true;
+      audio.stopEngine();
+      audio.playDefeat();
+      document.getElementById('defDistanceVal').textContent = `${Math.floor(distance)}m`;
+      defeatModal.classList.add('active');
+    }
+
+    function triggerVictory() {
+      isVictoryAchieved = true;
+      isPaused = true;
+      audio.stopEngine();
+      audio.playVictory();
+      flashVignette('turbo');
+      localStorage.setItem('krypt_day_28_cleared', 'true');
+      document.getElementById('vicScoreVal').textContent = score;
+      victoryModal.classList.add('active');
+    }
+
+    function resetGame() {
+      distance = 0;
+      score = 0;
+      lives = 3;
+      baseSpeed = 7.5;
+      currentSpeed = 7.5;
+      nitroTimer = 0;
+      isGameOver = false;
+      isVictoryAchieved = false;
+      isEndlessMode = false;
+      isPaused = false;
+
+      player.x = ROAD_LEFT + LANE_WIDTH + (LANE_WIDTH - player.w) / 2;
+      player.y = 400;
+      player.vx = 0;
+      player.invulnTimer = 0;
+
+      enemies = [];
+      pickups = [];
+      particles = [];
+      spawnTimer = 45;
+
+      updateLivesHUD();
+      hudScore.textContent = '0';
+      hudDistance.textContent = '0m';
+      hudSpeed.textContent = '120 km/h';
+      progressFill.style.width = '0%';
+      goalLabel.textContent = 'Portal del Averno (1000m)';
+
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+      audio.init();
+      audio.startEngine();
+    }
+
+    /* --- Update Loop --- */
+    function update() {
+      if (isGameOver || isPaused) return;
+
+      // 1. Speed & Nitro Logic
+      let speedMult = 1.0;
+      if (keys.up) speedMult += 0.35;
+      if (keys.down) speedMult -= 0.35;
+
+      if (nitroTimer > 0) {
+        nitroTimer--;
+        speedMult += 0.9;
+        if (Math.random() < 0.4) {
+          spawnSparks(player.x + 10, player.y + player.h, '#00e5ff', 3);
+          spawnSparks(player.x + player.w - 10, player.y + player.h, '#00e5ff', 3);
+        }
+      }
+
+      currentSpeed = baseSpeed * speedMult;
+      audio.updateEnginePitch(currentSpeed / 15);
+
+      // Distance
+      distance += (currentSpeed * 0.08);
+      hudDistance.textContent = `${Math.floor(distance)}m`;
+      hudSpeed.textContent = `${Math.floor(currentSpeed * 16)} km/h`;
+
+      // Check 1000m Victory Goal
+      if (!isVictoryAchieved && distance >= GOAL_DISTANCE) {
+        triggerVictory();
+        return;
+      }
+
+      const progressPercent = Math.min(100, (distance / GOAL_DISTANCE) * 100);
+      progressFill.style.width = `${progressPercent}%`;
+
+      // Gradual road acceleration
+      if (baseSpeed < 12.5) {
+        baseSpeed += 0.0012;
+      }
+
+      // 2. Road scrolling & props
+      roadStripeOffset = (roadStripeOffset + currentSpeed) % 40;
+
+      roadsideProps.forEach(p => {
+        p.y += currentSpeed;
+        if (p.y > CANVAS_HEIGHT + 40) {
+          p.y = -40;
+          p.type = Math.random() < 0.5 ? 'tomb' : 'torch';
+        }
+      });
+
+      // 3. Player Steering Physics
+      const steerSpeed = 6.2;
+      if (keys.left) {
+        player.x -= steerSpeed;
+        player.steerTilt = -0.15;
+      } else if (keys.right) {
+        player.x += steerSpeed;
+        player.steerTilt = 0.15;
+      } else {
+        player.steerTilt *= 0.75;
+      }
+
+      // Constrain player within asphalt road boundaries
+      if (player.x < ROAD_LEFT + 4) player.x = ROAD_LEFT + 4;
+      if (player.x + player.w > ROAD_RIGHT - 4) player.x = ROAD_RIGHT - 4 - player.w;
+
+      if (player.invulnTimer > 0) player.invulnTimer--;
+
+      // Flame exhaust trail
+      if (Math.random() < 0.6) {
+        particles.push({
+          x: player.x + (Math.random() < 0.5 ? 10 : player.w - 10),
+          y: player.y + player.h,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: 2 + Math.random() * 3,
+          color: nitroTimer > 0 ? '#00e5ff' : '#ff7518',
+          radius: 2 + Math.random() * 2.5,
+          life: 0.8,
+          decay: 0.06
+        });
+      }
+
+      // 4. Traffic Update & Spawning
+      spawnTimer--;
+      if (spawnTimer <= 0) {
+        spawnTraffic();
+        spawnTimer = Math.max(28, Math.floor(65 - currentSpeed * 2.5) + Math.floor(Math.random() * 15));
+      }
+
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        // Enemies move downward relative to player speed
+        e.y += (currentSpeed - (baseSpeed * e.speedMod));
+
+        // Collision with player
+        if (checkRectOverlap(player, e)) {
+          takeDamage();
+          spawnSparks((player.x + e.x) / 2, (player.y + e.y) / 2, '#ff7518', 12);
+          enemies.splice(i, 1);
+          continue;
+        }
+
+        // Offscreen removal
+        if (e.y > CANVAS_HEIGHT + 90 || e.y < -150) {
+          enemies.splice(i, 1);
+        }
+      }
+
+      // 5. Pickups Update
+      for (let i = pickups.length - 1; i >= 0; i--) {
+        const p = pickups[i];
+        p.y += currentSpeed;
+        p.bob += 0.08;
+
+        // Circle-box check with player
+        const distX = Math.abs(p.x - (player.x + player.w / 2));
+        const distY = Math.abs(p.y - (player.y + player.h / 2));
+
+        if (distX < (player.w / 2 + p.radius) && distY < (player.h / 2 + p.radius)) {
+          if (p.type === 'nitro') {
+            audio.playNitro();
+            nitroTimer = 160; // ~2.5 sec boost
+            showBanner('¡NITRO INFERNAL!', '#00e5ff');
+            flashVignette('turbo');
+          } else {
+            audio.playSoul();
+            score += 150;
+            hudScore.textContent = score;
+            showBanner('+150 PUNTOS', '#ffd24d');
+          }
+          spawnSparks(p.x, p.y, p.type === 'nitro' ? '#00e5ff' : '#ffd24d', 14);
+          pickups.splice(i, 1);
+          continue;
+        }
+
+        if (p.y > CANVAS_HEIGHT + 30) {
+          pickups.splice(i, 1);
+        }
+      }
+
+      // 6. Particles update
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.life -= pt.decay;
+        if (pt.life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+      }
+    }
+
+    function checkRectOverlap(r1, r2) {
+      // Slightly forgivable hitbox (-4px inset)
+      return (
+        r1.x + 4 < r2.x + r2.w - 4 &&
+        r1.x + r1.w - 4 > r2.x + 4 &&
+        r1.y + 4 < r2.y + r2.h - 4 &&
+        r1.y + r1.h - 4 > r2.y + 4
+      );
+    }
+
+    /* --- Render Loop --- */
+    function draw() {
+      ctx.save();
+      if (shakeDuration > 0) {
+        shakeDuration--;
+        const ox = (Math.random() - 0.5) * shakeIntensity;
+        const oy = (Math.random() - 0.5) * shakeIntensity;
+        ctx.translate(ox, oy);
+      }
+
+      // 1. Roadside Wasteland / Graveyard grass
+      ctx.fillStyle = '#0a0d0a';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      // Left & Right verge ground
+      ctx.fillStyle = '#181f19';
+      ctx.fillRect(0, 0, ROAD_LEFT, CANVAS_HEIGHT);
+      ctx.fillRect(ROAD_RIGHT, 0, CANVAS_WIDTH - ROAD_RIGHT, CANVAS_HEIGHT);
+
+      // Roadside Props (Tombs & Torches)
+      roadsideProps.forEach(p => {
+        if (p.type === 'tomb') {
+          // Gravestone
+          ctx.fillStyle = '#344538';
+          ctx.beginPath();
+          ctx.arc(p.x + 8, p.y + 6, 8, Math.PI, 0);
+          ctx.rect(p.x, p.y + 6, 16, 14);
+          ctx.fill();
+        } else {
+          // Torch with flickering fire
+          ctx.fillStyle = '#2b1b12';
+          ctx.fillRect(p.x + 6, p.y + 6, 4, 16);
+          // Flame
+          ctx.fillStyle = '#ff7518';
+          ctx.beginPath();
+          ctx.arc(p.x + 8, p.y + 4, 5 + Math.sin(Date.now() * 0.01 + p.y) * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // 2. Asphalt Road Surface
+      ctx.fillStyle = '#121415';
+      ctx.fillRect(ROAD_LEFT, 0, ROAD_WIDTH, CANVAS_HEIGHT);
+
+      // Kerb curb stripes (Red & White sinister borders)
+      const curbH = 20;
+      for (let y = -curbH + roadStripeOffset; y < CANVAS_HEIGHT + curbH; y += curbH) {
+        const isRed = Math.floor((y - roadStripeOffset) / curbH) % 2 === 0;
+        ctx.fillStyle = isRed ? '#8a1d29' : '#e0d8c8';
+        ctx.fillRect(ROAD_LEFT - 6, y, 6, curbH);
+        ctx.fillRect(ROAD_RIGHT, y, 6, curbH);
+      }
+
+      // 3. Lane Dash Lines
+      ctx.strokeStyle = '#5c483a';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([20, 20]);
+      ctx.lineDashOffset = -roadStripeOffset;
+
+      for (let l = 1; l < NUM_LANES; l++) {
+        const laneX = ROAD_LEFT + l * LANE_WIDTH;
+        ctx.beginPath();
+        ctx.moveTo(laneX, 0);
+        ctx.lineTo(laneX, CANVAS_HEIGHT);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]); // Reset dash
+
+      // 4. Draw Pickups
+      pickups.forEach(p => {
+        const pulse = Math.sin(p.bob) * 3;
+        ctx.save();
+        if (p.type === 'nitro') {
+          ctx.shadowColor = '#00e5ff';
+          ctx.shadowBlur = 12;
+          ctx.fillStyle = '#00e5ff';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius + pulse * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 12px Cinzel';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('⚡', p.x, p.y);
+        } else {
+          ctx.shadowColor = '#ffd24d';
+          ctx.shadowBlur = 12;
+          ctx.fillStyle = '#ffd24d';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius + pulse * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#221';
+          ctx.font = 'bold 12px Cinzel';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('💀', p.x, p.y);
+        }
+        ctx.restore();
+      });
+
+      // 5. Draw Traffic Enemies
+      enemies.forEach(e => {
+        ctx.save();
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(e.x + 4, e.y + 4, e.w, e.h);
+
+        // Vehicle Chassis
+        ctx.fillStyle = e.color;
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(e.x, e.y, e.w, e.h, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        // Windshield
+        ctx.fillStyle = '#2a1a2e';
+        ctx.fillRect(e.x + 6, e.y + 14, e.w - 12, 14);
+
+        // Rear brake lights
+        ctx.fillStyle = '#ff2a4b';
+        ctx.fillRect(e.x + 4, e.y + e.h - 5, 8, 4);
+        ctx.fillRect(e.x + e.w - 12, e.y + e.h - 5, 8, 4);
+
+        // Center emblem
+        ctx.fillStyle = '#e4dfd3';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(e.label, e.x + e.w / 2, e.y + e.h / 2 + 6);
+        ctx.restore();
+      });
+
+      // 6. Draw Player Vehicle
+      if (player.invulnTimer % 4 < 2) {
+        ctx.save();
+        ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+        ctx.rotate(player.steerTilt);
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(-player.w / 2 + 5, -player.h / 2 + 5, player.w, player.h);
+
+        // Hell Racer Body (Infernal Black & Crimson)
+        const carGrad = ctx.createLinearGradient(0, -player.h / 2, 0, player.h / 2);
+        carGrad.addColorStop(0, '#a81c32');
+        carGrad.addColorStop(0.5, '#450913');
+        carGrad.addColorStop(1, '#1a0407');
+        ctx.fillStyle = carGrad;
+        ctx.strokeStyle = '#ff7518';
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        ctx.roundRect(-player.w / 2, -player.h / 2, player.w, player.h, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        // Front Headlights
+        ctx.fillStyle = '#ffd24d';
+        ctx.shadowColor = '#ffd24d';
+        ctx.shadowBlur = 10;
+        ctx.fillRect(-player.w / 2 + 4, -player.h / 2 + 2, 8, 5);
+        ctx.fillRect(player.w / 2 - 12, -player.h / 2 + 2, 8, 5);
+        ctx.shadowBlur = 0;
+
+        // Front Windshield
+        ctx.fillStyle = '#111';
+        ctx.fillRect(-player.w / 2 + 6, -player.h / 2 + 18, player.w - 12, 15);
+
+        // Skull Hood Decal
+        ctx.fillStyle = '#fff';
+        ctx.font = '14px Cinzel';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('☠️', 0, 8);
+
+        // Rear Spoiler Wing
+        ctx.fillStyle = '#ff7518';
+        ctx.fillRect(-player.w / 2 - 2, player.h / 2 - 8, player.w + 4, 5);
+
+        // Nitro exhaust flare
+        if (nitroTimer > 0) {
+          ctx.fillStyle = '#00e5ff';
+          ctx.shadowColor = '#00e5ff';
+          ctx.shadowBlur = 14;
+          ctx.beginPath();
+          ctx.moveTo(-player.w / 2 + 6, player.h / 2);
+          ctx.lineTo(0, player.h / 2 + 20 + Math.random() * 10);
+          ctx.lineTo(player.w / 2 - 6, player.h / 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // 7. Draw Particles (Sparks & Flames)
+      particles.forEach(pt => {
+        ctx.save();
+        ctx.globalAlpha = pt.life;
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      ctx.restore();
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* ==========================================================================
+       KEYBOARD & MOBILE TOUCH CONTROLS
+       ========================================================================== */
+    window.addEventListener('keydown', (e) => {
+      if (isGameOver || isPaused) return;
+
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        e.preventDefault();
+        keys.left = true;
+        audio.playSwerve();
+      } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        e.preventDefault();
+        keys.right = true;
+        audio.playSwerve();
+      } else if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        keys.up = true;
+      } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+        e.preventDefault();
+        keys.down = true;
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        // Activate nitro if available or mini-burst
+        audio.playNitro();
+        nitroTimer = 120;
+        showBanner('¡NITRO!', '#00e5ff');
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = false;
+      if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = false;
+    });
+
+    // Mobile Virtual Touch Handlers
+    const btnLeft = document.getElementById('btnMobileLeft');
+    const btnRight = document.getElementById('btnMobileRight');
+    const btnNitro = document.getElementById('btnMobileNitro');
+
+    const bindTouchButton = (btn, onPress, onRelease) => {
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        audio.init();
+        onPress();
+      });
+      btn.addEventListener('pointerup', (e) => {
+        e.preventDefault();
+        onRelease();
+      });
+      btn.addEventListener('pointerleave', onRelease);
+    };
+
+    bindTouchButton(btnLeft, () => { keys.left = true; audio.playSwerve(); }, () => { keys.left = false; });
+    bindTouchButton(btnRight, () => { keys.right = true; audio.playSwerve(); }, () => { keys.right = false; });
+    btnNitro.addEventListener('click', () => {
+      audio.init();
+      audio.playNitro();
+      nitroTimer = 120;
+      showBanner('¡NITRO!', '#00e5ff');
+    });
+
+    // Touch on Canvas directly to steer
+    canvas.addEventListener('pointerdown', (e) => {
+      if (isGameOver || isPaused) return;
+      audio.init();
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      if (clickX < rect.width * 0.45) {
+        keys.left = true;
+        audio.playSwerve();
+      } else if (clickX > rect.width * 0.55) {
+        keys.right = true;
+        audio.playSwerve();
+      } else {
+        // Center tap: Nitro
+        audio.playNitro();
+        nitroTimer = 120;
+        showBanner('¡NITRO!', '#00e5ff');
+      }
+    });
+
+    canvas.addEventListener('pointerup', () => {
+      keys.left = false;
+      keys.right = false;
+    });
+
+    /* ==========================================================================
+       MODAL & AUDIO UI LISTENERS
+       ========================================================================== */
+    const btnAudioToggle = document.getElementById('btnAudioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+    const audioLabel = document.getElementById('audioLabel');
+
+    btnAudioToggle.addEventListener('click', () => {
+      audio.enabled = !audio.enabled;
+      if (audio.enabled) {
+        audioIcon.textContent = '🔊';
+        audioLabel.textContent = 'Sonido';
+        audio.init();
+        audio.startEngine();
+        showToast('Sonido activado');
+      } else {
+        audioIcon.textContent = '🔇';
+        audioLabel.textContent = 'Silencio';
+        audio.stopEngine();
+        showToast('Sonido silenciado');
+      }
+    });
+
+    // Help Modal
+    document.getElementById('btnHowTo').addEventListener('click', () => {
+      helpModal.classList.add('active');
+      isPaused = true;
+      audio.stopEngine();
+    });
+
+    document.getElementById('btnCloseHelp').addEventListener('click', () => {
+      helpModal.classList.remove('active');
+      if (!victoryModal.classList.contains('active') && !defeatModal.classList.contains('active')) {
+        isPaused = false;
+        audio.startEngine();
+      }
+    });
+
+    document.getElementById('btnStartPlaying').addEventListener('click', () => {
+      helpModal.classList.remove('active');
+      if (!victoryModal.classList.contains('active') && !defeatModal.classList.contains('active')) {
+        isPaused = false;
+        audio.startEngine();
+      }
+    });
+
+    // Retry Button
+    document.getElementById('btnRetry').addEventListener('click', () => {
+      resetGame();
+    });
+
+    // Endless Mode
+    document.getElementById('btnContinueEndless').addEventListener('click', () => {
+      victoryModal.classList.remove('active');
+      isPaused = false;
+      isEndlessMode = true;
+      goalLabel.textContent = 'Carretera Infinita ♾️';
+      player.invulnTimer = 90;
+      enemies = enemies.filter(e => e.y < player.y - 200 || e.y > player.y + 150);
+      audio.startEngine();
+      showToast('¡Modo Carretera Infinita activado!');
+    });
+
+    // Discord Spoiler Copy Button (No visual spoiler tag, payload has ||AUTOPISTA-INFERNAL||)
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    copyDiscordBtn.addEventListener('click', () => {
+      const discordText = `🎃 ¡He superado el Día 28 en La Krypta! Código: ||AUTOPISTA-INFERNAL|| (Distancia: ${Math.floor(distance)}m, Puntos: ${score})`;
+      navigator.clipboard.writeText(discordText).then(() => {
+        copyDiscordBtn.innerHTML = '<span>✔️</span><span>¡Copiado!</span>';
+        showToast('Mensaje copiado para Discord');
+        setTimeout(() => {
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        showToast('Error al copiar');
+      });
+    });
+
+    // Start race!
+    resetGame();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

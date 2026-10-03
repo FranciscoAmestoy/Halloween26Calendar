@@ -242,6 +242,32 @@
       color: var(--toxic-green);
     }
 
+    /* Invisible Secret Admin Button */
+    .btn-invisible-admin {
+      opacity: 0;
+      width: 24px;
+      height: 32px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: default;
+      box-shadow: none;
+      pointer-events: auto;
+      transition: opacity 0.25s ease;
+    }
+
+    .btn-invisible-admin.active {
+      opacity: 1;
+      width: auto;
+      padding: 7px 14px;
+      border: 1px solid var(--stone-border);
+      background: linear-gradient(180deg, #23402d 0%, #15271c 100%);
+      cursor: pointer;
+      border-radius: 8px;
+      color: var(--toxic-green);
+      box-shadow: 0 0 12px var(--toxic-glow);
+    }
+
     /* Season Status Badge */
     .season-badge {
       display: flex;
@@ -913,7 +939,7 @@
           <button class="btn-spooky active" id="sfxToggleBtn" title="Efectos de sonido (audio/hover.mp3 & audio/click.mp3)">
             <span id="sfxIcon">🔊</span> <span id="sfxLabel">SFX ON</span>
           </button>
-          <button class="btn-spooky" id="adminKeyBtn" title="Llave Arcana (Admin)">
+          <button class="btn-invisible-admin" id="adminKeyBtn">
             <span>🔑</span>
           </button>
         </div>
@@ -1054,7 +1080,7 @@
       { day: 28, roman: "XXVIII",emblem: "🏎️", title: "Autopista del Averno", mechanic: "Vertical 2D Racing", lore: "Conduce por el sendero tenebroso esquivando carruajes fúnebres y llamaradas del inframundo." },
       { day: 29, roman: "XXIX",  emblem: "👾", title: "Invasión de Ultratumba", mechanic: "Space Invaders", lore: "Dispara relámpagos benditos contra las legiones de murciélagos y demonios que descienden en formación." },
       { day: 30, roman: "XXX",   emblem: "🐍", title: "Ciempiés de Sangre", mechanic: "Snake Clásico", lore: "Guía a la sierpe maldita a devorar almas errantes; cada bocado incrementa su colosal tamaño." },
-      { day: 31, roman: "XXXI",  emblem: "🎃", title: "Rompe-Catacumbas (Gran Final)", mechanic: "Arkanoid / Breakout", lore: "Noche de Brujas: Destruye los sellos de piedra del sarcófago mayor para el exorcismo final." }
+      { day: 31, roman: "XXXI",  emblem: "🎃", title: "UnderKrypt: Boss Rush", mechanic: "Undertale Battle Clone", lore: "Noche de Brujas: Enfréntate a los 5 grandes monstruos clásicos en un Boss Rush con almas de colores y mucho humor." }
     ];
 
     /* ==========================================================================
@@ -1461,6 +1487,24 @@
         if (tomb.day === 25 && localStorage.getItem('krypt_day_25_cleared') === 'true') {
           statusText = "✓ ¡Superado!";
         }
+        if (tomb.day === 26 && localStorage.getItem('krypt_day_26_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 27 && localStorage.getItem('krypt_day_27_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 28 && localStorage.getItem('krypt_day_28_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 29 && localStorage.getItem('krypt_day_29_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 30 && localStorage.getItem('krypt_day_30_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
+        if (tomb.day === 31 && localStorage.getItem('krypt_day_31_cleared') === 'true') {
+          statusText = "✓ ¡Superado!";
+        }
 
         card.innerHTML = `
           <div class="tomb-roman-watermark">${tomb.roman}</div>
@@ -1595,6 +1639,18 @@
           enterCurseBtn.textContent = '🕳️ Entrar al Maleficio: El Descenso al Abismo';
         } else if (tomb.day === 25) {
           enterCurseBtn.textContent = '☄️ Entrar al Maleficio: Catapulta de Huesos';
+        } else if (tomb.day === 26) {
+          enterCurseBtn.textContent = '🏃 Entrar al Maleficio: Pesadilla Eterna';
+        } else if (tomb.day === 27) {
+          enterCurseBtn.textContent = '🪢 Entrar al Maleficio: El Ahorcado del Pantano';
+        } else if (tomb.day === 28) {
+          enterCurseBtn.textContent = '🏎️ Entrar al Maleficio: Autopista del Averno';
+        } else if (tomb.day === 29) {
+          enterCurseBtn.textContent = '👾 Entrar al Maleficio: Invasión de Ultratumba';
+        } else if (tomb.day === 30) {
+          enterCurseBtn.textContent = '🐍 Entrar al Maleficio: Ciempiés de Sangre';
+        } else if (tomb.day === 31) {
+          enterCurseBtn.textContent = '🎃 Entrar al Gran Maleficio: UnderKrypt Boss Rush';
         } else {
           enterCurseBtn.textContent = isCurrent ? '⚡ Iniciar Maleficio (Fase de Pruebas)' : '🔄 Rejugar Maleficio (Fase de Pruebas)';
         }
@@ -1674,6 +1730,18 @@
         window.location.href = 'games/dia-24/index.html';
       } else if (currentlySelectedTomb.tomb.day === 25) {
         window.location.href = 'games/dia-25/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 26) {
+        window.location.href = 'games/dia-26/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 27) {
+        window.location.href = 'games/dia-27/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 28) {
+        window.location.href = 'games/dia-28/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 29) {
+        window.location.href = 'games/dia-29/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 30) {
+        window.location.href = 'games/dia-30/index.html';
+      } else if (currentlySelectedTomb.tomb.day === 31) {
+        window.location.href = 'games/dia-31/index.html';
       } else {
         showToast("💀 Lápida examinada. En la siguiente fase aquí cargará este juego.");
       }

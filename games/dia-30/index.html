@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 30: Ciempiés de Sangre - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --board-border: #33141b;
+      --parchment: #ece2ce;
+      --text-muted: #9c858b;
+
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.6);
+      --crimson-dark: #8a0e22;
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.6);
+      --moon-gold: #ffd24d;
+      --moon-glow: rgba(255, 210, 77, 0.6);
+      --spectral-blue: #00e5ff;
+      --tile-dark: #0f1412;
+      --tile-alt: #131a17;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 12%, rgba(55, 12, 22, 0.55) 0%, transparent 65%),
+        radial-gradient(circle at 50% 88%, rgba(20, 8, 12, 0.7) 0%, transparent 70%);
+      padding: 8px 12px 14px 12px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.16;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.35) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    .vignette-overlay.flash-win {
+      box-shadow: inset 0 0 140px rgba(255, 210, 77, 0.85);
+    }
+
+    /* Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(28, 16, 20, 0.6);
+      border: 1px solid #3d242a;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: #fff;
+      border-color: var(--blood-red);
+      box-shadow: 0 0 10px var(--blood-glow);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      background: rgba(28, 16, 20, 0.6);
+      border: 1px solid #3d242a;
+      color: var(--parchment);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--moon-gold);
+      color: #fff;
+      box-shadow: 0 0 8px var(--moon-glow);
+    }
+
+    /* Title Banner */
+    .title-banner {
+      text-align: center;
+      margin-bottom: 2px;
+    }
+
+    .day-tag {
+      font-family: 'Cinzel', serif;
+      font-size: 0.72rem;
+      color: var(--blood-red);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 800;
+      text-shadow: 0 0 8px var(--blood-glow);
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 2.15rem;
+      letter-spacing: 2.5px;
+      color: var(--moon-gold);
+      text-shadow: 0 0 12px var(--moon-glow);
+      line-height: 1.1;
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(20, 11, 14, 0.88);
+      border: 1px solid #3d2028;
+      border-radius: 8px;
+      padding: 6px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+    }
+
+    .hud-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .stat-value {
+      font-family: 'Cinzel', serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--parchment);
+    }
+
+    /* Progress bar */
+    .growth-progress-box {
+      flex: 1;
+      min-width: 180px;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .growth-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(10, 6, 8, 0.9);
+      border: 1px solid #381a22;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      width: 12%;
+      height: 100%;
+      background: linear-gradient(90deg, #ff2a4b, #ffd24d);
+      box-shadow: 0 0 10px var(--blood-glow);
+      transition: width 0.25s ease;
+    }
+
+    /* Canvas Sandbox */
+    .canvas-wrapper {
+      position: relative;
+      background: #090e0c;
+      border: 2px solid #381a22;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+    }
+
+    #gameCanvas {
+      display: block;
+      background-color: #0b110e;
+      width: 100%;
+      max-width: 440px;
+      height: 440px;
+      touch-action: none;
+    }
+
+    /* Floating Banners */
+    .floating-banner {
+      position: absolute;
+      top: 25%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      font-family: 'Creepster', cursive;
+      font-size: 2.4rem;
+      color: var(--blood-red);
+      text-shadow: 0 0 15px var(--blood-glow), 0 4px 10px #000;
+      letter-spacing: 2px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 20;
+      text-align: center;
+      width: 100%;
+    }
+
+    .floating-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    /* Mobile D-Pad Virtual Controls */
+    .mobile-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+      max-width: 280px;
+      margin-top: 4px;
+    }
+
+    .dpad-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-dpad {
+      width: 64px;
+      height: 52px;
+      background: linear-gradient(180deg, #24141a 0%, #12090d 100%);
+      border: 1px solid #3d2028;
+      border-radius: 8px;
+      color: var(--parchment);
+      font-size: 1.25rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      transition: all 0.1s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-dpad:active {
+      transform: translateY(2px);
+      filter: brightness(1.2);
+      border-color: var(--blood-red);
+      box-shadow: 0 0 12px var(--blood-glow);
+    }
+
+    /* Bottom Info */
+    .bottom-bar {
+      width: 100%;
+      text-align: center;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      padding: 4px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(145deg, #1d0f14 0%, #0d070a 100%);
+      border: 2px solid #3d1c25;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 440px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      transform: translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-backdrop.active .modal-box {
+      transform: translateY(0);
+    }
+
+    .modal-box.victory {
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 35px rgba(255, 210, 77, 0.35);
+    }
+
+    .modal-box.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 35px rgba(255, 42, 75, 0.35);
+    }
+
+    .modal-icon {
+      font-size: 3rem;
+      filter: drop-shadow(0 0 10px var(--moon-glow));
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2.2rem;
+      color: var(--moon-gold);
+      text-shadow: 0 0 10px var(--moon-glow);
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .modal-box.defeat .modal-title {
+      color: var(--blood-red);
+      text-shadow: 0 0 10px var(--blood-glow);
+    }
+
+    .modal-desc {
+      font-size: 0.88rem;
+      color: var(--parchment);
+      line-height: 1.5;
+    }
+
+    .secret-scroll {
+      background: rgba(28, 14, 18, 0.9);
+      border: 1px dashed var(--moon-gold);
+      border-radius: 8px;
+      padding: 12px 18px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .scroll-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: var(--moon-gold);
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px var(--moon-glow);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 12px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      color: #fff;
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 15px rgba(88, 101, 242, 0.6);
+    }
+
+    .btn-action.advance {
+      background: linear-gradient(135deg, #ff2a4b, #990e24);
+      color: #fff;
+    }
+
+    .btn-action.advance:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 0 18px var(--blood-glow);
+    }
+
+    .btn-action.retry {
+      background: linear-gradient(135deg, #a81c32, #680f1d);
+      color: #fff;
+    }
+
+    .btn-action.retry:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 0 15px var(--blood-glow);
+    }
+
+    .modal-close-corner {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .modal-close-corner:hover {
+      color: #fff;
+    }
+
+    .how-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      text-align: left;
+      font-size: 0.84rem;
+      line-height: 1.4;
+      width: 100%;
+    }
+
+    .how-step-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      background: rgba(28, 14, 18, 0.95);
+      border: 1px solid var(--blood-red);
+      color: var(--parchment);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.8), 0 0 15px var(--blood-glow);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+  <div class="toast" id="toast">Notificación</div>
+
+  <div class="game-shell">
+    <!-- Header Nav -->
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+
+      <div class="header-controls">
+        <button class="btn-icon" id="btnAudioToggle">
+          <span id="audioIcon">🔊</span>
+          <span id="audioLabel">Sonido</span>
+        </button>
+        <button class="btn-icon" id="btnHowTo">
+          <span>❓</span>
+          <span>¿Cómo Jugar?</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Title Banner -->
+    <div class="title-banner">
+      <div class="day-tag">Día 30 • XXX</div>
+      <h1>Ciempiés de Sangre</h1>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-group">
+        <div class="hud-stat">
+          <span class="stat-label">Longitud</span>
+          <span class="stat-value" id="hudLength" style="color: var(--blood-red);">3</span>
+        </div>
+        <div class="hud-stat">
+          <span class="stat-label">Puntos</span>
+          <span class="stat-value" id="hudScore" style="color: var(--moon-gold);">0</span>
+        </div>
+      </div>
+
+      <div class="growth-progress-box">
+        <div class="growth-labels">
+          <span>Cieno</span>
+          <span id="goalLabel">Longitud Meta: 15</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div class="hud-group">
+        <div class="hud-stat">
+          <span class="stat-label">Velocidad</span>
+          <span class="stat-value" id="hudSpeed" style="color: var(--toxic-green);">Normal</span>
+        </div>
+        <button class="btn-icon" id="btnRestart" title="Reiniciar partida">
+          <span>🔄</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Canvas Sandbox -->
+    <div class="canvas-wrapper">
+      <canvas id="gameCanvas" width="440" height="440"></canvas>
+      <div class="floating-banner" id="floatingBanner">¡CIEMPÍES TITÁNICO!</div>
+    </div>
+
+    <!-- Mobile Virtual Controls (D-Pad) -->
+    <div class="mobile-controls">
+      <div class="dpad-row">
+        <button class="btn-dpad" id="btnUp">▲</button>
+      </div>
+      <div class="dpad-row">
+        <button class="btn-dpad" id="btnLeft">◀</button>
+        <button class="btn-dpad" id="btnDown">▼</button>
+        <button class="btn-dpad" id="btnRight">▶</button>
+      </div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="bottom-bar">
+      <span>[Flechas / WASD] Guiar al Ciempiés • Desliza el dedo en móvil para girar</span>
+      <span>¡Alcanza 15 segmentos de longitud devorando orbes de sangre!</span>
+    </div>
+  </div>
+
+  <!-- How to Play Modal -->
+  <div class="modal-backdrop" id="helpModal">
+    <div class="modal-box">
+      <button class="modal-close-corner" id="btnCloseHelp">&times;</button>
+      <div class="modal-icon">🐍🩸</div>
+      <h2 class="modal-title">Cómo Jugar</h2>
+      
+      <div class="how-step">
+        <div class="how-step-icon">🐍</div>
+        <div><strong>La Sierpe Carmesí:</strong> Usa las flechas de dirección <code>[▲ ▼ ◀ ▶]</code> o <code>[WASD]</code> (o desliza tu dedo en móvil) para guiar al ciempiés por las losas de la cripta.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">🩸</div>
+        <div><strong>Orbes de Sangre:</strong> Devora los frascos y orbes carmesí para crecer +1 segmento y ganar +10 Puntos. Cada tanto aparecerán calabazas doradas de bonus.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">⚠️</div>
+        <div><strong>Peligros Mortales:</strong> Evita colisionar contra los muros de piedra o contra tu propio cuerpo segmental.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">🏆</div>
+        <div><strong>Meta de Victoria:</strong> Haz crecer al ciempiés hasta alcanzar <strong>15 segmentos</strong> de longitud para sellar el maleficio.</div>
+      </div>
+
+      <button class="btn-action advance" id="btnStartPlaying">
+        <span>🐍</span>
+        <span>¡Comenzar el Banquete!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">👑🩸</div>
+      <h2 class="modal-title">¡Ciempiés Titánico!</h2>
+      <p class="modal-desc">
+        Has alimentado a la sierpe carmesí hasta alcanzar una colosal longitud de 15 segmentos en las catacumbas.
+      </p>
+
+      <div style="font-size: 0.95rem; color: var(--parchment);">
+        Puntos Totales: <strong id="vicScoreVal" style="color: var(--moon-gold);">0</strong>
+      </div>
+
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display">SIERPE-CARMESI</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action advance" id="btnContinueEndless">
+        <span>♾️</span>
+        <span>Modo Ciempiés Infinito</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(28,14,18,0.7);">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box defeat">
+      <div class="modal-icon">💀💥</div>
+      <h2 class="modal-title">¡Ciempiés Quebrado!</h2>
+      <p class="modal-desc">
+        La sierpe colisionó en la oscuridad de las catacumbas antes de alcanzar su forma titánica.
+      </p>
+
+      <div style="font-size: 0.95rem; color: var(--parchment);">
+        Longitud Alcanzada: <strong id="defLengthVal" style="color: var(--moon-gold);">0</strong>
+      </div>
+
+      <button class="btn-action retry" id="btnRetry">
+        <span>🔄</span>
+        <span>Intentar de Nuevo</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO SYNTHESIZER
+       ========================================================================== */
+    class SnakeAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playSlither() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(160, t);
+        osc.frequency.exponentialRampToValueAtTime(70, t + 0.04);
+        gain.gain.setValueAtTime(0.04, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.04);
+      }
+
+      playBite() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, t);
+        osc.frequency.exponentialRampToValueAtTime(880, t + 0.1);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.1);
+      }
+
+      playBonus() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t + i * 0.05);
+          gain.gain.setValueAtTime(0.16, t + i * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.05 + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.05);
+          osc.stop(t + i * 0.05 + 0.22);
+        });
+      }
+
+      playCrash() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(30, t + 0.35);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.35);
+      }
+
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const notes = [440, 554.37, 659.25, 880];
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t + i * 0.12);
+          gain.gain.setValueAtTime(0.25, t + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.6);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.12);
+          osc.stop(t + i * 0.12 + 0.6);
+        });
+      }
+    }
+
+    const audio = new SnakeAudio();
+
+    /* ==========================================================================
+       GAME ENGINE & LOGIC
+       ========================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const vignette = document.getElementById('vignette');
+    const toast = document.getElementById('toast');
+    const floatingBanner = document.getElementById('floatingBanner');
+
+    const hudLength = document.getElementById('hudLength');
+    const hudScore = document.getElementById('hudScore');
+    const hudSpeed = document.getElementById('hudSpeed');
+    const progressFill = document.getElementById('progressFill');
+
+    // Modals
+    const helpModal = document.getElementById('helpModal');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+
+    // Grid Dimensions
+    const GRID_SIZE = 20; // 20x20 tiles
+    const TILE_SIZE = 22; // 20 * 22 = 440px
+    const GOAL_LENGTH = 15; // 15 segments to win
+
+    // Game State
+    let snake = [];
+    let dir = { x: 1, y: 0 };
+    let nextDir = { x: 1, y: 0 };
+    let inputQueue = [];
+    let food = { x: 15, y: 10 };
+    let bonusFood = null;
+    let score = 0;
+    let isGameOver = false;
+    let isVictoryAchieved = false;
+    let isEndlessMode = false;
+    let isPaused = false;
+    let tickSpeed = 120; // ms per step
+    let lastTickTime = 0;
+    let particles = [];
+
+    /* --- Visual Notifications & Shakes --- */
+    function showBanner(text, color = '#ff2a4b') {
+      floatingBanner.textContent = text;
+      floatingBanner.style.color = color;
+      floatingBanner.classList.add('show');
+      setTimeout(() => {
+        floatingBanner.classList.remove('show');
+      }, 1000);
+    }
+
+    function flashVignette(cssClass) {
+      vignette.classList.add(cssClass);
+      setTimeout(() => {
+        vignette.classList.remove(cssClass);
+      }, 300);
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    /* --- Spawn Food & Bonus --- */
+    function spawnFood() {
+      let valid = false;
+      while (!valid) {
+        food.x = Math.floor(Math.random() * GRID_SIZE);
+        food.y = Math.floor(Math.random() * GRID_SIZE);
+        valid = !snake.some(seg => seg.x === food.x && seg.y === food.y);
+      }
+    }
+
+    function maybeSpawnBonus() {
+      if (bonusFood || Math.random() > 0.35) return;
+      let valid = false;
+      let bx = 0, by = 0;
+      while (!valid) {
+        bx = Math.floor(Math.random() * GRID_SIZE);
+        by = Math.floor(Math.random() * GRID_SIZE);
+        valid = !snake.some(seg => seg.x === bx && seg.y === by) && (bx !== food.x || by !== food.y);
+      }
+      bonusFood = { x: bx, y: by, life: 100 }; // stays for ~100 frames
+    }
+
+    function spawnSparks(x, y, color = '#ff2a4b', count = 10) {
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = 1.5 + Math.random() * 4;
+        particles.push({
+          x: x * TILE_SIZE + TILE_SIZE / 2,
+          y: y * TILE_SIZE + TILE_SIZE / 2,
+          vx: Math.cos(a) * s,
+          vy: Math.sin(a) * s,
+          color,
+          radius: 2 + Math.random() * 2,
+          life: 1,
+          decay: 0.05 + Math.random() * 0.03
+        });
+      }
+    }
+
+    /* --- Reset & Start --- */
+    function resetGame() {
+      snake = [
+        { x: 5, y: 10, prevX: 4, prevY: 10 },
+        { x: 4, y: 10, prevX: 3, prevY: 10 },
+        { x: 3, y: 10, prevX: 2, prevY: 10 }
+      ];
+      dir = { x: 1, y: 0 };
+      nextDir = { x: 1, y: 0 };
+      inputQueue = [];
+      score = 0;
+      isGameOver = false;
+      isVictoryAchieved = false;
+      isEndlessMode = false;
+      isPaused = false;
+      tickSpeed = 120;
+      lastTickTime = performance.now();
+      bonusFood = null;
+      particles = [];
+
+      spawnFood();
+
+      hudLength.textContent = snake.length;
+      hudScore.textContent = '0';
+      hudSpeed.textContent = 'Normal';
+      progressFill.style.width = `${Math.min(100, (snake.length / GOAL_LENGTH) * 100)}%`;
+
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+    }
+
+    function triggerVictory() {
+      isVictoryAchieved = true;
+      isPaused = true;
+      audio.playVictory();
+      flashVignette('flash-win');
+      localStorage.setItem('krypt_day_30_cleared', 'true');
+      document.getElementById('vicScoreVal').textContent = score;
+      victoryModal.classList.add('active');
+    }
+
+    function gameOver() {
+      isGameOver = true;
+      isPaused = true;
+      audio.playCrash();
+      flashVignette('danger');
+      document.getElementById('defLengthVal').textContent = snake.length;
+      defeatModal.classList.add('active');
+    }
+
+    /* --- Update Step --- */
+    function updateGameStep() {
+      if (isGameOver || isPaused) return;
+
+      if (inputQueue.length > 0) {
+        nextDir = inputQueue.shift();
+      }
+      dir = nextDir;
+
+      const newHeadX = snake[0].x + dir.x;
+      const newHeadY = snake[0].y + dir.y;
+
+      // Wall collision check
+      if (newHeadX < 0 || newHeadX >= GRID_SIZE || newHeadY < 0 || newHeadY >= GRID_SIZE) {
+        gameOver();
+        return;
+      }
+
+      // Self collision check (ignore tail tip unless eating)
+      const willEat = (newHeadX === food.x && newHeadY === food.y);
+      const bodyToCheck = willEat ? snake : snake.slice(0, -1);
+      if (bodyToCheck.some(seg => seg.x === newHeadX && seg.y === newHeadY)) {
+        gameOver();
+        return;
+      }
+
+      audio.playSlither();
+
+      // Record previous positions for smooth 60fps sliding
+      for (let i = snake.length - 1; i > 0; i--) {
+        snake[i].prevX = snake[i].x;
+        snake[i].prevY = snake[i].y;
+        snake[i].x = snake[i - 1].x;
+        snake[i].y = snake[i - 1].y;
+      }
+      snake[0].prevX = snake[0].x;
+      snake[0].prevY = snake[0].y;
+      snake[0].x = newHeadX;
+      snake[0].y = newHeadY;
+
+      // Check food bite
+      if (willEat) {
+        audio.playBite();
+        score += 10;
+        hudScore.textContent = score;
+        spawnSparks(newHeadX, newHeadY, '#ff2a4b', 12);
+        spawnFood();
+        maybeSpawnBonus();
+
+        // Grow by adding segment at tail's previous spot
+        const tail = snake[snake.length - 1];
+        snake.push({
+          x: tail.prevX,
+          y: tail.prevY,
+          prevX: tail.prevX,
+          prevY: tail.prevY
+        });
+
+        // Speed curve (tuned for smooth play)
+        tickSpeed = Math.max(70, 120 - Math.floor(snake.length * 2.2));
+        hudSpeed.textContent = tickSpeed < 85 ? '¡Frenético!' : (tickSpeed < 105 ? 'Rápido' : 'Normal');
+
+        // Check Victory with GOAL_LENGTH = 15
+        if (!isVictoryAchieved && snake.length >= GOAL_LENGTH) {
+          triggerVictory();
+          return;
+        }
+      }
+
+      // Check bonus food
+      if (bonusFood) {
+        if (newHeadX === bonusFood.x && newHeadY === bonusFood.y) {
+          audio.playBonus();
+          score += 50;
+          hudScore.textContent = score;
+          showBanner('+50 CALABAZA', '#ffd24d');
+          spawnSparks(newHeadX, newHeadY, '#ffd24d', 16);
+          bonusFood = null;
+        } else {
+          bonusFood.life--;
+          if (bonusFood.life <= 0) bonusFood = null;
+        }
+      }
+
+      hudLength.textContent = snake.length;
+      const prog = Math.min(100, (snake.length / GOAL_LENGTH) * 100);
+      progressFill.style.width = `${prog}%`;
+    }
+
+    /* --- Main Animation Loop (60 FPS Smooth Rendering) --- */
+    function gameLoop(currentTime) {
+      if (!lastTickTime) lastTickTime = currentTime;
+      const elapsed = currentTime - lastTickTime;
+
+      if (elapsed >= tickSpeed) {
+        updateGameStep();
+        lastTickTime = currentTime;
+      }
+
+      // Progress fraction between 0.0 and 1.0 for sub-tile smooth sliding
+      let progress = 1;
+      if (!isGameOver && !isPaused && tickSpeed > 0) {
+        progress = Math.min(1, Math.max(0, (currentTime - lastTickTime) / tickSpeed));
+      }
+
+      // Particles update
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.life -= pt.decay;
+        if (pt.life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+      }
+
+      draw(progress);
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* --- Canvas Render --- */
+    function draw(progress = 1) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Alternating Crypt Tile Grid
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          ctx.fillStyle = (r + c) % 2 === 0 ? '#0d1310' : '#090f0c';
+          ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+      }
+
+      // Stone border line
+      ctx.strokeStyle = '#2b1b22';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+
+      // 2. Draw Food (Orbe de Sangre)
+      const fx = food.x * TILE_SIZE + TILE_SIZE / 2;
+      const fy = food.y * TILE_SIZE + TILE_SIZE / 2;
+      const pulse = Math.sin(Date.now() * 0.008) * 1.5;
+
+      ctx.save();
+      ctx.shadowColor = '#ff2a4b';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = '#ff2a4b';
+      ctx.beginPath();
+      ctx.arc(fx, fy, 7.5 + pulse * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ff94a4';
+      ctx.beginPath();
+      ctx.arc(fx - 2, fy - 2, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 3. Draw Bonus Food (Calabaza Dorada)
+      if (bonusFood) {
+        const bx = bonusFood.x * TILE_SIZE + TILE_SIZE / 2;
+        const by = bonusFood.y * TILE_SIZE + TILE_SIZE / 2;
+        ctx.save();
+        ctx.shadowColor = '#ffd24d';
+        ctx.shadowBlur = 12;
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🎃', bx, by);
+        ctx.restore();
+      }
+
+      // 4. Draw Smooth Continuous Centipede Body
+      if (snake.length > 1) {
+        // Outer glowing body line
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 42, 75, 0.45)';
+        ctx.lineWidth = TILE_SIZE - 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+
+        const h = snake[0];
+        ctx.moveTo(
+          (h.prevX + (h.x - h.prevX) * progress) * TILE_SIZE + TILE_SIZE / 2,
+          (h.prevY + (h.y - h.prevY) * progress) * TILE_SIZE + TILE_SIZE / 2
+        );
+        for (let i = 1; i < snake.length; i++) {
+          const s = snake[i];
+          ctx.lineTo(
+            (s.prevX + (s.x - s.prevX) * progress) * TILE_SIZE + TILE_SIZE / 2,
+            (s.prevY + (s.y - s.prevY) * progress) * TILE_SIZE + TILE_SIZE / 2
+          );
+        }
+        ctx.stroke();
+
+        // Inner crimson chitin spine
+        ctx.strokeStyle = '#8a0e22';
+        ctx.lineWidth = TILE_SIZE - 6;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 5. Draw Articulated Segment Plates & Leg Spikes
+      for (let i = snake.length - 1; i >= 1; i--) {
+        const seg = snake[i];
+        const px = (seg.prevX + (seg.x - seg.prevX) * progress) * TILE_SIZE + TILE_SIZE / 2;
+        const py = (seg.prevY + (seg.y - seg.prevY) * progress) * TILE_SIZE + TILE_SIZE / 2;
+        const radius = (TILE_SIZE - 6) / 2;
+
+        ctx.save();
+        // Segment circular plate
+        ctx.fillStyle = i % 2 === 0 ? '#b31832' : '#680c1d';
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Plate highlight
+        ctx.fillStyle = '#e63956';
+        ctx.beginPath();
+        ctx.arc(px - 1, py - 1, radius * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Perpendicular centipede leg spikes
+        const nextSeg = snake[i - 1];
+        const dx = (nextSeg.x - seg.x);
+        const dy = (nextSeg.y - seg.y);
+        const angle = Math.atan2(dy, dx);
+        const perp = angle + Math.PI / 2;
+
+        const legDist = radius + 3.5;
+        ctx.strokeStyle = '#ff7518';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(px + Math.cos(perp) * radius, py + Math.sin(perp) * radius);
+        ctx.lineTo(px + Math.cos(perp) * legDist, py + Math.sin(perp) * legDist);
+        ctx.moveTo(px - Math.cos(perp) * radius, py - Math.sin(perp) * radius);
+        ctx.lineTo(px - Math.cos(perp) * legDist, py - Math.sin(perp) * legDist);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 6. Draw Centipede Head (Smooth position & rotation)
+      if (snake.length > 0) {
+        const head = snake[0];
+        const hx = (head.prevX + (head.x - head.prevX) * progress) * TILE_SIZE + TILE_SIZE / 2;
+        const hy = (head.prevY + (head.y - head.prevY) * progress) * TILE_SIZE + TILE_SIZE / 2;
+        const headAngle = Math.atan2(head.y - head.prevY || dir.y, head.x - head.prevX || dir.x);
+
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.rotate(headAngle);
+
+        // Head Base
+        ctx.shadowColor = '#ff2a4b';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = '#ff2a4b';
+        ctx.beginPath();
+        ctx.roundRect(-TILE_SIZE / 2 + 2, -TILE_SIZE / 2 + 2, TILE_SIZE - 4, TILE_SIZE - 4, 6);
+        ctx.fill();
+
+        // Mandibles / Fangs in front
+        ctx.fillStyle = '#ffd24d';
+        ctx.beginPath();
+        ctx.moveTo(TILE_SIZE / 2 - 2, -5);
+        ctx.lineTo(TILE_SIZE / 2 + 5, -3);
+        ctx.lineTo(TILE_SIZE / 2 - 2, -1);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(TILE_SIZE / 2 - 2, 1);
+        ctx.lineTo(TILE_SIZE / 2 + 5, 3);
+        ctx.lineTo(TILE_SIZE / 2 - 2, 5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Glowing venomous eyes
+        ctx.fillStyle = '#ffd24d';
+        ctx.beginPath();
+        ctx.arc(2, -4, 2.5, 0, Math.PI * 2);
+        ctx.arc(2, 4, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(2.5, -4, 1.2, 0, Math.PI * 2);
+        ctx.arc(2.5, 4, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      // 7. Particles
+      particles.forEach(pt => {
+        ctx.save();
+        ctx.globalAlpha = pt.life;
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    /* ==========================================================================
+       KEYBOARD & MOBILE TOUCH CONTROLS
+       ========================================================================== */
+    function setDirection(dx, dy) {
+      if (isGameOver || isPaused) return;
+      audio.init();
+
+      const lastDir = inputQueue.length > 0 ? inputQueue[inputQueue.length - 1] : dir;
+      // Prevent 180-degree turn
+      if (dx !== 0 && lastDir.x === -dx) return;
+      if (dy !== 0 && lastDir.y === -dy) return;
+      // Prevent duplicate input
+      if (dx === lastDir.x && dy === lastDir.y) return;
+
+      if (inputQueue.length < 2) {
+        inputQueue.push({ x: dx, y: dy });
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        setDirection(0, -1);
+      } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+        e.preventDefault();
+        setDirection(0, 1);
+      } else if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        e.preventDefault();
+        setDirection(-1, 0);
+      } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        e.preventDefault();
+        setDirection(1, 0);
+      }
+    });
+
+    // Mobile Virtual D-Pad
+    document.getElementById('btnUp').addEventListener('click', () => setDirection(0, -1));
+    document.getElementById('btnDown').addEventListener('click', () => setDirection(0, 1));
+    document.getElementById('btnLeft').addEventListener('click', () => setDirection(-1, 0));
+    document.getElementById('btnRight').addEventListener('click', () => setDirection(1, 0));
+    document.getElementById('btnLeft').addEventListener('click', () => setDirection(-1, 0));
+    document.getElementById('btnRight').addEventListener('click', () => setDirection(1, 0));
+
+    // Swipe Gestures on Canvas
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', (e) => {
+      if (e.changedTouches.length > 0) {
+        const diffX = e.changedTouches[0].clientX - touchStartX;
+        const diffY = e.changedTouches[0].clientY - touchStartY;
+        const absX = Math.abs(diffX);
+        const absY = Math.abs(diffY);
+
+        if (Math.max(absX, absY) > 20) {
+          if (absX > absY) {
+            setDirection(diffX > 0 ? 1 : -1, 0);
+          } else {
+            setDirection(0, diffY > 0 ? 1 : -1);
+          }
+        }
+      }
+    }, { passive: true });
+
+    /* ==========================================================================
+       MODAL & AUDIO UI LISTENERS
+       ========================================================================== */
+    const btnAudioToggle = document.getElementById('btnAudioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+    const audioLabel = document.getElementById('audioLabel');
+
+    btnAudioToggle.addEventListener('click', () => {
+      audio.enabled = !audio.enabled;
+      if (audio.enabled) {
+        audioIcon.textContent = '🔊';
+        audioLabel.textContent = 'Sonido';
+        audio.init();
+        showToast('Sonido activado');
+      } else {
+        audioIcon.textContent = '🔇';
+        audioLabel.textContent = 'Silencio';
+        showToast('Sonido silenciado');
+      }
+    });
+
+    // Help Modal
+    document.getElementById('btnHowTo').addEventListener('click', () => {
+      helpModal.classList.add('active');
+      isPaused = true;
+    });
+
+    document.getElementById('btnCloseHelp').addEventListener('click', () => {
+      helpModal.classList.remove('active');
+      if (!victoryModal.classList.contains('active') && !defeatModal.classList.contains('active')) {
+        isPaused = false;
+      }
+    });
+
+    document.getElementById('btnStartPlaying').addEventListener('click', () => {
+      helpModal.classList.remove('active');
+      if (!victoryModal.classList.contains('active') && !defeatModal.classList.contains('active')) {
+        isPaused = false;
+      }
+    });
+
+    // Restart Button
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      resetGame();
+      showToast('Partida reiniciada.');
+    });
+
+    // Retry Button
+    document.getElementById('btnRetry').addEventListener('click', () => {
+      resetGame();
+    });
+
+    // Endless Mode Button
+    document.getElementById('btnContinueEndless').addEventListener('click', () => {
+      victoryModal.classList.remove('active');
+      isEndlessMode = true;
+      isPaused = false;
+      document.getElementById('goalLabel').textContent = 'Modo Infinito ♾️';
+      showToast('¡Modo Ciempiés Infinito activado!');
+    });
+
+    // Discord Spoiler Copy Button (No visual spoiler tag, payload has ||SIERPE-CARMESI||)
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    copyDiscordBtn.addEventListener('click', () => {
+      const discordText = `🎃 ¡He superado el Día 30 en La Krypta! Código: ||SIERPE-CARMESI|| (Longitud: ${snake.length}, Puntos: ${score})`;
+      navigator.clipboard.writeText(discordText).then(() => {
+        copyDiscordBtn.innerHTML = '<span>✔️</span><span>¡Copiado!</span>';
+        showToast('Mensaje copiado para Discord');
+        setTimeout(() => {
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        showToast('Error al copiar');
+      });
+    });
+
+    // Start game!
+    resetGame();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

@@ -1,0 +1,2361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 31: UnderKrypt - Boss Rush de Halloween | La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #000000;
+      --box-border: #ffffff;
+      --text-white: #ffffff;
+      --text-yellow: #ffff00;
+      --hp-red: #c70000;
+      --hp-yellow: #ffff00;
+      --hp-green: #00ff00;
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.6);
+      --blood-red: #ff2a4b;
+      --gold: #ffd24d;
+      --blue-soul: #00bfff;
+      --green-soul: #00ff00;
+      --purple-soul: #d154ff;
+      --yellow-soul: #ffff00;
+      --red-soul: #ff0000;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-white);
+      font-family: 'Press Start 2P', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+
+    /* Ambient Scanline Filter (Retro CRT) */
+    body::before {
+      content: " ";
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 4px, 6px 100%;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      max-width: 720px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0a0a0a;
+      border-bottom: 2px solid #222;
+      z-index: 10;
+    }
+
+    .btn-nav {
+      background: #111;
+      color: #aaa;
+      border: 1px solid #444;
+      padding: 6px 10px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.6rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-nav:hover {
+      background: #222;
+      color: #fff;
+      border-color: #888;
+    }
+
+    .boss-counter-badge {
+      font-size: 0.65rem;
+      color: var(--gold);
+      text-align: center;
+      line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .boss-counter-badge span {
+      color: #fff;
+      font-size: 0.55rem;
+    }
+
+    /* Main Battle Container */
+    #battleContainer {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 12px;
+      position: relative;
+    }
+
+    /* Boss Stage Area */
+    #bossStage {
+      width: 100%;
+      height: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      position: relative;
+      margin-bottom: 8px;
+    }
+
+    .boss-sprite-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s;
+    }
+
+    .boss-sprite-wrapper.hurt {
+      animation: bossHurtAnim 0.4s ease;
+    }
+
+    @keyframes bossHurtAnim {
+      0%, 100% { transform: translateX(0); filter: brightness(1); }
+      20% { transform: translateX(-12px); filter: brightness(2) drop-shadow(0 0 10px red); }
+      40% { transform: translateX(12px); }
+      60% { transform: translateX(-8px); }
+      80% { transform: translateX(8px); }
+    }
+
+    #bossImage {
+      max-height: 165px;
+      max-width: 180px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.15));
+      animation: bossFloat 3s infinite ease-in-out;
+    }
+
+    @keyframes bossFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    /* Boss Speech Bubble */
+    .speech-bubble {
+      position: absolute;
+      top: 5px;
+      right: 15px;
+      max-width: 210px;
+      background: #ffffff;
+      color: #000000;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.52rem;
+      line-height: 1.5;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      z-index: 5;
+      display: none;
+    }
+
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: 12px;
+      left: -10px;
+      border-width: 6px 10px 6px 0;
+      border-style: solid;
+      border-color: transparent #ffffff transparent transparent;
+      display: block;
+      width: 0;
+    }
+
+    /* Boss HP Bar (Shown on hit) */
+    .boss-hp-wrap {
+      width: 180px;
+      height: 14px;
+      background: #333;
+      border: 2px solid #555;
+      margin-top: 4px;
+      border-radius: 4px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .boss-hp-fill {
+      width: 100%;
+      height: 100%;
+      background: #39ff14;
+      transition: width 0.3s ease;
+    }
+
+    /* Undertale Battle Arena Box / Text Box */
+    #arenaBox {
+      width: 580px;
+      height: 180px;
+      max-width: 95vw;
+      border: 4px solid var(--box-border);
+      background: #000000;
+      position: relative;
+      overflow: hidden;
+      transition: width 0.2s ease, height 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #arenaBox.in-battle {
+      width: 288px;
+      height: 168px;
+    }
+
+    /* Arena Canvas for Bullet Hell & Soul Heart */
+    #battleCanvas {
+      width: 280px;
+      height: 160px;
+      display: none;
+    }
+
+    /* Dialogue & Menu View inside Arena Box */
+    #dialogueView {
+      width: 100%;
+      height: 100%;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      overflow-y: auto;
+    }
+
+    .undertale-text {
+      font-family: 'VT323', monospace;
+      font-size: 1.6rem;
+      line-height: 1.25;
+      color: #fff;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Menu Grid Selection */
+    .menu-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 20px;
+      margin-top: 8px;
+      font-family: 'VT323', monospace;
+      font-size: 1.55rem;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      color: #ffffff;
+      transition: color 0.1s;
+    }
+
+    .menu-item.yellow-name {
+      color: #ffff00 !important;
+    }
+
+    .menu-item.selected {
+      color: #ff9900;
+    }
+
+    .menu-item .heart-icon {
+      visibility: hidden;
+      color: var(--red-soul);
+      font-size: 1.2rem;
+    }
+
+    .menu-item.selected .heart-icon {
+      visibility: visible;
+    }
+
+    /* Attack Timing Target Bar */
+    #attackTargetBox {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: #111;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .target-track {
+      width: 88%;
+      height: 80px;
+      border: 3px solid #fff;
+      border-radius: 8px;
+      position: relative;
+      background: radial-gradient(circle at center, #222 0%, #000 70%);
+      overflow: hidden;
+    }
+
+    .target-center-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 10px;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 0, 0.4);
+      border-left: 2px dashed #ffff00;
+      border-right: 2px dashed #ffff00;
+    }
+
+    .target-cursor {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 14px;
+      background: #fff;
+      border-radius: 2px;
+      box-shadow: 0 0 10px #fff;
+    }
+
+    /* Player Stats Bar */
+    #playerStats {
+      width: 580px;
+      max-width: 95vw;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 10px 0;
+      font-size: 0.7rem;
+    }
+
+    .stat-name {
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+    }
+
+    .hp-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hp-label {
+      font-size: 0.6rem;
+      color: #bbb;
+    }
+
+    .hp-bar-bg {
+      width: 120px;
+      height: 18px;
+      background: var(--hp-red);
+      position: relative;
+      border: 1px solid #000;
+    }
+
+    .hp-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: var(--hp-yellow);
+      transition: width 0.2s;
+    }
+
+    .hp-digits {
+      font-size: 0.75rem;
+      font-family: 'Press Start 2P', monospace;
+    }
+
+    /* Undertale 4 Action Buttons */
+    #actionButtons {
+      width: 580px;
+      max-width: 95vw;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .btn-action {
+      background: #000000;
+      border: 3px solid #ff7700;
+      color: #ff7700;
+      padding: 8px 4px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.62rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+
+    .btn-action:hover, .btn-action.selected {
+      background: #2a1100;
+      border-color: #ffff00;
+      color: #ffff00;
+      box-shadow: 0 0 12px rgba(255, 255, 0, 0.4);
+    }
+
+    .btn-action .btn-heart {
+      display: none;
+      color: var(--red-soul);
+      font-size: 0.8rem;
+    }
+
+    .btn-action.selected .btn-heart {
+      display: inline-block;
+    }
+
+    /* Mobile Controls Bar */
+    #mobileControls {
+      display: none;
+      width: 100%;
+      max-width: 580px;
+      margin-top: 14px;
+      padding: 8px;
+      background: #0d0d0d;
+      border: 1px solid #333;
+      border-radius: 8px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(3, 40px);
+      gap: 4px;
+    }
+
+    .dpad-btn {
+      background: #222;
+      color: #eee;
+      border: 1px solid #555;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .dpad-btn:active {
+      background: #555;
+    }
+
+    .action-touch-btns {
+      display: flex;
+      gap: 10px;
+    }
+
+    .touch-btn {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: #252525;
+      border: 2px solid #888;
+      color: #fff;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.7rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .touch-btn.btn-z {
+      border-color: #ffff00;
+      color: #ffff00;
+    }
+
+    .touch-btn.btn-x {
+      border-color: #00bfff;
+      color: #00bfff;
+    }
+
+    .touch-btn:active {
+      transform: scale(0.92);
+      filter: brightness(1.3);
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-box {
+      background: #0c0c0c;
+      border: 4px solid var(--gold);
+      box-shadow: 0 0 35px rgba(255, 210, 77, 0.35);
+      border-radius: 10px;
+      max-width: 500px;
+      width: 100%;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+    }
+
+    .modal-box h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      color: var(--gold);
+      margin-bottom: 12px;
+      text-shadow: 0 0 10px rgba(255, 210, 77, 0.5);
+    }
+
+    .modal-box p {
+      font-size: 0.65rem;
+      line-height: 1.6;
+      color: #ddd;
+      margin-bottom: 16px;
+    }
+
+    .btn-modal {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.65rem;
+      background: #ff7700;
+      color: #000;
+      border: none;
+      cursor: pointer;
+      margin: 6px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .btn-modal:hover {
+      background: #ffff00;
+      box-shadow: 0 0 15px rgba(255, 255, 0, 0.6);
+    }
+
+    .btn-discord {
+      background: #5865F2;
+      color: #fff;
+    }
+
+    .btn-discord:hover {
+      background: #7289da;
+      box-shadow: 0 0 15px rgba(88, 101, 242, 0.6);
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #222;
+      color: #fff;
+      padding: 8px 16px;
+      border: 1px solid #777;
+      border-radius: 4px;
+      font-size: 0.6rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 2000;
+    }
+
+    #toast.show {
+      opacity: 1;
+    }
+
+    @media (max-width: 600px) {
+      #arenaBox { height: 160px; }
+      #bossStage { height: 185px; }
+      #bossImage { max-height: 135px; }
+      .undertale-text { font-size: 1.3rem; }
+      .menu-list { font-size: 1.25rem; }
+      .btn-action { font-size: 0.52rem; padding: 6px 2px; }
+      #mobileControls { display: flex; }
+      .speech-bubble { font-size: 0.45rem; max-width: 170px; right: 5px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Retro Navigation Header -->
+  <header>
+    <a href="../../index.html" class="btn-nav">
+      <span>⬅️</span><span>La Krypta</span>
+    </a>
+
+    <div class="boss-counter-badge">
+      <strong id="hudBossName">Jefe 1: Tibio el Esqueleto</strong>
+      <span id="hudSoulMode">Alma: 🔵 Gravedad Azul</span>
+    </div>
+
+    <button id="btnAudioToggle" class="btn-nav">
+      <span id="audioIcon">🔊</span><span id="audioLabel">SFX</span>
+    </button>
+  </header>
+
+  <!-- Main Battle Window -->
+  <div id="battleContainer">
+
+    <!-- Boss Stage Area -->
+    <div id="bossStage">
+      <!-- Speech Bubble -->
+      <div id="bossSpeech" class="speech-bubble">
+        ¡Heheheh! ¡Te doy la bienvenida al Gran Final de La Krypta!
+      </div>
+
+      <!-- Boss Sprite -->
+      <div id="bossSpriteWrap" class="boss-sprite-wrapper">
+        <img id="bossImage" src="assets/boss_1_skeleton.jpg" alt="Boss Sprite">
+        <div id="bossHpWrap" class="boss-hp-wrap">
+          <div id="bossHpFill" class="boss-hp-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Undertale Battle Arena Box / Text Box -->
+    <div id="arenaBox">
+      <!-- Dialogue & Selection View -->
+      <div id="dialogueView">
+        <div id="mainText" class="undertale-text">* Tibio el Esqueleto te desafía sonriendo con ganas de soltar chistes.</div>
+        <div id="menuGrid" class="menu-list" style="display: none;"></div>
+      </div>
+
+      <!-- Attack Target Timing Bar -->
+      <div id="attackTargetBox">
+        <div class="target-track">
+          <div class="target-center-line"></div>
+          <div id="targetCursor" class="target-cursor"></div>
+        </div>
+      </div>
+
+      <!-- 60 FPS Dodge Bullet Canvas -->
+      <canvas id="battleCanvas" width="280" height="160"></canvas>
+    </div>
+
+    <!-- Player Stats Bar -->
+    <div id="playerStats">
+      <div class="stat-name">ALMA&nbsp;&nbsp;LV 31</div>
+      <div class="hp-wrapper">
+        <span class="hp-label">HP</span>
+        <div class="hp-bar-bg">
+          <div id="hpFill" class="hp-bar-fill"></div>
+        </div>
+        <span id="hpText" class="hp-digits">50 / 50</span>
+      </div>
+    </div>
+
+    <!-- 4 Undertale Action Buttons -->
+    <div id="actionButtons">
+      <button class="btn-action selected" id="btnFight" data-action="fight">
+        <span class="btn-heart">❤️</span><span>⚔️ ATACAR</span>
+      </button>
+      <button class="btn-action" id="btnItem" data-action="item">
+        <span class="btn-heart">❤️</span><span>🍬 ITEM</span>
+      </button>
+      <button class="btn-action" id="btnMercy" data-action="mercy">
+        <span class="btn-heart">❤️</span><span>💛 PIEDAD</span>
+      </button>
+      <button class="btn-action" id="btnFlee" data-action="flee">
+        <span class="btn-heart">❤️</span><span>🏃 HUIR</span>
+      </button>
+    </div>
+
+    <!-- Mobile Touch Controls for Responsive Mobile Play -->
+    <div id="mobileControls">
+      <div class="dpad-grid">
+        <div></div>
+        <button class="dpad-btn" id="dpadUp">▲</button>
+        <div></div>
+        <button class="dpad-btn" id="dpadLeft">◀</button>
+        <button class="dpad-btn" id="dpadDown">▼</button>
+        <button class="dpad-btn" id="dpadRight">▶</button>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+
+      <div class="action-touch-btns">
+        <button class="touch-btn btn-x" id="btnTouchX">
+          <span>X</span>
+          <span style="font-size:0.45rem;">CANCEL</span>
+        </button>
+        <button class="touch-btn btn-z" id="btnTouchZ">
+          <span>Z</span>
+          <span style="font-size:0.45rem;">ACCIÓN</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Help & Lore Modal -->
+  <div id="helpModal" class="modal-overlay">
+    <div class="modal-box">
+      <h2>💀 UnderKrypt: Boss Rush</h2>
+      <p>
+        ¡Bienvenido al Gran Duelo Final del Calendario de Halloween!<br><br>
+        Enfrenta a <strong>5 Jefes Monstruosos</strong> inspirados en Undertale:<br>
+        1. <strong>Tibio</strong> (Alma Azul - Gravedad & Huesos)<br>
+        2. <strong>Don Calabazo</strong> (Alma Verde - Escudo 4 Rumbos)<br>
+        3. <strong>Madame Morgana</strong> (Alma Violeta - 3 Líneas Arcanas)<br>
+        4. <strong>Frankie</strong> (Alma Amarilla - Peashooter Disparador)<br>
+        5. <strong>Conde Vladislav</strong> (Alma Roja - Caos Final)<br><br>
+        <strong>Mecánicas:</strong><br>
+        • Puedes ganar golpeando con <strong>[ATACAR]</strong> o usando <strong>[PIEDAD]</strong> tras hablar/charlar y sobrevivir a sus chistes.<br>
+        • Usa <strong>[ITEM]</strong> para curarte con caramelos de Halloween.<br>
+        • ¡<strong>[HUIR]</strong> nunca funciona pero te hará reír!
+      </p>
+      <button class="btn-modal" id="btnCloseHelp">¡DETERMINACIÓN!</button>
+    </div>
+  </div>
+
+  <!-- Victory Grand Finale Modal -->
+  <div id="victoryModal" class="modal-overlay">
+    <div class="modal-box">
+      <h2>🎃 ¡EXORCISMO FINAL COMPLETADO!</h2>
+      <p>
+        ¡Has superado el <strong>Boss Rush de los 5 Grandes Monstruos</strong> y sellado La Krypta del Cementerio Maldito para siempre!<br><br>
+        Tu Determinación de Halloween ha liberado las catacumbas con honor, risas y golosinas.
+      </p>
+      <div style="font-family:'VT323', monospace; font-size:1.8rem; color:#ffff00; margin:14px 0;">
+        CÓDIGO SECRETO DESBLOQUEADO
+      </div>
+      <button class="btn-modal btn-discord" id="copyDiscordBtn">
+        <span>📋</span><span>Copiar para Discord</span>
+      </button>
+      <a href="../../index.html" class="btn-modal">
+        <span>⚰️</span><span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast"></div>
+
+  <!-- Audio & Game Engine Script -->
+  <script>
+    /* ==========================================================================
+       1. RETRO WEB AUDIO API SYNTHESIZER
+       ========================================================================== */
+    class RetroAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playBlip(freq = 440, type = 'square', dur = 0.05) {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + dur);
+      }
+
+      playSpeech(pitch = 240) {
+        this.playBlip(pitch + Math.random() * 40, 'triangle', 0.04);
+      }
+
+      playSelect() {
+        this.playBlip(680, 'square', 0.06);
+      }
+
+      playHurt() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.25);
+      }
+
+      playSlash() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.18);
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.18);
+      }
+
+      playHit() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(260, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(70, this.ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.2);
+      }
+
+      playHeal() {
+        if (!this.enabled) return;
+        this.init();
+        const notes = [440, 554, 659, 880];
+        notes.forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, this.ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.08);
+          gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + (idx + 1) * 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(this.ctx.currentTime + idx * 0.08);
+          osc.stop(this.ctx.currentTime + (idx + 1) * 0.08);
+        });
+      }
+
+      playDing() {
+        this.playBlip(1046, 'sine', 0.25);
+      }
+
+      playShieldClang() {
+        this.playBlip(520, 'square', 0.09);
+      }
+
+      playPeashooter() {
+        this.playBlip(740, 'sawtooth', 0.06);
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        const melody = [
+          { f: 523, d: 0.15 }, { f: 659, d: 0.15 }, { f: 784, d: 0.15 },
+          { f: 1046, d: 0.35 }, { f: 784, d: 0.15 }, { f: 1046, d: 0.6 }
+        ];
+        let t = this.ctx.currentTime;
+        melody.forEach(note => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(note.f, t);
+          gain.gain.setValueAtTime(0.25, t);
+          gain.gain.linearRampToValueAtTime(0.001, t + note.d);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + note.d);
+          t += note.d + 0.03;
+        });
+      }
+    }
+
+    const sound = new RetroAudioEngine();
+
+    /* ==========================================================================
+       2. BOSS ROSTER & DATA
+       ========================================================================== */
+    const BOSSES = [
+      {
+        id: 1,
+        name: "Tibio el Esqueleto",
+        title: "Tibio el Cómico Calavérico",
+        image: "assets/boss_1_skeleton.jpg",
+        maxHp: 300,
+        soulColor: "blue", // Blue Soul: Gravity & Jump
+        soulLabel: "Alma: 🔵 Gravedad Azul",
+        voicePitch: 200,
+        dialogues: [
+          "¿Por qué los esqueletos son tan tranquilos? ¡Porque nada les llega al hueso!",
+          "Te veo con ganas de pelea... aunque yo no le pongo mucho 'hueso' a las flexiones.",
+          "¡Cuidado con ese fémur! Me costó dos semanas encontrarlo en el cementerio.",
+          "Si me vences, prométeme que no usarás mi cráneo de maceta para suculentas."
+        ],
+        actResponses: [
+          "* Le cuentas a Tibio un chiste sobre costillas flotantes. ¡Se parte de la risa y se le cae la mandíbula al suelo!",
+          "* Tocas un solo de xilófono en las costillas de Tibio con ritmo de cumbia cadavérica. ¡Tibio se emociona hasta la médula!"
+        ],
+        actSpeech: [
+          "¡Heheheh! ¡Buen chiste! ¡Pero aún me queda un repertorio entero de fémures!",
+          "¡Woooow! ¡Eso sí que tuvo ritmo y médula! ¡Ya me caes demasiado bien para pelear!"
+        ],
+        spareDialog: "¡Heheheh! Eres un hueso duro de roer. ¡Paz y golosinas para todos!",
+        attacks: ["boneJump", "boneWave"]
+      },
+      {
+        id: 2,
+        name: "Don Calabazo",
+        title: "Don Calabazo el Caballero",
+        image: "assets/boss_2_pumpkin.jpg",
+        maxHp: 360,
+        soulColor: "green", // Green Soul: 4-Way Shield (Undyne Style)
+        soulLabel: "Alma: 🟢 Escudo Guardián",
+        voicePitch: 150,
+        dialogues: [
+          "¡Siente la furia del puré otoñal de la justicia!",
+          "¿Sabías que una calabaza jamás miente? ¡Porque siempre se le ve la pepa!",
+          "¡Mi armadura de hojas crujientes es impenetrable ante los cuchillos desafilados!",
+          "¡Te reto a un torneo donde el perdedor hornea las tartas de calabaza!"
+        ],
+        actResponses: [
+          "* Halagas el brillo naranja de su casco de calabaza. Don Calabazo intenta mantenerse serio, pero su vela interior titila con orgullo.",
+          "* Le ofreces regar sus hojas con fertilizante premium y le recitas un poema a la tarta de calabaza. ¡Don Calabazo baja su lanza conmovido!"
+        ],
+        actSpeech: [
+          "¡Ejem! ¡Un cumplido noble, mortal! ¡Pero el honor de las calabazas exige valor!",
+          "¡Oh, qué honor! ¡Nadie había elogiado tanto mi pulpa! ¡Te declaro mi amigo!"
+        ],
+        spareDialog: "¡Veo que posees el noble honor de la calabaza! ¡Vencedor y amigo!",
+        attacks: ["shieldSpears"]
+      },
+      {
+        id: 3,
+        name: "Madame Morgana",
+        title: "Madame Morgana de la Olla",
+        image: "assets/boss_3_witch.jpg",
+        maxHp: 420,
+        soulColor: "purple", // Purple Soul: 3 Web Lines (Muffet Style)
+        soulLabel: "Alma: 🟣 Hilos del Caldero",
+        voicePitch: 320,
+        dialogues: [
+          "¡¿Quién me cambió el ojo de tritón por una aceituna rellena?! ¡Me arruinaron la salsa!",
+          "¡No te muevas tan rápido que desestabilizas el pH del caldero!",
+          "Mi pócima tenía que oler a azufre ancestral y huele a lavanda de oferta de supermercado.",
+          "¡Una pizca de baba de babosa y dos cucharadas de dulce de leche! ¡Mmmh!"
+        ],
+        actResponses: [
+          "* Revuelves la olla en el sentido de las agujas del reloj y corriges la pizca de sal del caldero. Madame Morgana huele el vapor con curiosidad.",
+          "* Le sugieres agregar chispas de chocolate y dulce de leche a la pócima. Morgana prueba la mezcla con su cuchara y da saltitos de alegría."
+        ],
+        actSpeech: [
+          "¡Vaya! ¡Buen toque! ¡Pero mi receta ancestral aún necesita un toque más atrevido!",
+          "¡G-Genial! ¡Es la pócima más rica en 300 años! ¡No más peleas, hora del postre!"
+        ],
+        spareDialog: "¡Por fin alguien que aprecia la alta cocina de ultratumba! ¡Toma una taza de chocolate y pasa!",
+        attacks: ["potionLines"]
+      },
+      {
+        id: 4,
+        name: "Frankie el Amable",
+        title: "Frankie y la Mochila Tesla",
+        image: "assets/boss_4_frankenstein.jpg",
+        maxHp: 500,
+        soulColor: "yellow", // Yellow Soul: Peashooter / Shooter (Mettaton Style)
+        soulLabel: "Alma: 🟡 Disparo Voltímetro",
+        voicePitch: 110,
+        dialogues: [
+          "Frankie tropezó con cordones de las botas... ¡chispitas traviesas para ti!",
+          "El doctor dijo que contara hasta diez... 1, 2, voltio, zapato... ¿qué seguía?",
+          "Frankie no quiere asustar, pero la mochila no tiene botón de apagado.",
+          "¡Mira! ¡Frankie inventó un sombrero que da cosquillas eléctricas!"
+        ],
+        actResponses: [
+          "* Le ajustas con cariño el tornillo flojo del cuello a Frankie. Frankie suspira aliviado y sus ojos brillan con gratitud.",
+          "* Le ayudas a atarse los cordones gigantes de sus botas para que no vuelva a tropezar. Frankie suelta una lágrima de pura felicidad."
+        ],
+        actSpeech: [
+          "¡Ooh! ¡Cabeza de Frankie ya no hace 'clac-clac'! ¡Frankie agradecido!",
+          "¡Frankie ya no tropieza! ¡Frankie feliz! ¡Frankie quiere abrazo suave sin electricidad!"
+        ],
+        spareDialog: "¡Frankie tener nuevo amigo! ¡Frankie da abrazo suave sin electrocutar!",
+        attacks: ["teslaShooter"]
+      },
+      {
+        id: 5,
+        name: "Conde Vladislav",
+        title: "Conde Vladislav (Señor del Averno)",
+        image: "assets/boss_5_dracula.jpg",
+        maxHp: 650,
+        soulColor: "red", // Red Soul: Free Omnidirectional Pure Bullet Hell (Final Boss)
+        soulLabel: "Alma: 🔴 Determinación Carmesí",
+        voicePitch: 180,
+        dialogues: [
+          "¡¿Qué es un humano?! ¡Un miserable montón de golosinas! ¡¿Y encima sin gluten?!",
+          "¡Bebo la sangre de... bueno, en realidad es jugo de tomate con salvia, el colesterol me tiene a raya!",
+          "¡Mil años gobernando la noche y mi archienemigo viene disfrazado a pedir caramelos!",
+          "¡Danza conmigo bajo la luna llena, criatura del azúcar!"
+        ],
+        actResponses: [
+          "* Le ofreces a Vladislav una servilleta de seda bordada para limpiarse una mancha de jugo de tomate del esmoquin. El Conde se acomoda la capa complacido.",
+          "* Le convidas un vaso de jugo de tomate artesanal bajo en sodio y sin gluten. Los ojos del Conde se iluminan y hace una reverencia teatral."
+        ],
+        actSpeech: [
+          "¡Vaya, modales exquisitos! Pocos mortales aprecian la etiqueta... ¡pero aún tengo sed!",
+          "¡Por todos los murciélagos! ¡Es la añada perfecta! ¡Has conquistado a Vladislav!"
+        ],
+        spareDialog: "¡Magnífico! ¡Brindo contigo con mi tetrabrik de tomate! ¡El pacto de Halloween está sellado!",
+        attacks: ["batSwarm", "chaosHell"]
+      }
+    ];
+
+    /* ==========================================================================
+       3. INVENTORY ITEMS (HALLOWEEN SWEETS)
+       ========================================================================== */
+    let inventory = [
+      { name: "🍬 Gomitas de Calabaza", heal: 20, desc: "Saben a azúcar pura y recuerdos de infancia." },
+      { name: "🍭 Paleta Ojo de Cíclope", heal: 25, desc: "Te guiña un ojo mientras la saboreas." },
+      { name: "🍫 Chocolate Espectral", heal: 35, desc: "Frío como la tumba, pero con dulce de leche." },
+      { name: "🧃 Jugo Tomate Sangriento", heal: 45, desc: "La bebida favorita del Conde Vladislav." },
+      { name: "✨ Pócima Fizz Sagrada", heal: 50, desc: "¡Restaura todos tus puntos de salud!" }
+    ];
+
+    /* ==========================================================================
+       4. GAME STATE VARIABLES
+       ========================================================================== */
+    let currentBossIdx = 0;
+    let bossHp = BOSSES[0].maxHp;
+    let playerHp = 50;
+    const playerMaxHp = 50;
+    let bossSpareReady = false;
+    let bossActCount = 0;
+    let bossTurnCount = 0;
+
+    let gameState = "MENU_MAIN"; // MENU_MAIN, MENU_SUB, ATTACK_TIMING, ENEMY_TURN, VICTORY, GAME_OVER
+    let selectedActionIdx = 0; // 0: FIGHT, 1: ITEM, 2: MERCY, 3: FLEE
+    let selectedSubIdx = 0;
+    let subMenuItems = [];
+
+    let isPaused = false;
+    let isGameOver = false;
+
+    // Bullet Hell Canvas & Soul Physics
+    const canvas = document.getElementById('battleCanvas');
+    const ctx = canvas.getContext('2d');
+    let soul = {
+      x: 120,
+      y: 70,
+      size: 14,
+      vx: 0,
+      vy: 0,
+      isGrounded: false,
+      jumpHeld: false,
+      shieldDir: 'up', // for green soul ('up', 'down', 'left', 'right')
+      webLine: 1, // for purple soul (0: top, 1: mid, 2: bottom)
+      invulnTimer: 0
+    };
+
+    let bullets = [];
+    let soulBullets = []; // for yellow soul peashooter
+    let donCalabazoSpears = []; // Sequential rhythm spears for Boss 2
+    let vladislavSequence = []; // Clean orchestrated patterns for Boss 5
+    let enemyTurnTimer = 0;
+    let enemyTurnDuration = 360; // ~6 seconds at 60fps
+    let isActionProcessing = false;
+    let turnTimeoutId = null;
+    let defeatTimeoutId = null;
+
+    function scheduleEnemyTurn(delayMs) {
+      if (turnTimeoutId) clearTimeout(turnTimeoutId);
+      turnTimeoutId = setTimeout(() => {
+        turnTimeoutId = null;
+        startEnemyTurn();
+      }, delayMs);
+    }
+
+    function scheduleDefeat(delayMs) {
+      if (defeatTimeoutId) clearTimeout(defeatTimeoutId);
+      defeatTimeoutId = setTimeout(() => {
+        defeatTimeoutId = null;
+        handleBossDefeated(false);
+      }, delayMs);
+    }
+
+    // Attack Target Timing
+    let targetCursorPos = 0;
+    let targetSpeed = 4.5;
+    let targetDir = 1;
+    let targetAnimId = null;
+
+    // Keys state
+    const keys = {
+      ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false,
+      KeyW: false, KeyS: false, KeyA: false, KeyD: false,
+      KeyZ: false, KeyX: false, Enter: false, ShiftLeft: false
+    };
+
+    /* ==========================================================================
+       5. DOM ELEMENTS
+       ========================================================================== */
+    const hudBossName = document.getElementById('hudBossName');
+    const hudSoulMode = document.getElementById('hudSoulMode');
+    const bossSpeech = document.getElementById('bossSpeech');
+    const bossImage = document.getElementById('bossImage');
+    const bossSpriteWrap = document.getElementById('bossSpriteWrap');
+    const bossHpWrap = document.getElementById('bossHpWrap');
+    const bossHpFill = document.getElementById('bossHpFill');
+
+    const arenaBox = document.getElementById('arenaBox');
+    const dialogueView = document.getElementById('dialogueView');
+    const mainText = document.getElementById('mainText');
+    const menuGrid = document.getElementById('menuGrid');
+    const attackTargetBox = document.getElementById('attackTargetBox');
+    const targetCursor = document.getElementById('targetCursor');
+
+    const hpFill = document.getElementById('hpFill');
+    const hpText = document.getElementById('hpText');
+
+    const actionBtns = [
+      document.getElementById('btnFight'),
+      document.getElementById('btnItem'),
+      document.getElementById('btnMercy'),
+      document.getElementById('btnFlee')
+    ];
+
+    const helpModal = document.getElementById('helpModal');
+    const victoryModal = document.getElementById('victoryModal');
+    const toast = document.getElementById('toast');
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    /* ==========================================================================
+       6. UI & MENU HANDLING
+       ========================================================================== */
+    function updateStatsUI() {
+      const pct = Math.max(0, Math.min(100, (playerHp / playerMaxHp) * 100));
+      hpFill.style.width = `${pct}%`;
+      hpText.textContent = `${playerHp} / ${playerMaxHp}`;
+
+      if (bossHpWrap.style.display !== 'none') {
+        const curBoss = BOSSES[currentBossIdx];
+        const bPct = Math.max(0, Math.min(100, (bossHp / curBoss.maxHp) * 100));
+        bossHpFill.style.width = `${bPct}%`;
+      }
+    }
+
+    function updateActionButtonsUI() {
+      actionBtns.forEach((btn, idx) => {
+        if (gameState === 'MENU_MAIN' && idx === selectedActionIdx) {
+          btn.classList.add('selected');
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+    }
+
+    function setBossSpeech(text) {
+      bossSpeech.textContent = text;
+      bossSpeech.style.display = 'block';
+      const curBoss = BOSSES[currentBossIdx];
+      // Play brief speech blips
+      let count = 0;
+      const interval = setInterval(() => {
+        if (count++ > 6) clearInterval(interval);
+        sound.playSpeech(curBoss.voicePitch);
+      }, 50);
+    }
+
+    function hideBossSpeech() {
+      bossSpeech.style.display = 'none';
+    }
+
+    let isTransitioningBoss = false;
+
+    function loadBoss(idx) {
+      isTransitioningBoss = false;
+      currentBossIdx = idx;
+      const b = BOSSES[idx];
+      bossHp = b.maxHp;
+      bossTurnCount = 0;
+      bossSpareReady = false;
+      bossActCount = 0;
+
+      hudBossName.textContent = `Jefe ${b.id}/5: ${b.name}`;
+      hudSoulMode.textContent = b.soulLabel;
+      bossImage.src = b.image;
+      bossImage.style.opacity = '1';
+      bossImage.style.filter = 'drop-shadow(0 0 12px rgba(255, 255, 255, 0.15))';
+      bossHpWrap.style.display = 'none';
+
+      mainText.textContent = `* ¡${b.title} aparece con mirada desafiante!`;
+      setBossSpeech(b.dialogues[0]);
+
+      resetSoulForBoss(b);
+      showMainMenu();
+      updateStatsUI();
+    }
+
+    function resetSoulForBoss(boss) {
+      soul.vx = 0;
+      soul.vy = 0;
+      soul.invulnTimer = 0;
+      soul.shieldDir = 'up';
+      soul.webLine = 1;
+
+      if (boss.soulColor === 'blue') {
+        soul.x = 140;
+        soul.y = 146; // Grounded on floor (canvas.height = 160)
+        soul.isGrounded = true;
+        soul.jumpHeld = false;
+      } else if (boss.soulColor === 'green') {
+        soul.x = 140;
+        soul.y = 80;
+        soul.isGrounded = false;
+      } else if (boss.soulColor === 'purple') {
+        soul.x = 140;
+        soul.y = 80; // middle line at 80
+        soul.webLine = 1;
+        soul.isGrounded = false;
+      } else {
+        soul.x = 140;
+        soul.y = 110;
+        soul.isGrounded = false;
+      }
+    }
+
+    function showMainMenu() {
+      isActionProcessing = false;
+      if (turnTimeoutId) { clearTimeout(turnTimeoutId); turnTimeoutId = null; }
+      if (defeatTimeoutId) { clearTimeout(defeatTimeoutId); defeatTimeoutId = null; }
+      gameState = 'MENU_MAIN';
+      arenaBox.classList.remove('in-battle');
+      dialogueView.style.display = 'flex';
+      menuGrid.style.display = 'none';
+      attackTargetBox.style.display = 'none';
+      canvas.style.display = 'none';
+
+      const curBoss = BOSSES[currentBossIdx];
+      const bossDisplayName = bossSpareReady ? `<span style="color:#ffff00;">${curBoss.name}</span>` : curBoss.name;
+
+      if (bossSpareReady) {
+        mainText.innerHTML = `* ${bossDisplayName} te mira pacíficamente.<br><span style="font-size:1.25rem; color:#ffff00;">(¡Su nombre brilla en AMARILLO! Usa [PIEDAD] -> [Perdonar])</span>`;
+      } else if (bossActCount === 1) {
+        mainText.innerHTML = `* ${curBoss.name} parece ablandarse tras tu acción.<br><span style="font-size:1.25rem; color:#aaa;">(Usa [PIEDAD] -> [Actuar] una vez más para convencerlo)</span>`;
+      } else {
+        mainText.innerHTML = `* ${curBoss.name} te observa expectante.<br><span style="font-size:1.25rem; color:#aaa;">(Usa [Z]/Click para elegir, [X] para volver)</span>`;
+      }
+      updateActionButtonsUI();
+    }
+
+    function openSubMenu(action) {
+      gameState = 'MENU_SUB';
+      selectedSubIdx = 0;
+      subMenuItems = [];
+      const curBoss = BOSSES[currentBossIdx];
+
+      if (action === 'fight') {
+        subMenuItems = [
+          { label: `* ${curBoss.name}`, isSpare: bossSpareReady, type: 'FIGHT' }
+        ];
+      } else if (action === 'item') {
+        if (inventory.length === 0) {
+          mainText.innerHTML = "* ¡No te quedan más dulces en los bolsillos!";
+          gameState = 'MENU_MAIN';
+          return;
+        }
+        subMenuItems = inventory.map((it, idx) => ({
+          label: `* ${it.name} (+${it.heal} HP)`,
+          itemIdx: idx,
+          type: 'ITEM'
+        }));
+      } else if (action === 'mercy') {
+        subMenuItems = [
+          { label: `* Perdonar`, isSpare: bossSpareReady, type: 'SPARE' },
+          { label: `* Actuar / Hablar`, isSpare: false, type: 'ACT' }
+        ];
+      }
+
+      renderSubMenu();
+    }
+
+    function renderSubMenu() {
+      mainText.innerHTML = "";
+      menuGrid.innerHTML = "";
+      menuGrid.style.display = 'grid';
+
+      subMenuItems.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = `menu-item ${idx === selectedSubIdx ? 'selected' : ''} ${item.isSpare ? 'yellow-name' : ''}`;
+        div.innerHTML = `<span class="heart-icon">❤️</span><span>${item.label}</span>`;
+        div.addEventListener('click', () => {
+          selectedSubIdx = idx;
+          confirmSelection();
+        });
+        menuGrid.appendChild(div);
+      });
+    }
+
+    function updateSubMenuSelection() {
+      const items = menuGrid.querySelectorAll('.menu-item');
+      items.forEach((it, idx) => {
+        if (idx === selectedSubIdx) {
+          it.classList.add('selected');
+        } else {
+          it.classList.remove('selected');
+        }
+      });
+    }
+
+    /* ==========================================================================
+       7. ATTACK TIMING MINI-GAME
+       ========================================================================== */
+    let lastAttackTime = 0;
+    function startAttackTiming() {
+      gameState = 'ATTACK_TIMING';
+      dialogueView.style.display = 'none';
+      canvas.style.display = 'none';
+      attackTargetBox.style.display = 'flex';
+
+      targetCursorPos = 0;
+      targetDir = 1;
+      const baseSpeed = 4.2 + currentBossIdx * 0.7;
+      lastAttackTime = performance.now();
+
+      function animCursor(now) {
+        if (gameState !== 'ATTACK_TIMING') return;
+        const dt = (now - lastAttackTime) / (1000 / 60);
+        lastAttackTime = now;
+        const clampedDt = Math.min(Math.max(dt, 0.2), 2.5);
+
+        const track = attackTargetBox.querySelector('.target-track');
+        const maxW = track ? (track.clientWidth - 16) : 300;
+        targetCursorPos += baseSpeed * targetDir * clampedDt;
+        if (targetCursorPos >= maxW) {
+          targetCursorPos = maxW;
+          targetDir = -1;
+        } else if (targetCursorPos <= 0) {
+          targetCursorPos = 0;
+          targetDir = 1;
+        }
+        targetCursor.style.left = `${targetCursorPos}px`;
+        targetAnimId = requestAnimationFrame(animCursor);
+      }
+      targetAnimId = requestAnimationFrame(animCursor);
+    }
+
+    function executeAttackHit() {
+      if (isActionProcessing || gameState !== 'ATTACK_TIMING') return;
+      isActionProcessing = true;
+      gameState = 'BUSY';
+      cancelAnimationFrame(targetAnimId);
+
+      const track = attackTargetBox.querySelector('.target-track');
+      const center = (track.clientWidth - 16) / 2;
+      const diff = Math.abs(targetCursorPos - center);
+      const accuracy = Math.max(0, 1 - diff / (track.clientWidth / 2));
+
+      let damage = Math.floor(65 + accuracy * 95);
+      if (diff < 15) {
+        damage = 180; // Critical hit!
+        sound.playDing();
+      }
+
+      sound.playSlash();
+      bossSpriteWrap.classList.add('hurt');
+      setTimeout(() => bossSpriteWrap.classList.remove('hurt'), 450);
+
+      bossHp -= damage;
+      bossHpWrap.style.display = 'block';
+      updateStatsUI();
+
+      attackTargetBox.style.display = 'none';
+      dialogueView.style.display = 'flex';
+      menuGrid.innerHTML = '';
+      menuGrid.style.display = 'none';
+
+      mainText.innerHTML = `* ¡Asestaste un golpe certero infligiendo <span style="color:#ff2a4b; font-weight:bold;">${damage} de daño</span> al jefe!`;
+      sound.playHit();
+
+      if (bossHp <= 0) {
+        scheduleDefeat(1400);
+      } else {
+        scheduleEnemyTurn(1400);
+      }
+    }
+
+    /* ==========================================================================
+       8. ITEMS, ACT, MERCY & FLEE LOGIC
+       ========================================================================== */
+    function useItem(idx) {
+      if (isActionProcessing || gameState !== 'MENU_SUB') return;
+      isActionProcessing = true;
+      gameState = 'BUSY';
+
+      const it = inventory[idx];
+      if (!it) return;
+      inventory.splice(idx, 1);
+      playerHp = Math.min(playerMaxHp, playerHp + it.heal);
+      updateStatsUI();
+      sound.playHeal();
+
+      dialogueView.style.display = 'flex';
+      menuGrid.innerHTML = '';
+      menuGrid.style.display = 'none';
+      mainText.innerHTML = `* Saboreas <strong>${it.name}</strong>.<br>* ${it.desc}<br>* ¡Recuperaste <span style="color:#ffff00;">${it.heal} HP</span>!`;
+
+      scheduleEnemyTurn(1600);
+    }
+
+    function doAct() {
+      if (isActionProcessing || gameState !== 'MENU_SUB') return;
+      isActionProcessing = true;
+      gameState = 'BUSY';
+      const curBoss = BOSSES[currentBossIdx];
+
+      bossActCount++;
+      const isReadyToSpare = bossActCount >= 2;
+      if (isReadyToSpare) {
+        bossSpareReady = true; // 2 acts completed -> Mercy ready!
+        sound.playDing();
+      } else {
+        sound.playSelect();
+      }
+
+      dialogueView.style.display = 'flex';
+      menuGrid.innerHTML = '';
+      menuGrid.style.display = 'none';
+
+      const actIdx = Math.min(bossActCount - 1, (curBoss.actResponses ? curBoss.actResponses.length - 1 : 0));
+      const respText = curBoss.actResponses ? curBoss.actResponses[actIdx] : (curBoss.actResponse || "");
+      const speechText = curBoss.actSpeech ? curBoss.actSpeech[actIdx] : "¡Vaya! ¡Eso me ha tocado el corazón monstruoso!";
+
+      if (isReadyToSpare) {
+        mainText.innerHTML = `${respText}<br><span style="color:#ffff00; font-weight:bold;">* ¡El nombre de ${curBoss.name} ahora brilla en AMARILLO! ¡Ya puedes PERDONARLO en el menú de Piedad!</span>`;
+      } else {
+        mainText.innerHTML = `${respText}<br><span style="color:#aaa;">* (${curBoss.name} empieza a ablandarse, ¡pero aún necesitas Actuar una vez más!)</span>`;
+      }
+
+      setBossSpeech(speechText);
+      scheduleEnemyTurn(2200);
+    }
+
+    function doSpare() {
+      if (isActionProcessing || gameState !== 'MENU_SUB') return;
+      isActionProcessing = true;
+      gameState = 'BUSY';
+      const curBoss = BOSSES[currentBossIdx];
+
+      if (bossSpareReady) {
+        handleBossDefeated(true);
+      } else {
+        dialogueView.style.display = 'flex';
+        menuGrid.innerHTML = '';
+        menuGrid.style.display = 'none';
+
+        if (bossActCount === 0) {
+          mainText.innerHTML = `* Intentas perdonar a ${curBoss.name}, pero aún está entusiasmado con la batalla.<br>* (¡Prueba con <strong>Actuar</strong> primero!)`;
+        } else {
+          mainText.innerHTML = `* ${curBoss.name} parece dudar, pero aún no confía plenamente en ti.<br>* (¡Prueba con <strong>Actuar</strong> una vez más para que su nombre se vuelva amarillo!)`;
+        }
+        scheduleEnemyTurn(1800);
+      }
+    }
+
+    function doFlee() {
+      if (isActionProcessing || gameState !== 'MENU_MAIN') return;
+      isActionProcessing = true;
+      gameState = 'BUSY';
+      dialogueView.style.display = 'flex';
+      menuGrid.innerHTML = '';
+      menuGrid.style.display = 'none';
+
+      const fleeJokes = [
+        "* Intentas correr, pero tus zapatillas de Halloween chillan delatándote en el suelo de piedra.",
+        "* Las puertas de la cripta están trabadas con una escoba de bruja oxidada.",
+        "* ¡No puedes huir en el Gran Final del Calendario! ¡Tu dignidad se opone rotundamente!",
+        "* Tus piernas se convirtieron en gelatina de frambuesa por la tensión.",
+        "* El jefe te mira decepcionado: '¡Oye, no seas aguafiestas! ¡Tengo más chistes listos!'"
+      ];
+      const joke = fleeJokes[Math.floor(Math.random() * fleeJokes.length)];
+      mainText.innerHTML = joke;
+      sound.playSpeech(180);
+
+      scheduleEnemyTurn(1800);
+    }
+
+    /* ==========================================================================
+       9. ENEMY TURN & BULLET HELL SIMULATION
+       ========================================================================== */
+    function startEnemyTurn() {
+      if (gameState === 'ENEMY_TURN') return; // Idempotent guard: never restart if already running!
+      gameState = 'ENEMY_TURN';
+      isActionProcessing = false;
+      arenaBox.classList.add('in-battle');
+      dialogueView.style.display = 'none';
+      attackTargetBox.style.display = 'none';
+      canvas.style.display = 'block';
+
+      const curBoss = BOSSES[currentBossIdx];
+      resetSoulForBoss(curBoss);
+      bullets = [];
+      soulBullets = [];
+      enemyTurnTimer = 0;
+      enemyTurnDuration = curBoss.id === 2 ? 480 : (curBoss.id === 3 ? 480 : (curBoss.id === 4 ? 480 : (curBoss.id === 5 ? 530 : 380)));
+
+      // Boss quip for this turn
+      bossTurnCount++;
+      const quipIdx = bossTurnCount % curBoss.dialogues.length;
+      setBossSpeech(curBoss.dialogues[quipIdx]);
+
+      // Rhythm spear sequence for Boss 2 (12 spears, Undyne rhythm shield challenge)
+      if (curBoss.id === 2) {
+        donCalabazoSpears = [
+          { dir: 'left', time: 30 },
+          { dir: 'right', time: 70 },
+          { dir: 'up', time: 110 },
+          { dir: 'down', time: 150 },
+          { dir: 'left', time: 190 },
+          { dir: 'up', time: 228 },
+          { dir: 'right', time: 265 },
+          { dir: 'down', time: 302 },
+          { dir: 'left', time: 338 },
+          { dir: 'right', time: 370 },
+          { dir: 'up', time: 400 },
+          { dir: 'down', time: 435 }
+        ];
+      }
+
+      // Clean orchestrated sequence for Boss 5 (Dracula / Vladislav)
+      if (curBoss.id === 5) {
+        vladislavSequence = [
+          // Phase 1: 3 bats weaving in gentle sine waves
+          { time: 25, type: 'bat', x: 295, y: 45, vx: -1.6, vy: 0.4, wave: true },
+          { time: 55, type: 'bat', x: 295, y: 115, vx: -1.6, vy: -0.4, wave: true },
+          { time: 85, type: 'bat', x: 295, y: 80, vx: -1.7, vy: 0.3, wave: true },
+
+          // Phase 2: 3 falling tomato juice drops with clear gaps to weave between
+          { time: 130, type: 'tomato', x: 65, y: -10, vx: 0, vy: 1.4 },
+          { time: 155, type: 'tomato', x: 140, y: -10, vx: 0, vy: 1.4 },
+          { time: 180, type: 'tomato', x: 215, y: -10, vx: 0, vy: 1.4 },
+
+          // Phase 3: 4 bats criss-crossing
+          { time: 225, type: 'bat', x: 295, y: 40, vx: -1.7, vy: 0.5, wave: true },
+          { time: 245, type: 'bat', x: 295, y: 120, vx: -1.7, vy: -0.5, wave: true },
+          { time: 275, type: 'bat', x: 295, y: 55, vx: -1.75, vy: 0.4, wave: true },
+          { time: 295, type: 'bat', x: 295, y: 105, vx: -1.75, vy: -0.4, wave: true },
+
+          // Phase 4: 4 tomato drops in staggered pairs
+          { time: 335, type: 'tomato', x: 80, y: -10, vx: 0, vy: 1.5 },
+          { time: 345, type: 'tomato', x: 200, y: -10, vx: 0, vy: 1.5 },
+          { time: 380, type: 'tomato', x: 140, y: -10, vx: 0, vy: 1.5 },
+          { time: 395, type: 'tomato', x: 50, y: -10, vx: 0, vy: 1.5 },
+
+          // Phase 5: Final crescendo - 2 bats & 1 central tomato drop
+          { time: 430, type: 'bat', x: 295, y: 60, vx: -1.8, vy: 0.4, wave: true },
+          { time: 445, type: 'tomato', x: 140, y: -10, vx: 0, vy: 1.6 },
+          { time: 460, type: 'bat', x: 295, y: 100, vx: -1.8, vy: -0.4, wave: true }
+        ];
+      }
+
+      // Spawn initial wave of boss projectiles
+      spawnBossBullets(curBoss);
+    }
+
+    function spawnBossBullets(boss) {
+      if (boss.id === 1) { // Tibio: Bones along bottom / jumping
+        const boneHeights = [22, 28, 22, 26];
+        for (let i = 0; i < 4; i++) {
+          const h = boneHeights[i];
+          bullets.push({
+            x: 310 + i * 140,
+            y: canvas.height - h, // sits right on the floor (canvas.height = 160)
+            w: 12,
+            h: h,
+            vx: -1.6,
+            vy: 0,
+            type: 'bone'
+          });
+        }
+      } else if (boss.id === 2) {
+        // Don Calabazo: Spears spawned sequentially in updateEnemyTurn (no multiple collisions at once!)
+        bullets = [];
+      } else if (boss.id === 3) { // Madame Morgana: 3 Lines Potions (14 potions)
+        const lines = [40, 80, 120];
+        const pattern = [0, 1, 2, 1, 0, 2, 1, 2, 0, 1, 0, 2, 1, 0];
+        for (let i = 0; i < pattern.length; i++) {
+          bullets.push({
+            x: 290 + i * 48,
+            y: lines[pattern[i]],
+            radius: 7,
+            vx: -1.75,
+            vy: 0,
+            type: 'potion'
+          });
+        }
+      } else if (boss.id === 4) { // Frankie: Tesla shooter (13 coils in 2 cascading waves)
+        for (let i = 0; i < 7; i++) {
+          bullets.push({
+            x: 35 + i * 35,
+            y: -15 - (i * 38),
+            w: 16,
+            h: 16,
+            hp: 2,
+            vx: (i % 2 === 0 ? 0.3 : -0.3),
+            vy: 1.25,
+            type: 'tesla'
+          });
+        }
+        for (let i = 0; i < 6; i++) {
+          bullets.push({
+            x: 50 + i * 36,
+            y: -310 - (i * 38),
+            w: 16,
+            h: 16,
+            hp: 2,
+            vx: (i % 2 === 0 ? -0.35 : 0.35),
+            vy: 1.3,
+            type: 'tesla'
+          });
+        }
+      } else if (boss.id === 5) {
+        // Vladislav: sequential spawning via vladislavSequence
+        bullets = [];
+      }
+    }
+
+    function updateEnemyTurn() {
+      if (gameState !== 'ENEMY_TURN') return;
+      const curBoss = BOSSES[currentBossIdx];
+      enemyTurnTimer++;
+
+      if (soul.invulnTimer > 0) {
+        soul.invulnTimer--;
+      }
+
+      // 1. Soul Movement Physics by Soul Mode
+      if (curBoss.soulColor === 'blue') {
+        // Gravity & Jump Physics (Undertale Blue Soul)
+        const speed = 2.4;
+        if (keys.ArrowLeft || keys.KeyA) soul.x -= speed;
+        if (keys.ArrowRight || keys.KeyD) soul.x += speed;
+
+        const isPressingJump = keys.ArrowUp || keys.KeyW;
+
+        // Jump launch from ground
+        if (isPressingJump && soul.isGrounded) {
+          soul.vy = -5.8;
+          soul.isGrounded = false;
+          soul.jumpHeld = true;
+          sound.playBlip(320, 'square', 0.08);
+        }
+
+        // Variable gravity: hold jump to soar higher, release to fall
+        if (soul.jumpHeld && isPressingJump && soul.vy < 0) {
+          soul.vy += 0.20; // Floaty ascent
+        } else {
+          soul.jumpHeld = false;
+          soul.vy += 0.35; // Snappy descent
+        }
+
+        soul.y += soul.vy;
+
+        // Floor collision
+        const floorY = 146;
+        if (soul.y >= floorY) {
+          soul.y = floorY;
+          soul.vy = 0;
+          soul.isGrounded = true;
+          soul.jumpHeld = false;
+        }
+      } else if (curBoss.soulColor === 'green') {
+        // Shield Guard: Soul is stationary at center; keys aim the shield
+        soul.x = 140;
+        soul.y = 80;
+        if (keys.ArrowUp || keys.KeyW) soul.shieldDir = 'up';
+        if (keys.ArrowDown || keys.KeyS) soul.shieldDir = 'down';
+        if (keys.ArrowLeft || keys.KeyA) soul.shieldDir = 'left';
+        if (keys.ArrowRight || keys.KeyD) soul.shieldDir = 'right';
+      } else if (curBoss.soulColor === 'purple') {
+        // 3 Web Lines: Jump between 3 horizontal strings (Y = 40, 80, 120)
+        const lines = [40, 80, 120];
+        const speed = 2.0;
+        if (keys.ArrowLeft || keys.KeyA) soul.x -= speed;
+        if (keys.ArrowRight || keys.KeyD) soul.x += speed;
+
+        if ((keys.ArrowUp || keys.KeyW) && soul.webLine > 0) {
+          soul.webLine--;
+          keys.ArrowUp = false; keys.KeyW = false;
+          sound.playBlip(480, 'sine', 0.06);
+        } else if ((keys.ArrowDown || keys.KeyS) && soul.webLine < 2) {
+          soul.webLine++;
+          keys.ArrowDown = false; keys.KeyS = false;
+          sound.playBlip(380, 'sine', 0.06);
+        }
+        soul.y = lines[soul.webLine];
+      } else if (curBoss.soulColor === 'yellow') {
+        // Peashooter: Free movement + Z to shoot upward bullets
+        const speed = 2.2;
+        if (keys.ArrowLeft || keys.KeyA) soul.x -= speed;
+        if (keys.ArrowRight || keys.KeyD) soul.x += speed;
+        if (keys.ArrowUp || keys.KeyW) soul.y -= speed;
+        if (keys.ArrowDown || keys.KeyS) soul.y += speed;
+
+        if (keys.KeyZ || keys.Enter) {
+          if (enemyTurnTimer % 14 === 0) {
+            soulBullets.push({ x: soul.x, y: soul.y - 8, vy: -5 });
+            sound.playPeashooter();
+          }
+        }
+      } else {
+        // Red Soul: Classic Omnidirectional Free Movement
+        const speed = keys.ShiftLeft || keys.KeyX ? 1.2 : 2.4;
+        if (keys.ArrowLeft || keys.KeyA) soul.x -= speed;
+        if (keys.ArrowRight || keys.KeyD) soul.x += speed;
+        if (keys.ArrowUp || keys.KeyW) soul.y -= speed;
+        if (keys.ArrowDown || keys.KeyS) soul.y += speed;
+      }
+
+      // Strict boundary clamp inside arena box: heart will never escape
+      soul.x = Math.max(12, Math.min(canvas.width - 12, soul.x));
+      soul.y = Math.max(12, Math.min(canvas.height - 12, soul.y));
+
+      // 2. Update Soul Bullets (Yellow mode)
+      for (let i = soulBullets.length - 1; i >= 0; i--) {
+        const sb = soulBullets[i];
+        sb.y += sb.vy;
+        if (sb.y < 0) {
+          soulBullets.splice(i, 1);
+          continue;
+        }
+        // Check collision with bullets/obstacles
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const b = bullets[j];
+          if (Math.abs(sb.x - b.x) < 14 && Math.abs(sb.y - b.y) < 14) {
+            b.hp = (b.hp || 1) - 1;
+            soulBullets.splice(i, 1);
+            sound.playHit();
+            if (b.hp <= 0) bullets.splice(j, 1);
+            break;
+          }
+        }
+      }
+
+      // 3. Sequential rhythm spawner for Boss 2 (Don Calabazo)
+      if (curBoss.id === 2 && donCalabazoSpears.length > 0) {
+        for (let i = donCalabazoSpears.length - 1; i >= 0; i--) {
+          const sp = donCalabazoSpears[i];
+          if (enemyTurnTimer >= sp.time) {
+            const speed = 2.2;
+            let bx = 140, by = 80, bvx = 0, bvy = 0;
+            if (sp.dir === 'left') { bx = 15; by = 80; bvx = speed; }
+            if (sp.dir === 'right') { bx = 265; by = 80; bvx = -speed; }
+            if (sp.dir === 'up') { bx = 140; by = 15; bvy = speed; }
+            if (sp.dir === 'down') { bx = 140; by = 145; bvy = -speed; }
+
+            bullets.push({ x: bx, y: by, w: 10, h: 10, vx: bvx, vy: bvy, dir: sp.dir, type: 'spear' });
+            donCalabazoSpears.splice(i, 1);
+          }
+        }
+      }
+
+      // 4. Sequential spawner for Boss 5 (Conde Vladislav)
+      if (curBoss.id === 5 && vladislavSequence.length > 0) {
+        for (let i = vladislavSequence.length - 1; i >= 0; i--) {
+          const vs = vladislavSequence[i];
+          if (enemyTurnTimer >= vs.time) {
+            bullets.push({
+              x: vs.x,
+              y: vs.y,
+              vx: vs.vx,
+              vy: vs.vy,
+              type: vs.type,
+              wave: !!vs.wave,
+              radius: vs.type === 'bat' ? 6 : 5
+            });
+            vladislavSequence.splice(i, 1);
+          }
+        }
+      }
+
+      // 5. Update & Render Bullets
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx;
+        b.y += b.vy;
+        if (b.wave) {
+          b.y += Math.sin(enemyTurnTimer * 0.08) * 0.8;
+        }
+
+        // Collision Check with Soul (only if not in i-frames)
+        if (soul.invulnTimer <= 0) {
+          if (b.type === 'bone') {
+            // AABB Box collision with forgiving heart core hitbox
+            const soulHitRadius = 4;
+            const soulCenterX = soul.x;
+            const soulCenterY = soul.y;
+
+            const boneLeft = b.x - b.w / 2;
+            const boneRight = b.x + b.w / 2;
+            const boneTop = b.y;
+            const boneBottom = b.y + b.h;
+
+            const overlapX = (soulCenterX + soulHitRadius > boneLeft) && (soulCenterX - soulHitRadius < boneRight);
+            const overlapY = (soulCenterY + soulHitRadius > boneTop) && (soulCenterY - soulHitRadius < boneBottom);
+
+            if (overlapX && overlapY) {
+              damagePlayer(10);
+              continue;
+            }
+          } else if (curBoss.soulColor === 'green') {
+            // Green Soul shield check
+            const dist = Math.hypot(b.x - soul.x, b.y - soul.y);
+            if (dist < 24) {
+              let blocked = false;
+              if (b.dir === 'left' && soul.shieldDir === 'left') blocked = true;
+              if (b.dir === 'right' && soul.shieldDir === 'right') blocked = true;
+              if (b.dir === 'up' && soul.shieldDir === 'up') blocked = true;
+              if (b.dir === 'down' && soul.shieldDir === 'down') blocked = true;
+
+              if (blocked) {
+                sound.playShieldClang();
+                bullets.splice(i, 1);
+                continue;
+              } else if (dist < 10) {
+                damagePlayer(10);
+                bullets.splice(i, 1);
+                continue;
+              }
+            }
+          } else {
+            // General Soul Hitbox
+            const hitDist = b.radius || (b.w ? b.w / 2 : 7);
+            const d = Math.hypot(b.x - soul.x, b.y - soul.y);
+            if (d < hitDist + 4) {
+              damagePlayer(10);
+              bullets.splice(i, 1);
+              continue;
+            }
+          }
+        }
+      }
+
+      // Check turn end
+      const allQueuedDone = (curBoss.id === 2 ? donCalabazoSpears.length === 0 : (curBoss.id === 5 ? vladislavSequence.length === 0 : true));
+      const allBulletsOffscreen = bullets.every(b => b.x < -30 || b.x > canvas.width + 50 || b.y > canvas.height + 50);
+      if ((enemyTurnTimer > 150 && allQueuedDone && allBulletsOffscreen) || enemyTurnTimer >= enemyTurnDuration) {
+        endEnemyTurn();
+      }
+    }
+
+    function damagePlayer(amount) {
+      if (soul.invulnTimer > 0) return;
+      soul.invulnTimer = 45; // ~0.75s of invincibility frames
+      playerHp = Math.max(0, playerHp - amount);
+      updateStatsUI();
+      sound.playHurt();
+
+      // Screen shake on arena
+      arenaBox.style.transform = `translate(${(Math.random()-0.5)*12}px, ${(Math.random()-0.5)*12}px)`;
+      setTimeout(() => arenaBox.style.transform = 'none', 120);
+
+      if (playerHp <= 0) {
+        handleGameOver();
+      }
+    }
+
+    function endEnemyTurn() {
+      arenaBox.classList.remove('in-battle');
+      gameState = 'MENU_MAIN';
+      canvas.style.display = 'none';
+      dialogueView.style.display = 'flex';
+      hideBossSpeech();
+      showMainMenu();
+    }
+
+    /* ==========================================================================
+       10. CANVAS RENDER LOOP (60 FPS)
+       ========================================================================== */
+    function drawBattleCanvas() {
+      if (gameState !== 'ENEMY_TURN') return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const curBoss = BOSSES[currentBossIdx];
+
+      // Draw Purple 3 Web Lines if in Purple Soul Mode
+      if (curBoss.soulColor === 'purple') {
+        ctx.strokeStyle = '#d154ff';
+        ctx.lineWidth = 2;
+        [35, 70, 105].forEach(y => {
+          ctx.beginPath();
+          ctx.moveTo(10, y);
+          ctx.lineTo(canvas.width - 10, y);
+          ctx.stroke();
+        });
+      }
+
+      // Draw Bullets
+      bullets.forEach(b => {
+        ctx.save();
+        if (b.type === 'bone') {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(b.x - b.w / 2, b.y, b.w, b.h);
+          ctx.beginPath();
+          ctx.arc(b.x - b.w / 2, b.y, 4, 0, Math.PI * 2);
+          ctx.arc(b.x + b.w / 2, b.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (b.type === 'spear') {
+          ctx.fillStyle = '#39ff14';
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (b.type === 'potion') {
+          ctx.fillStyle = '#d154ff';
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(b.x - 2, b.y - 2, 3, 3);
+        } else if (b.type === 'tesla') {
+          ctx.fillStyle = '#ffff00';
+          ctx.fillRect(b.x - 8, b.y - 8, 16, 16);
+          ctx.strokeStyle = '#fff';
+          ctx.strokeRect(b.x - 8, b.y - 8, 16, 16);
+        } else if (b.type === 'bat') {
+          ctx.fillStyle = '#ff2a4b';
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          // Flapping wings
+          const wingFlap = Math.sin(enemyTurnTimer * 0.25) * 4;
+          ctx.beginPath();
+          ctx.moveTo(b.x - 3, b.y);
+          ctx.lineTo(b.x - 9, b.y - wingFlap);
+          ctx.lineTo(b.x - 4, b.y + 2);
+          ctx.moveTo(b.x + 3, b.y);
+          ctx.lineTo(b.x + 9, b.y - wingFlap);
+          ctx.lineTo(b.x + 4, b.y + 2);
+          ctx.strokeStyle = '#ff2a4b';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        } else if (b.type === 'tomato') {
+          // Tomato juice drop
+          ctx.fillStyle = '#ff2a4b';
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          // Green stem on top
+          ctx.fillStyle = '#39ff14';
+          ctx.fillRect(b.x - 1, b.y - 7, 2, 3);
+        }
+        ctx.restore();
+      });
+
+      // Draw Soul Bullets (Peashooter)
+      soulBullets.forEach(sb => {
+        ctx.fillStyle = '#ffff00';
+        ctx.fillRect(sb.x - 2, sb.y - 5, 4, 8);
+      });
+
+      // Draw Soul Heart
+      ctx.save();
+      if (soul.invulnTimer > 0 && Math.floor(soul.invulnTimer / 4) % 2 === 0) {
+        ctx.globalAlpha = 0.35;
+      }
+      let heartColor = '#ff0000';
+      if (curBoss.soulColor === 'blue') heartColor = '#00bfff';
+      if (curBoss.soulColor === 'green') heartColor = '#00ff00';
+      if (curBoss.soulColor === 'purple') heartColor = '#d154ff';
+      if (curBoss.soulColor === 'yellow') heartColor = '#ffff00';
+
+      ctx.fillStyle = heartColor;
+      drawHeartShape(ctx, soul.x, soul.y, soul.size);
+
+      // Green Soul Shield Direction Indicator
+      if (curBoss.soulColor === 'green') {
+        ctx.strokeStyle = '#39ff14';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        const dist = 18;
+        if (soul.shieldDir === 'up') {
+          ctx.moveTo(soul.x - 14, soul.y - dist);
+          ctx.lineTo(soul.x + 14, soul.y - dist);
+        } else if (soul.shieldDir === 'down') {
+          ctx.moveTo(soul.x - 14, soul.y + dist);
+          ctx.lineTo(soul.x + 14, soul.y + dist);
+        } else if (soul.shieldDir === 'left') {
+          ctx.moveTo(soul.x - dist, soul.y - 14);
+          ctx.lineTo(soul.x - dist, soul.y + 14);
+        } else if (soul.shieldDir === 'right') {
+          ctx.moveTo(soul.x + dist, soul.y - 14);
+          ctx.lineTo(soul.x + dist, soul.y + 14);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawHeartShape(c, cx, cy, size = 14) {
+      c.save();
+      c.translate(cx, cy);
+      c.beginPath();
+      const s = size / 14;
+      c.moveTo(0, 5 * s);
+      c.bezierCurveTo(-7 * s, -1 * s, -7 * s, -6 * s, -3.5 * s, -6 * s);
+      c.bezierCurveTo(-1.5 * s, -6 * s, 0, -4 * s, 0, -2 * s);
+      c.bezierCurveTo(0, -4 * s, 1.5 * s, -6 * s, 3.5 * s, -6 * s);
+      c.bezierCurveTo(7 * s, -6 * s, 7 * s, -1 * s, 0, 5 * s);
+      c.closePath();
+      c.fill();
+      c.restore();
+    }
+
+    /* ==========================================================================
+       11. BOSS DEFEATED & VICTORY
+       ========================================================================== */
+    function handleBossDefeated(spared = false) {
+      if (isTransitioningBoss) return;
+      isTransitioningBoss = true;
+      gameState = 'BOSS_DEFEATED';
+      arenaBox.classList.remove('in-battle');
+
+      const curBoss = BOSSES[currentBossIdx];
+      sound.playVictory();
+      hideBossSpeech();
+
+      dialogueView.style.display = 'flex';
+      menuGrid.style.display = 'none';
+      attackTargetBox.style.display = 'none';
+      canvas.style.display = 'none';
+      bossHpWrap.style.display = 'none';
+
+      // Visual feedback on boss defeat
+      if (!spared) {
+        bossImage.style.opacity = '0.35';
+        bossImage.style.filter = 'grayscale(1) blur(1px)';
+      }
+
+      if (spared) {
+        mainText.innerHTML = `* ¡Has <strong>PERDONADO</strong> a ${curBoss.name}!<br>* "${curBoss.spareDialog}"<br>* ¡El maleficio de este monstruo ha sido purificado en paz!`;
+      } else {
+        mainText.innerHTML = `* ¡Has <strong>DERROTADO</strong> a ${curBoss.name}!<br>* Se desvanece dejando una montaña de dulces en el suelo.<br>* ¡Victoria épica!`;
+      }
+
+      setTimeout(() => {
+        if (currentBossIdx + 1 < BOSSES.length) {
+          // Next boss in Boss Rush
+          loadBoss(currentBossIdx + 1);
+          showToast(`¡Avanzas al Jefe ${currentBossIdx + 1}/5!`);
+        } else {
+          // Grand Finale Victory!
+          triggerGrandVictory();
+        }
+      }, 3000);
+    }
+
+    function triggerGrandVictory() {
+      isPaused = true;
+      localStorage.setItem('krypt_day_31_cleared', 'true');
+      sound.playVictory();
+      victoryModal.classList.add('active');
+    }
+
+    function handleGameOver() {
+      isGameOver = true;
+      isPaused = true;
+      sound.playHurt();
+      mainText.innerHTML = "* Has caído en el abismo de la cripta...<br>* ¡Mantén tu DETERMINACIÓN y levántate!";
+      setTimeout(() => {
+        playerHp = playerMaxHp;
+        isGameOver = false;
+        isPaused = false;
+        loadBoss(currentBossIdx); // Retry current boss
+        showToast("¡Reintentando combate!");
+      }, 2500);
+    }
+
+    /* ==========================================================================
+       12. INPUT HANDLING (KEYBOARD & TOUCH)
+       ========================================================================== */
+    window.addEventListener('keydown', (e) => {
+      sound.init();
+      if (keys.hasOwnProperty(e.code)) {
+        keys[e.code] = true;
+      }
+
+      if (isPaused) return;
+
+      if (gameState === 'MENU_MAIN') {
+        if (e.repeat) return;
+        if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+          selectedActionIdx = (selectedActionIdx + 3) % 4;
+          sound.playSelect();
+          updateActionButtonsUI();
+        } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+          selectedActionIdx = (selectedActionIdx + 1) % 4;
+          sound.playSelect();
+          updateActionButtonsUI();
+        } else if (e.code === 'KeyZ' || e.code === 'Enter') {
+          confirmSelection();
+        }
+      } else if (gameState === 'MENU_SUB') {
+        if (e.repeat) return;
+        if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+          // Switch between columns
+          if (subMenuItems.length === 2) {
+            selectedSubIdx = 0; // Left option (Perdonar)
+          } else if (selectedSubIdx % 2 === 1) {
+            selectedSubIdx--;
+          }
+          sound.playSelect();
+          updateSubMenuSelection();
+        } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+          // Switch between columns
+          if (subMenuItems.length === 2) {
+            selectedSubIdx = 1; // Right option (Actuar)
+          } else if (selectedSubIdx % 2 === 0 && selectedSubIdx + 1 < subMenuItems.length) {
+            selectedSubIdx++;
+          }
+          sound.playSelect();
+          updateSubMenuSelection();
+        } else if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+          if (subMenuItems.length === 2) {
+            selectedSubIdx = (selectedSubIdx + 1) % 2;
+          } else if (selectedSubIdx >= 2) {
+            selectedSubIdx -= 2;
+          }
+          sound.playSelect();
+          updateSubMenuSelection();
+        } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+          if (subMenuItems.length === 2) {
+            selectedSubIdx = (selectedSubIdx + 1) % 2;
+          } else if (selectedSubIdx + 2 < subMenuItems.length) {
+            selectedSubIdx += 2;
+          }
+          sound.playSelect();
+          updateSubMenuSelection();
+        } else if (e.code === 'KeyZ' || e.code === 'Enter') {
+          confirmSelection();
+        } else if (e.code === 'KeyX' || e.code === 'ShiftLeft') {
+          // Cancel back to main menu
+          showMainMenu();
+          sound.playSelect();
+        }
+      } else if (gameState === 'ATTACK_TIMING') {
+        if (e.repeat) return;
+        if (e.code === 'KeyZ' || e.code === 'Enter' || e.code === 'Space') {
+          executeAttackHit();
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (keys.hasOwnProperty(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    function confirmSelection() {
+      if (isActionProcessing) return;
+      if (gameState !== 'MENU_MAIN' && gameState !== 'MENU_SUB' && gameState !== 'ATTACK_TIMING') return;
+      sound.init();
+      if (gameState === 'MENU_MAIN') {
+        sound.playSelect();
+        const actionType = actionBtns[selectedActionIdx].dataset.action;
+        if (actionType === 'flee') {
+          doFlee();
+        } else {
+          openSubMenu(actionType);
+        }
+      } else if (gameState === 'MENU_SUB') {
+        const item = subMenuItems[selectedSubIdx];
+        if (!item) return;
+        sound.playSelect();
+
+        if (item.type === 'FIGHT') {
+          startAttackTiming();
+        } else if (item.type === 'ITEM') {
+          useItem(item.itemIdx);
+        } else if (item.type === 'SPARE') {
+          doSpare();
+        } else if (item.type === 'ACT') {
+          doAct();
+        }
+      }
+    }
+
+    // Click on action buttons
+    actionBtns.forEach((btn, idx) => {
+      btn.addEventListener('click', (e) => {
+        btn.blur();
+        if (isActionProcessing || gameState !== 'MENU_MAIN') return;
+        selectedActionIdx = idx;
+        updateActionButtonsUI();
+        confirmSelection();
+      });
+    });
+
+    // Touch DPad controls
+    const bindTouch = (id, code) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        keys[code] = true;
+        window.dispatchEvent(new KeyboardEvent('keydown', { code }));
+      });
+      btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[code] = false; });
+      btn.addEventListener('mousedown', () => {
+        keys[code] = true;
+        window.dispatchEvent(new KeyboardEvent('keydown', { code }));
+      });
+      btn.addEventListener('mouseup', () => keys[code] = false);
+    };
+
+    bindTouch('dpadUp', 'ArrowUp');
+    bindTouch('dpadDown', 'ArrowDown');
+    bindTouch('dpadLeft', 'ArrowLeft');
+    bindTouch('dpadRight', 'ArrowRight');
+
+    const touchZ = document.getElementById('btnTouchZ');
+    touchZ.addEventListener('click', (e) => {
+      touchZ.blur();
+      if (gameState === 'ATTACK_TIMING') {
+        executeAttackHit();
+      } else if (gameState === 'MENU_MAIN' || gameState === 'MENU_SUB') {
+        confirmSelection();
+      }
+    });
+
+    const touchX = document.getElementById('btnTouchX');
+    touchX.addEventListener('click', (e) => {
+      touchX.blur();
+      if (gameState === 'MENU_SUB') {
+        showMainMenu();
+        sound.playSelect();
+      }
+    });
+
+    // Audio Toggle
+    const audioBtn = document.getElementById('btnAudioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+    const audioLabel = document.getElementById('audioLabel');
+    audioBtn.addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      if (sound.enabled) {
+        audioIcon.textContent = '🔊';
+        audioLabel.textContent = 'SFX';
+        sound.init();
+        showToast('Sonido activado');
+      } else {
+        audioIcon.textContent = '🔇';
+        audioLabel.textContent = 'MUTE';
+        showToast('Sonido silenciado');
+      }
+    });
+
+    // Discord Copy Button (No visual spoiler tag in label, payload has ||DETERMINACION-HALLOWEEN||)
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    copyDiscordBtn.addEventListener('click', () => {
+      const discordText = `🎃 ¡He derrotado el Boss Rush del Día 31 (Gran Final) en La Krypta! Código: ||DETERMINACION-HALLOWEEN|| (Jefes Purificados: 5/5)`;
+      navigator.clipboard.writeText(discordText).then(() => {
+        copyDiscordBtn.innerHTML = '<span>✔️</span><span>¡Copiado!</span>';
+        showToast('Mensaje copiado para Discord');
+        setTimeout(() => {
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        showToast('Error al copiar');
+      });
+    });
+
+    document.getElementById('btnCloseHelp').addEventListener('click', () => {
+      helpModal.classList.remove('active');
+    });
+
+    /* ==========================================================================
+       13. MAIN ENGINE ANIMATION LOOP (FIXED 60 FPS TIMESTEP)
+       ========================================================================== */
+    let lastEngineTime = 0;
+    let engineAccumulator = 0;
+    const FIXED_TIMESTEP = 1000 / 60; // 16.6667 ms per physics tick
+    const MAX_ACCUMULATOR = 100; // Cap to avoid spiraling on background tab
+
+    function engineLoop(currentTime) {
+      if (!lastEngineTime) lastEngineTime = currentTime || performance.now();
+      let frameDelta = (currentTime || performance.now()) - lastEngineTime;
+      lastEngineTime = currentTime || performance.now();
+
+      if (frameDelta > MAX_ACCUMULATOR) frameDelta = MAX_ACCUMULATOR;
+
+      if (!isPaused) {
+        engineAccumulator += frameDelta;
+        while (engineAccumulator >= FIXED_TIMESTEP) {
+          updateEnemyTurn();
+          engineAccumulator -= FIXED_TIMESTEP;
+        }
+        drawBattleCanvas();
+      } else {
+        engineAccumulator = 0;
+      }
+
+      requestAnimationFrame(engineLoop);
+    }
+
+    // Initialize Game with Boss 1
+    loadBoss(0);
+    requestAnimationFrame(engineLoop);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 29: Invasión de Ultratumba - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070908;
+      --board-border: #233428;
+      --parchment: #ece2ce;
+      --text-muted: #85988b;
+
+      --laser-blue: #00e5ff;
+      --laser-glow: rgba(0, 229, 255, 0.6);
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.6);
+      --hell-red: #ff2a4b;
+      --hell-glow: rgba(255, 42, 75, 0.6);
+      --moon-gold: #ffd24d;
+      --moon-glow: rgba(255, 210, 77, 0.6);
+      --purple-invader: #b336ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 12%, rgba(35, 12, 55, 0.45) 0%, transparent 65%),
+        radial-gradient(circle at 50% 88%, rgba(10, 28, 16, 0.7) 0%, transparent 70%);
+      padding: 8px 12px 14px 12px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.16;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.35) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    .vignette-overlay.flash-win {
+      box-shadow: inset 0 0 140px rgba(0, 229, 255, 0.85);
+    }
+
+    /* Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(18, 28, 20, 0.6);
+      border: 1px solid #283a2d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: #fff;
+      border-color: var(--laser-blue);
+      box-shadow: 0 0 10px var(--laser-glow);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      background: rgba(18, 28, 20, 0.6);
+      border: 1px solid #283a2d;
+      color: var(--parchment);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--moon-gold);
+      color: #fff;
+      box-shadow: 0 0 8px var(--moon-glow);
+    }
+
+    /* Title Banner */
+    .title-banner {
+      text-align: center;
+      margin-bottom: 2px;
+    }
+
+    .day-tag {
+      font-family: 'Cinzel', serif;
+      font-size: 0.72rem;
+      color: var(--laser-blue);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 800;
+      text-shadow: 0 0 8px var(--laser-glow);
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 2.15rem;
+      letter-spacing: 2.5px;
+      color: var(--moon-gold);
+      text-shadow: 0 0 12px var(--moon-glow);
+      line-height: 1.1;
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(12, 20, 15, 0.88);
+      border: 1px solid #243829;
+      border-radius: 8px;
+      padding: 6px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+    }
+
+    .hud-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .stat-value {
+      font-family: 'Cinzel', serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--parchment);
+    }
+
+    /* Lives */
+    .lives-box {
+      display: flex;
+      gap: 4px;
+      font-size: 1.05rem;
+    }
+
+    .heart-icon {
+      filter: drop-shadow(0 0 4px var(--hell-glow));
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .heart-icon.lost {
+      opacity: 0.25;
+      filter: grayscale(1);
+      transform: scale(0.85);
+    }
+
+    /* Canvas Sandbox */
+    .canvas-wrapper {
+      position: relative;
+      background: #080b09;
+      border: 2px solid #233828;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+    }
+
+    #gameCanvas {
+      display: block;
+      background-color: #060907;
+      width: 100%;
+      max-width: 520px;
+      height: 520px;
+      touch-action: none;
+    }
+
+    /* Floating Banners */
+    .floating-banner {
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      font-family: 'Creepster', cursive;
+      font-size: 2.4rem;
+      color: var(--laser-blue);
+      text-shadow: 0 0 15px var(--laser-glow), 0 4px 10px #000;
+      letter-spacing: 2px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 20;
+      text-align: center;
+      width: 100%;
+    }
+
+    .floating-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    /* Mobile On-screen Controls */
+    .mobile-controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 520px;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .btn-mobile-act {
+      flex: 1;
+      padding: 14px 6px;
+      background: linear-gradient(180deg, #18281d 0%, #0d1610 100%);
+      border: 1px solid #283d2e;
+      border-radius: 8px;
+      color: var(--parchment);
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      transition: all 0.1s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-mobile-act:active {
+      transform: translateY(2px);
+      filter: brightness(1.2);
+      border-color: var(--laser-blue);
+    }
+
+    .btn-mobile-act.shoot {
+      border-color: var(--laser-blue);
+      color: var(--laser-blue);
+    }
+
+    .btn-mobile-act.shoot:active {
+      box-shadow: 0 0 15px var(--laser-glow);
+    }
+
+    /* Bottom Info */
+    .bottom-bar {
+      width: 100%;
+      text-align: center;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      padding: 4px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(145deg, #131d16 0%, #090e0b 100%);
+      border: 2px solid #283e2e;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 440px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      transform: translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-backdrop.active .modal-box {
+      transform: translateY(0);
+    }
+
+    .modal-box.victory {
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 35px rgba(255, 210, 77, 0.35);
+    }
+
+    .modal-box.defeat {
+      border-color: var(--hell-red);
+      box-shadow: 0 0 35px rgba(255, 42, 75, 0.35);
+    }
+
+    .modal-icon {
+      font-size: 3rem;
+      filter: drop-shadow(0 0 10px var(--moon-glow));
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2.2rem;
+      color: var(--moon-gold);
+      text-shadow: 0 0 10px var(--moon-glow);
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .modal-box.defeat .modal-title {
+      color: var(--hell-red);
+      text-shadow: 0 0 10px var(--hell-glow);
+    }
+
+    .modal-desc {
+      font-size: 0.88rem;
+      color: var(--parchment);
+      line-height: 1.5;
+    }
+
+    .secret-scroll {
+      background: rgba(18, 28, 21, 0.9);
+      border: 1px dashed var(--moon-gold);
+      border-radius: 8px;
+      padding: 12px 18px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .scroll-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: var(--moon-gold);
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px var(--moon-glow);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 12px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      color: #fff;
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 15px rgba(88, 101, 242, 0.6);
+    }
+
+    .btn-action.advance {
+      background: linear-gradient(135deg, #00e5ff, #0088cc);
+      color: #fff;
+    }
+
+    .btn-action.advance:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 0 18px var(--laser-glow);
+    }
+
+    .btn-action.retry {
+      background: linear-gradient(135deg, #a81c32, #680f1d);
+      color: #fff;
+    }
+
+    .btn-action.retry:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 0 15px var(--hell-glow);
+    }
+
+    .modal-close-corner {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .modal-close-corner:hover {
+      color: #fff;
+    }
+
+    .how-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      text-align: left;
+      font-size: 0.84rem;
+      line-height: 1.4;
+      width: 100%;
+    }
+
+    .how-step-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      background: rgba(18, 28, 21, 0.95);
+      border: 1px solid var(--laser-blue);
+      color: var(--parchment);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.8), 0 0 15px var(--laser-glow);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+  <div class="toast" id="toast">Notificación</div>
+
+  <div class="game-shell">
+    <!-- Header Nav -->
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+
+      <div class="header-controls">
+        <button class="btn-icon" id="btnAudioToggle">
+          <span id="audioIcon">🔊</span>
+          <span id="audioLabel">Sonido</span>
+        </button>
+        <button class="btn-icon" id="btnHowTo">
+          <span>❓</span>
+          <span>¿Cómo Jugar?</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Title Banner -->
+    <div class="title-banner">
+      <div class="day-tag">Día 29 • XXIX</div>
+      <h1>Invasión de Ultratumba</h1>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-group">
+        <div class="hud-stat">
+          <span class="stat-label">Oleada</span>
+          <span class="stat-value" id="hudWave" style="color: var(--laser-blue);">1</span>
+        </div>
+        <div class="hud-stat">
+          <span class="stat-label">Invasores</span>
+          <span class="stat-value" id="hudEnemies" style="color: var(--moon-gold);">24</span>
+        </div>
+      </div>
+
+      <div class="hud-group">
+        <div class="hud-stat">
+          <span class="stat-label">Vidas</span>
+          <div class="lives-box" id="livesBox">
+            <span class="heart-icon" id="hp0">❤️</span>
+            <span class="heart-icon" id="hp1">❤️</span>
+            <span class="heart-icon" id="hp2">❤️</span>
+          </div>
+        </div>
+        <div class="hud-stat">
+          <span class="stat-label">Puntos</span>
+          <span class="stat-value" id="hudScore" style="color: var(--moon-gold);">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas Sandbox -->
+    <div class="canvas-wrapper">
+      <canvas id="gameCanvas" width="460" height="520"></canvas>
+      <div class="floating-banner" id="floatingBanner">¡OLEADA PURIFICADA!</div>
+    </div>
+
+    <!-- Mobile Touch Controls -->
+    <div class="mobile-controls">
+      <button class="btn-mobile-act" id="btnMobileLeft">
+        <span>◀️</span>
+        <span>Izquierda</span>
+      </button>
+      <button class="btn-mobile-act shoot" id="btnMobileShoot">
+        <span>⚡</span>
+        <span>Disparar</span>
+      </button>
+      <button class="btn-mobile-act" id="btnMobileRight">
+        <span>▶️</span>
+        <span>Derecha</span>
+      </button>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="bottom-bar">
+      <span>[◀ / A] Izquierda • [▶ / D] Derecha • [Espacio / W] Disparar Relámpago</span>
+      <span>¡Extermina la legión demoníaca antes de que profanen el camposanto!</span>
+    </div>
+  </div>
+
+  <!-- How to Play Modal -->
+  <div class="modal-backdrop" id="helpModal">
+    <div class="modal-box">
+      <button class="modal-close-corner" id="btnCloseHelp">&times;</button>
+      <div class="modal-icon">👾⚡</div>
+      <h2 class="modal-title">Cómo Jugar</h2>
+      
+      <div class="how-step">
+        <div class="how-step-icon">⚡</div>
+        <div><strong>Altar Sagrado:</strong> Mueve tu altar con las teclas <code>[◀]</code> y <code>[▶]</code> (o <code>[A]</code> / <code>[D]</code>) y dispara relámpagos benditos con <code>[Espacio]</code>.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">🦇</div>
+        <div><strong>Enjambre del Averno:</strong> La formación de demonios y murciélagos marcha de lado a lado y desciende paso a paso. Cuantos menos queden, más rápido avanzarán.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">🪦</div>
+        <div><strong>Lápidas Defensivas:</strong> 3 barricadas de piedra sagrada absorben los proyectiles de ácido enemigo y tus disparos hasta resquebrajarse.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">🏆</div>
+        <div><strong>Victoria:</strong> Destruye a todos los invasores de la legión para purificar el cementerio y obtener la palabra clave de Discord.</div>
+      </div>
+
+      <button class="btn-action advance" id="btnStartPlaying">
+        <span>⚡</span>
+        <span>¡Defender la Cripta!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">🏆✨</div>
+      <h2 class="modal-title">¡Legión Exterminada!</h2>
+      <p class="modal-desc">
+        Has aniquilado al enjambre demoníaco antes de que profanaran las tumbas sagradas del camposanto.
+      </p>
+
+      <div style="font-size: 0.95rem; color: var(--parchment);">
+        Puntos Obtenidos: <strong id="vicScoreVal" style="color: var(--moon-gold);">0</strong>
+      </div>
+
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display">INVASION-EXTERMINADA</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action advance" id="btnContinueEndless">
+        <span>♾️</span>
+        <span>Siguiente Oleada (Modo Infinito)</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(18,28,21,0.7);">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box defeat">
+      <div class="modal-icon">💀🥀</div>
+      <h2 class="modal-title">¡Camposanto Profanado!</h2>
+      <p class="modal-desc" id="defDesc">
+        Los demonios han quebrado tus defensas y sumido el cementerio en tinieblas eternas.
+      </p>
+
+      <div style="font-size: 0.95rem; color: var(--parchment);">
+        Puntuación Final: <strong id="defScoreVal" style="color: var(--moon-gold);">0</strong>
+      </div>
+
+      <button class="btn-action retry" id="btnRetry">
+        <span>🔄</span>
+        <span>Reintentar Exorcismo</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO SYNTHESIZER
+       ========================================================================== */
+    class InvaderAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.stepPitch = 0;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playMarchStep() {
+        if (!this.enabled || !this.ctx) return;
+        const pitches = [110, 98, 87.3, 73.4];
+        const freq = pitches[this.stepPitch % pitches.length];
+        this.stepPitch++;
+
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, t);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.75, t + 0.08);
+
+        gain.gain.setValueAtTime(0.08, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.08);
+      }
+
+      playShoot() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, t);
+        osc.frequency.exponentialRampToValueAtTime(220, t + 0.12);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.12);
+      }
+
+      playEnemyHit() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, t);
+        osc.frequency.exponentialRampToValueAtTime(60, t + 0.15);
+        gain.gain.setValueAtTime(0.22, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.15);
+      }
+
+      playBunkerHit() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.1);
+      }
+
+      playPlayerHurt() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, t);
+        osc.frequency.exponentialRampToValueAtTime(30, t + 0.35);
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.35);
+      }
+
+      playUfoSpawn() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(580, t);
+        osc.frequency.linearRampToValueAtTime(740, t + 0.2);
+        gain.gain.setValueAtTime(0.12, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.2);
+      }
+
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const notes = [440, 554.37, 659.25, 880];
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t + i * 0.12);
+          gain.gain.setValueAtTime(0.25, t + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.6);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.12);
+          osc.stop(t + i * 0.12 + 0.6);
+        });
+      }
+
+      playDefeat() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        [160, 130, 95].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, t + i * 0.15);
+          osc.frequency.exponentialRampToValueAtTime(f * 0.6, t + i * 0.15 + 0.3);
+          gain.gain.setValueAtTime(0.25, t + i * 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.15);
+          osc.stop(t + i * 0.15 + 0.3);
+        });
+      }
+    }
+
+    const audio = new InvaderAudio();
+
+    /* ==========================================================================
+       GAME ENGINE & LOGIC
+       ========================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const vignette = document.getElementById('vignette');
+    const toast = document.getElementById('toast');
+    const floatingBanner = document.getElementById('floatingBanner');
+
+    const hudWave = document.getElementById('hudWave');
+    const hudEnemies = document.getElementById('hudEnemies');
+    const hudScore = document.getElementById('hudScore');
+    const heartIcons = [
+      document.getElementById('hp0'),
+      document.getElementById('hp1'),
+      document.getElementById('hp2')
+    ];
+
+    // Modals
+    const helpModal = document.getElementById('helpModal');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+
+    // Canvas Constants
+    const CANVAS_WIDTH = 460;
+    const CANVAS_HEIGHT = 520;
+    const DEFENSE_LINE_Y = 445;
+
+    // Game State
+    let score = 0;
+    let lives = 3;
+    let wave = 1;
+    let isGameOver = false;
+    let isVictoryAchieved = false;
+    let isEndlessMode = false;
+    let isPaused = false;
+    let shakeDuration = 0;
+    let shakeIntensity = 0;
+
+    // Player (Sacred Altar)
+    const player = {
+      x: CANVAS_WIDTH / 2 - 20,
+      y: 470,
+      w: 40,
+      h: 24,
+      speed: 5.5,
+      invulnTimer: 0,
+      shootCooldown: 0
+    };
+
+    // Bullets, Invaders, Bunkers, Particles
+    let playerBullets = [];
+    let enemyBullets = [];
+    let invaders = [];
+    let bunkers = [];
+    let particles = [];
+    let ufo = null;
+    let ufoTimer = 500;
+
+    // Invader Swarm Movement
+    let swarmDir = 1; // 1 = right, -1 = left
+    let swarmStepTimer = 0;
+    let swarmStepInterval = 40; // Decreases as enemies die
+    let swarmDropDist = 14;
+
+    const keys = {
+      left: false,
+      right: false,
+      shoot: false
+    };
+
+    /* --- Visual Notifications & Shakes --- */
+    function showBanner(text, color = '#00e5ff') {
+      floatingBanner.textContent = text;
+      floatingBanner.style.color = color;
+      floatingBanner.classList.add('show');
+      setTimeout(() => {
+        floatingBanner.classList.remove('show');
+      }, 1000);
+    }
+
+    function triggerScreenShake(intensity = 6, duration = 15) {
+      shakeIntensity = intensity;
+      shakeDuration = duration;
+    }
+
+    function flashVignette(cssClass) {
+      vignette.classList.add(cssClass);
+      setTimeout(() => {
+        vignette.classList.remove(cssClass);
+      }, 300);
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    function updateLivesHUD() {
+      for (let i = 0; i < 3; i++) {
+        if (i < lives) {
+          heartIcons[i].classList.remove('lost');
+        } else {
+          heartIcons[i].classList.add('lost');
+        }
+      }
+    }
+
+    /* --- Spawning Formations & Bunkers --- */
+    function initBunkers() {
+      bunkers = [];
+      const bunkerCount = 3;
+      const spacing = CANVAS_WIDTH / (bunkerCount + 1);
+      for (let b = 0; b < bunkerCount; b++) {
+        const bx = spacing * (b + 1) - 24;
+        const by = 400;
+        // Each bunker is made of a 4x3 cluster of stone bricks (12x10 each)
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 4; col++) {
+            // Cutout arch in bottom center
+            if (row === 2 && (col === 1 || col === 2)) continue;
+            bunkers.push({
+              x: bx + col * 12,
+              y: by + row * 10,
+              w: 12,
+              h: 10,
+              hp: 3 // takes 3 hits to crumble
+            });
+          }
+        }
+      }
+    }
+
+    function initInvaderSwarm() {
+      invaders = [];
+      const rows = 4;
+      const cols = 6;
+      const startX = 50;
+      const startY = 65;
+      const xSpacing = 60;
+      const ySpacing = 36;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          let type = 'skull';
+          let pts = 10;
+          let icon = '💀';
+          let color = '#d4dcd5';
+
+          if (r === 0) {
+            type = 'demon';
+            pts = 30;
+            icon = '👿';
+            color = '#ff2a4b';
+          } else if (r === 1 || r === 2) {
+            type = 'bat';
+            pts = 20;
+            icon = '🦇';
+            color = '#b336ff';
+          }
+
+          invaders.push({
+            x: startX + c * xSpacing,
+            y: startY + r * ySpacing,
+            w: 32,
+            h: 24,
+            type,
+            pts,
+            icon,
+            color,
+            animOffset: Math.random() * Math.PI
+          });
+        }
+      }
+
+      swarmDir = 1;
+      swarmStepInterval = Math.max(14, 42 - wave * 4);
+      swarmStepTimer = swarmStepInterval;
+      hudEnemies.textContent = invaders.length;
+    }
+
+    function spawnSparks(x, y, color = '#00e5ff', count = 8) {
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = 1.5 + Math.random() * 4.5;
+        particles.push({
+          x, y,
+          vx: Math.cos(a) * s,
+          vy: Math.sin(a) * s,
+          color,
+          radius: 2 + Math.random() * 2,
+          life: 1,
+          decay: 0.04 + Math.random() * 0.03
+        });
+      }
+    }
+
+    /* --- Combat & Damage --- */
+    function takeDamage() {
+      if (isGameOver || isPaused || player.invulnTimer > 0) return;
+
+      lives--;
+      audio.playPlayerHurt();
+      triggerScreenShake(10, 20);
+      flashVignette('danger');
+      player.invulnTimer = 65; // ~1 sec invulnerability
+      updateLivesHUD();
+      spawnSparks(player.x + player.w / 2, player.y + player.h / 2, '#ff2a4b', 16);
+
+      if (lives <= 0) {
+        gameOver("¡Tu altar ha sido destruido por los proyectiles demoníacos!");
+      }
+    }
+
+    function gameOver(reason) {
+      isGameOver = true;
+      isPaused = true;
+      audio.playDefeat();
+      document.getElementById('defDesc').textContent = reason || "Los demonios han profanado el camposanto.";
+      document.getElementById('defScoreVal').textContent = score;
+      defeatModal.classList.add('active');
+    }
+
+    function triggerVictory() {
+      isVictoryAchieved = true;
+      isPaused = true;
+      audio.playVictory();
+      flashVignette('flash-win');
+      localStorage.setItem('krypt_day_29_cleared', 'true');
+      document.getElementById('vicScoreVal').textContent = score;
+      victoryModal.classList.add('active');
+    }
+
+    function resetGame() {
+      score = 0;
+      lives = 3;
+      wave = 1;
+      isGameOver = false;
+      isVictoryAchieved = false;
+      isEndlessMode = false;
+      isPaused = false;
+
+      player.x = CANVAS_WIDTH / 2 - 20;
+      player.invulnTimer = 0;
+      player.shootCooldown = 0;
+
+      playerBullets = [];
+      enemyBullets = [];
+      particles = [];
+      ufo = null;
+      ufoTimer = 400;
+
+      updateLivesHUD();
+      hudScore.textContent = '0';
+      hudWave.textContent = '1';
+
+      initBunkers();
+      initInvaderSwarm();
+
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+    }
+
+    function nextWave() {
+      wave++;
+      hudWave.textContent = wave;
+      playerBullets = [];
+      enemyBullets = [];
+      initInvaderSwarm();
+      showBanner(`¡OLEADA ${wave}!`, '#ffd24d');
+      isPaused = false;
+    }
+
+    /* --- Shooting Logic --- */
+    function shootPlayerBullet() {
+      if (isGameOver || isPaused || player.shootCooldown > 0) return;
+      audio.init();
+
+      // Max 2 bullets on screen at once for arcade classic feel
+      if (playerBullets.length >= 2) return;
+
+      audio.playShoot();
+      playerBullets.push({
+        x: player.x + player.w / 2 - 2,
+        y: player.y - 10,
+        w: 4,
+        h: 12,
+        speed: 8.5
+      });
+
+      player.shootCooldown = 15; // Cooldown frames
+    }
+
+    /* --- Update Loop --- */
+    function update() {
+      if (isGameOver || isPaused) return;
+
+      // 1. Player Controls
+      if (keys.left) {
+        player.x -= player.speed;
+      }
+      if (keys.right) {
+        player.x += player.speed;
+      }
+      if (keys.shoot) {
+        shootPlayerBullet();
+      }
+
+      // Constrain player
+      if (player.x < 15) player.x = 15;
+      if (player.x + player.w > CANVAS_WIDTH - 15) player.x = CANVAS_WIDTH - 15 - player.w;
+
+      if (player.invulnTimer > 0) player.invulnTimer--;
+      if (player.shootCooldown > 0) player.shootCooldown--;
+
+      // 2. Swarm Movement Stepper
+      swarmStepTimer--;
+      if (swarmStepTimer <= 0) {
+        audio.playMarchStep();
+        let hitEdge = false;
+
+        // Check if any invader touches edges
+        invaders.forEach(inv => {
+          if ((swarmDir === 1 && inv.x + inv.w >= CANVAS_WIDTH - 20) ||
+              (swarmDir === -1 && inv.x <= 20)) {
+            hitEdge = true;
+          }
+        });
+
+        if (hitEdge) {
+          swarmDir *= -1;
+          invaders.forEach(inv => {
+            inv.y += swarmDropDist;
+            // Check if invaders breached defense line!
+            if (inv.y + inv.h >= DEFENSE_LINE_Y) {
+              gameOver("¡La legión demoníaca ha tocado tierra profanando las tumbas!");
+              return;
+            }
+          });
+        } else {
+          invaders.forEach(inv => {
+            inv.x += swarmDir * 10;
+          });
+        }
+
+        // Adjust speed based on surviving invaders
+        const aliveRatio = invaders.length / 24;
+        swarmStepInterval = Math.max(6, Math.floor(aliveRatio * 32) + 4);
+        swarmStepTimer = swarmStepInterval;
+      }
+
+      // 3. Enemy Shooting
+      if (Math.random() < 0.035 && invaders.length > 0) {
+        // Pick a random invader near the bottom of its column
+        const shooter = invaders[Math.floor(Math.random() * invaders.length)];
+        enemyBullets.push({
+          x: shooter.x + shooter.w / 2 - 2,
+          y: shooter.y + shooter.h,
+          w: 4,
+          h: 10,
+          speed: 4.2
+        });
+      }
+
+      // 4. UFO Mystery Ship
+      ufoTimer--;
+      if (ufoTimer <= 0 && !ufo) {
+        audio.playUfoSpawn();
+        const fromLeft = Math.random() < 0.5;
+        ufo = {
+          x: fromLeft ? -45 : CANVAS_WIDTH + 10,
+          y: 28,
+          w: 42,
+          h: 20,
+          vx: fromLeft ? 2.5 : -2.5,
+          pts: 200
+        };
+        ufoTimer = 450 + Math.random() * 350;
+      }
+
+      if (ufo) {
+        ufo.x += ufo.vx;
+        if (ufo.x < -60 || ufo.x > CANVAS_WIDTH + 60) {
+          ufo = null;
+        }
+      }
+
+      // 5. Update Player Bullets
+      for (let i = playerBullets.length - 1; i >= 0; i--) {
+        const b = playerBullets[i];
+        b.y -= b.speed;
+
+        // Collision with Invaders
+        let bulletDestroyed = false;
+        for (let j = invaders.length - 1; j >= 0; j--) {
+          const inv = invaders[j];
+          if (checkRectOverlap(b, inv)) {
+            audio.playEnemyHit();
+            score += inv.pts;
+            hudScore.textContent = score;
+            spawnSparks(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 12);
+            invaders.splice(j, 1);
+            hudEnemies.textContent = invaders.length;
+            bulletDestroyed = true;
+            break;
+          }
+        }
+
+        // Collision with UFO
+        if (!bulletDestroyed && ufo && checkRectOverlap(b, ufo)) {
+          audio.playEnemyHit();
+          score += ufo.pts;
+          hudScore.textContent = score;
+          showBanner(`+${ufo.pts} ESPECTRO`, '#ffd24d');
+          spawnSparks(ufo.x + ufo.w / 2, ufo.y + ufo.h / 2, '#ffd24d', 18);
+          ufo = null;
+          bulletDestroyed = true;
+        }
+
+        // Collision with Bunkers
+        if (!bulletDestroyed) {
+          for (let k = bunkers.length - 1; k >= 0; k--) {
+            const brick = bunkers[k];
+            if (checkRectOverlap(b, brick)) {
+              audio.playBunkerHit();
+              brick.hp--;
+              spawnSparks(b.x, b.y, '#7d8a80', 4);
+              if (brick.hp <= 0) bunkers.splice(k, 1);
+              bulletDestroyed = true;
+              break;
+            }
+          }
+        }
+
+        if (bulletDestroyed || b.y < -15) {
+          playerBullets.splice(i, 1);
+        }
+      }
+
+      // 6. Update Enemy Bullets
+      for (let i = enemyBullets.length - 1; i >= 0; i--) {
+        const eb = enemyBullets[i];
+        eb.y += eb.speed;
+
+        let ebDestroyed = false;
+
+        // Collision with Player
+        if (checkRectOverlap(eb, player)) {
+          takeDamage();
+          ebDestroyed = true;
+        }
+
+        // Collision with Bunkers
+        if (!ebDestroyed) {
+          for (let k = bunkers.length - 1; k >= 0; k--) {
+            const brick = bunkers[k];
+            if (checkRectOverlap(eb, brick)) {
+              audio.playBunkerHit();
+              brick.hp--;
+              spawnSparks(eb.x, eb.y, '#ff2a4b', 4);
+              if (brick.hp <= 0) bunkers.splice(k, 1);
+              ebDestroyed = true;
+              break;
+            }
+          }
+        }
+
+        if (ebDestroyed || eb.y > CANVAS_HEIGHT + 10) {
+          enemyBullets.splice(i, 1);
+        }
+      }
+
+      // 7. Check Wave Cleared / Victory
+      if (invaders.length === 0) {
+        if (!isVictoryAchieved) {
+          triggerVictory();
+        } else {
+          nextWave();
+        }
+      }
+
+      // 8. Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.life -= pt.decay;
+        if (pt.life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+      }
+    }
+
+    function checkRectOverlap(r1, r2) {
+      return (
+        r1.x < r2.x + r2.w &&
+        r1.x + r1.w > r2.x &&
+        r1.y < r2.y + r2.h &&
+        r1.y + r1.h > r2.y
+      );
+    }
+
+    /* --- Render Loop --- */
+    function draw() {
+      ctx.save();
+      if (shakeDuration > 0) {
+        shakeDuration--;
+        const ox = (Math.random() - 0.5) * shakeIntensity;
+        const oy = (Math.random() - 0.5) * shakeIntensity;
+        ctx.translate(ox, oy);
+      }
+
+      // 1. Starry Night Sky with Eerie Green Moon
+      ctx.fillStyle = '#060907';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      // Distant stars/crosses
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+      for (let s = 0; s < 25; s++) {
+        const sx = (s * 47) % CANVAS_WIDTH;
+        const sy = (s * 31) % (CANVAS_HEIGHT - 120);
+        ctx.fillRect(sx, sy, 1.5, 1.5);
+      }
+
+      // Defense perimeter line
+      ctx.strokeStyle = 'rgba(255, 42, 75, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([8, 8]);
+      ctx.beginPath();
+      ctx.moveTo(10, DEFENSE_LINE_Y);
+      ctx.lineTo(CANVAS_WIDTH - 10, DEFENSE_LINE_Y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 2. Draw UFO (Carruaje Espectral)
+      if (ufo) {
+        ctx.save();
+        ctx.shadowColor = '#ffd24d';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = '#ff7518';
+        ctx.beginPath();
+        ctx.ellipse(ufo.x + ufo.w / 2, ufo.y + ufo.h / 2, ufo.w / 2, ufo.h / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🛸', ufo.x + ufo.w / 2, ufo.y + ufo.h / 2);
+        ctx.restore();
+      }
+
+      // 3. Draw Invaders
+      invaders.forEach(inv => {
+        ctx.save();
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Floating hover
+        const bob = Math.sin(Date.now() * 0.005 + inv.animOffset) * 2;
+        ctx.fillText(inv.icon, inv.x + inv.w / 2, inv.y + inv.h / 2 + bob);
+        ctx.restore();
+      });
+
+      // 4. Draw Bunkers (Lápidas Defensivas)
+      bunkers.forEach(b => {
+        ctx.fillStyle = b.hp === 3 ? '#3d5243' : (b.hp === 2 ? '#2d3d32' : '#1e2821');
+        ctx.strokeStyle = '#121a14';
+        ctx.lineWidth = 1;
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+      });
+
+      // 5. Draw Player Bullets (Relámpagos Azules)
+      playerBullets.forEach(b => {
+        ctx.save();
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = '#00e5ff';
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(b.x + 1, b.y + 2, b.w - 2, b.h - 4);
+        ctx.restore();
+      });
+
+      // 6. Draw Enemy Bullets (Gotas de Ácido Carmesí)
+      enemyBullets.forEach(eb => {
+        ctx.save();
+        ctx.shadowColor = '#ff2a4b';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = '#ff2a4b';
+        ctx.beginPath();
+        ctx.arc(eb.x + eb.w / 2, eb.y + eb.h / 2, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // 7. Draw Player (Altar Sagrado)
+      if (player.invulnTimer % 4 < 2) {
+        ctx.save();
+        ctx.fillStyle = '#e4dfd3';
+        ctx.strokeStyle = '#2b3d30';
+        ctx.lineWidth = 2;
+
+        // Base altar
+        ctx.beginPath();
+        ctx.roundRect(player.x, player.y + 8, player.w, player.h - 8, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        // Cannon tip / Cross
+        ctx.fillStyle = '#00e5ff';
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 8;
+        ctx.fillRect(player.x + player.w / 2 - 3, player.y - 2, 6, 12);
+        ctx.shadowBlur = 0;
+
+        // Runes on base
+        ctx.fillStyle = '#243829';
+        ctx.font = 'bold 10px Cinzel';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚡', player.x + player.w / 2, player.y + 20);
+        ctx.restore();
+      }
+
+      // 8. Draw Particles
+      particles.forEach(pt => {
+        ctx.save();
+        ctx.globalAlpha = pt.life;
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      ctx.restore();
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* ==========================================================================
+       KEYBOARD & TOUCH HANDLERS
+       ========================================================================== */
+    window.addEventListener('keydown', (e) => {
+      if (isGameOver || isPaused) return;
+
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        e.preventDefault();
+        keys.left = true;
+      } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        e.preventDefault();
+        keys.right = true;
+      } else if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        shootPlayerBullet();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+    });
+
+    // Mobile Virtual Touch Handlers
+    const btnLeft = document.getElementById('btnMobileLeft');
+    const btnRight = document.getElementById('btnMobileRight');
+    const btnShoot = document.getElementById('btnMobileShoot');
+
+    const bindTouch = (btn, onPress, onRelease) => {
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        audio.init();
+        onPress();
+      });
+      btn.addEventListener('pointerup', (e) => {
+        e.preventDefault();
+        onRelease();
+      });
+      btn.addEventListener('pointerleave', onRelease);
+    };
+
+    bindTouch(btnLeft, () => { keys.left = true; }, () => { keys.left = false; });
+    bindTouch(btnRight, () => { keys.right = true; }, () => { keys.right = false; });
+    btnShoot.addEventListener('click', () => {
+      audio.init();
+      shootPlayerBullet();
+    });
+
+    // Direct touch steering on canvas
+    canvas.addEventListener('pointerdown', (e) => {
+      if (isGameOver || isPaused) return;
+      audio.init();
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      if (clickX < rect.width * 0.35) {
+        keys.left = true;
+      } else if (clickX > rect.width * 0.65) {
+        keys.right = true;
+      } else {
+        shootPlayerBullet();
+      }
+    });
+
+    canvas.addEventListener('pointerup', () => {
+      keys.left = false;
+      keys.right = false;
+    });
+
+    /* ==========================================================================
+       MODAL & AUDIO UI LISTENERS
+       ========================================================================== */
+    const btnAudioToggle = document.getElementById('btnAudioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+    const audioLabel = document.getElementById('audioLabel');
+
+    btnAudioToggle.addEventListener('click', () => {
+      audio.enabled = !audio.enabled;
+      if (audio.enabled) {
+        audioIcon.textContent = '🔊';
+        audioLabel.textContent = 'Sonido';
+        audio.init();
+        showToast('Sonido activado');
+      } else {
+        audioIcon.textContent = '🔇';
+        audioLabel.textContent = 'Silencio';
+        showToast('Sonido silenciado');
+      }
+    });
+
+    // Help Modal
+    document.getElementById('btnHowTo').addEventListener('click', () => {
+      helpModal.classList.add('active');
+      isPaused = true;
+    });
+
+    document.getElementById('btnCloseHelp').addEventListener('click', () => {
+      helpModal.classList.remove('active');
+      if (!victoryModal.classList.contains('active') && !defeatModal.classList.contains('active')) {
+        isPaused = false;
+      }
+    });
+
+    document.getElementById('btnStartPlaying').addEventListener('click', () => {
+      helpModal.classList.remove('active');
+      if (!victoryModal.classList.contains('active') && !defeatModal.classList.contains('active')) {
+        isPaused = false;
+      }
+    });
+
+    // Retry Button
+    document.getElementById('btnRetry').addEventListener('click', () => {
+      resetGame();
+    });
+
+    // Endless Next Wave Button
+    document.getElementById('btnContinueEndless').addEventListener('click', () => {
+      victoryModal.classList.remove('active');
+      isEndlessMode = true;
+      nextWave();
+      showToast('¡Modo Invasión Infinita activado!');
+    });
+
+    // Discord Spoiler Copy Button (No visual spoiler tag, payload has ||INVASION-EXTERMINADA||)
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    copyDiscordBtn.addEventListener('click', () => {
+      const discordText = `🎃 ¡He superado el Día 29 en La Krypta! Código: ||INVASION-EXTERMINADA|| (Puntos: ${score})`;
+      navigator.clipboard.writeText(discordText).then(() => {
+        copyDiscordBtn.innerHTML = '<span>✔️</span><span>¡Copiado!</span>';
+        showToast('Mensaje copiado para Discord');
+        setTimeout(() => {
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        showToast('Error al copiar');
+      });
+    });
+
+    // Initialize Game
+    resetGame();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>

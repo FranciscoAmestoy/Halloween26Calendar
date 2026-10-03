@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Día 27: El Ahorcado del Pantano - La Krypta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@600;800;900&family=MedievalSharp&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070a08;
+      --swamp-water: #112015;
+      --swamp-mud: #211c14;
+      --swamp-green: #38b000;
+      --swamp-glow: rgba(56, 176, 0, 0.5);
+      --toxic-green: #39ff14;
+      --toxic-glow: rgba(57, 255, 20, 0.55);
+      --parchment: #ece2ce;
+      --text-muted: #839788;
+
+      --blood-red: #ff2a4b;
+      --blood-glow: rgba(255, 42, 75, 0.55);
+      --moon-gold: #ffd24d;
+      --moon-glow: rgba(255, 210, 77, 0.55);
+      --spectral-blue: #00e5ff;
+      --spectral-glow: rgba(0, 229, 255, 0.55);
+      --stone-border: #2c4233;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--parchment);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(circle at 50% 12%, rgba(26, 46, 28, 0.55) 0%, transparent 65%),
+        radial-gradient(circle at 50% 90%, rgba(15, 26, 18, 0.8) 0%, transparent 70%);
+      padding: 8px 12px 14px 12px;
+    }
+
+    /* Ambient scanlines & vignette */
+    .mist-ambient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.16;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.35) 4px);
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.88);
+      transition: box-shadow 0.25s ease;
+    }
+
+    .vignette-overlay.danger {
+      box-shadow: inset 0 0 140px rgba(255, 42, 75, 0.85);
+    }
+
+    .vignette-overlay.flash-gold {
+      box-shadow: inset 0 0 140px rgba(255, 210, 77, 0.85);
+    }
+
+    /* Shell Layout */
+    .game-shell {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Header Nav */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      color: #fff;
+      border-color: var(--spectral-blue);
+      box-shadow: 0 0 10px var(--spectral-glow);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      background: rgba(20, 32, 25, 0.6);
+      border: 1px solid #28392d;
+      color: var(--parchment);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--moon-gold);
+      color: #fff;
+      box-shadow: 0 0 8px var(--moon-glow);
+    }
+
+    /* Title Banner */
+    .title-banner {
+      text-align: center;
+      margin-bottom: 2px;
+    }
+
+    .day-tag {
+      font-family: 'Cinzel', serif;
+      font-size: 0.72rem;
+      color: var(--toxic-green);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 800;
+      text-shadow: 0 0 8px var(--toxic-glow);
+    }
+
+    .title-banner h1 {
+      font-family: 'Creepster', cursive;
+      font-size: 2.15rem;
+      letter-spacing: 2.5px;
+      color: var(--moon-gold);
+      text-shadow: 0 0 12px var(--moon-glow);
+      line-height: 1.1;
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      width: 100%;
+      background: rgba(14, 24, 18, 0.85);
+      border: 1px solid var(--stone-border);
+      border-radius: 8px;
+      padding: 6px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+    }
+
+    .hud-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .stat-value {
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--parchment);
+    }
+
+    /* Difficulty Picker */
+    .difficulty-select {
+      background: #08120a;
+      border: 1px solid var(--stone-border);
+      color: var(--parchment);
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.76rem;
+      font-weight: 700;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .difficulty-select:focus {
+      border-color: var(--toxic-green);
+    }
+
+    /* Timer Progress Track */
+    .timer-container {
+      flex: 1;
+      min-width: 160px;
+      max-width: 280px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .timer-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .timer-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(8, 14, 10, 0.9);
+      border: 1px solid #1a2a1f;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .timer-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #38b000, #39ff14);
+      box-shadow: 0 0 8px var(--toxic-glow);
+      transition: width 0.3s linear, background 0.3s ease;
+    }
+
+    .timer-fill.danger {
+      background: linear-gradient(90deg, #ff2a4b, #ff7518);
+      box-shadow: 0 0 8px var(--blood-glow);
+    }
+
+    /* Main Swamp Play Area */
+    .swamp-playground {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 12px;
+      background: rgba(10, 18, 13, 0.75);
+      border: 1px solid var(--stone-border);
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.85);
+    }
+
+    @media (max-width: 740px) {
+      .swamp-playground {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left: Canvas Area for Quicksand */
+    .quicksand-view {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #09120c;
+      border: 1px solid #1f3325;
+      border-radius: 8px;
+      overflow: hidden;
+      min-height: 270px;
+    }
+
+    #swampCanvas {
+      width: 100%;
+      height: 270px;
+      display: block;
+    }
+
+    .quicksand-status-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(10, 20, 14, 0.85);
+      border: 1px solid #283d2d;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--moon-gold);
+      letter-spacing: 1px;
+    }
+
+    /* Right: Word Slots & Controls */
+    .cipher-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    /* Clue Box */
+    .clue-card {
+      background: rgba(16, 28, 20, 0.9);
+      border: 1px dashed #2d4532;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      color: var(--parchment);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .clue-tag {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--toxic-green);
+      font-weight: 800;
+    }
+
+    .clue-text {
+      font-style: italic;
+      line-height: 1.35;
+      color: #d8e5dc;
+    }
+
+    /* Word Slots Display */
+    .word-slots-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 4px;
+      min-height: 70px;
+    }
+
+    .letter-slot {
+      width: 38px;
+      height: 48px;
+      background: linear-gradient(180deg, #18281e 0%, #0c1610 100%);
+      border: 2px solid #283e30;
+      border-bottom: 3px solid var(--toxic-green);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cinzel', serif;
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: var(--moon-gold);
+      text-shadow: 0 0 10px var(--moon-glow);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+      transition: all 0.25s ease;
+    }
+
+    .letter-slot.revealed {
+      border-color: var(--moon-gold);
+      background: linear-gradient(180deg, #243b2b 0%, #112217 100%);
+      animation: slotPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .letter-slot.space-slot {
+      width: 18px;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
+
+    @keyframes slotPop {
+      0% { transform: scale(0.7); }
+      70% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    /* Keyboard Container */
+    .virtual-keyboard {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .kb-row {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .kb-key {
+      flex: 1;
+      max-width: 38px;
+      height: 40px;
+      background: linear-gradient(180deg, #1e3024 0%, #101c14 100%);
+      border: 1px solid #2b4432;
+      border-radius: 5px;
+      color: var(--parchment);
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .kb-key:hover:not(:disabled) {
+      border-color: var(--toxic-green);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px var(--toxic-glow);
+    }
+
+    .kb-key:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .kb-key.correct {
+      background: linear-gradient(180deg, #1d4d28 0%, #0f2c17 100%);
+      border-color: var(--toxic-green);
+      color: var(--toxic-green);
+      box-shadow: 0 0 8px var(--toxic-glow);
+      cursor: default;
+    }
+
+    .kb-key.wrong {
+      background: #0d120e;
+      border-color: #242424;
+      color: #4b5a50;
+      text-decoration: line-through;
+      cursor: default;
+      opacity: 0.45;
+    }
+
+    /* Bottom Info & Hints */
+    .bottom-bar {
+      width: 100%;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding: 4px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(145deg, #131d16 0%, #0a0e0b 100%);
+      border: 2px solid var(--stone-border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 440px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      transform: translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-backdrop.active .modal-box {
+      transform: translateY(0);
+    }
+
+    .modal-box.victory {
+      border-color: var(--moon-gold);
+      box-shadow: 0 0 35px rgba(255, 210, 77, 0.35);
+    }
+
+    .modal-box.defeat {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 35px rgba(255, 42, 75, 0.35);
+    }
+
+    .modal-icon {
+      font-size: 3rem;
+      filter: drop-shadow(0 0 10px var(--moon-glow));
+    }
+
+    .modal-title {
+      font-family: 'Creepster', cursive;
+      font-size: 2.2rem;
+      color: var(--moon-gold);
+      text-shadow: 0 0 10px var(--moon-glow);
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+
+    .modal-box.defeat .modal-title {
+      color: var(--blood-red);
+      text-shadow: 0 0 10px var(--blood-glow);
+    }
+
+    .modal-desc {
+      font-size: 0.88rem;
+      color: var(--parchment);
+      line-height: 1.5;
+    }
+
+    .secret-scroll {
+      background: rgba(18, 28, 22, 0.9);
+      border: 1px dashed var(--moon-gold);
+      border-radius: 8px;
+      padding: 12px 18px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .scroll-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .code-display {
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: var(--moon-gold);
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px var(--moon-glow);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 12px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-action.discord {
+      background: #5865F2;
+      color: #fff;
+    }
+
+    .btn-action.discord:hover {
+      background: #4752c4;
+      box-shadow: 0 0 15px rgba(88, 101, 242, 0.6);
+    }
+
+    .btn-action.advance {
+      background: linear-gradient(135deg, #38b000, #1b5e20);
+      color: #fff;
+    }
+
+    .btn-action.advance:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 0 18px var(--swamp-glow);
+    }
+
+    .btn-action.retry {
+      background: linear-gradient(135deg, #a81c32, #680f1d);
+      color: #fff;
+    }
+
+    .btn-action.retry:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 0 15px var(--blood-glow);
+    }
+
+    .modal-close-corner {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .modal-close-corner:hover {
+      color: #fff;
+    }
+
+    .how-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      text-align: left;
+      font-size: 0.84rem;
+      line-height: 1.4;
+      width: 100%;
+    }
+
+    .how-step-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      background: rgba(18, 28, 22, 0.95);
+      border: 1px solid var(--toxic-green);
+      color: var(--parchment);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.8), 0 0 15px var(--toxic-glow);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="mist-ambient"></div>
+  <div class="vignette-overlay" id="vignette"></div>
+  <div class="toast" id="toast">Notificación</div>
+
+  <div class="game-shell">
+    <!-- Header Nav -->
+    <header>
+      <a href="../../index.html" class="btn-back">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+
+      <div class="header-controls">
+        <button class="btn-icon" id="btnAudioToggle">
+          <span id="audioIcon">🔊</span>
+          <span id="audioLabel">Sonido</span>
+        </button>
+        <button class="btn-icon" id="btnHowTo">
+          <span>❓</span>
+          <span>¿Cómo Jugar?</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Title Banner -->
+    <div class="title-banner">
+      <div class="day-tag">Día 27 • XXVII</div>
+      <h1>El Ahorcado del Pantano</h1>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-group">
+        <div class="hud-stat">
+          <span class="stat-label">Dificultad</span>
+          <select id="diffSelect" class="difficulty-select">
+            <option value="easy">Iniciado (10 Vidas / 90s)</option>
+            <option value="normal" selected>Superviviente (8 Vidas / 60s)</option>
+            <option value="hard">Pesadilla (6 Vidas / 45s)</option>
+          </select>
+        </div>
+        <div class="hud-stat">
+          <span class="stat-label">Fallos Restantes</span>
+          <span class="stat-value" id="hudMistakes" style="color: var(--toxic-green);">8 / 8</span>
+        </div>
+      </div>
+
+      <div class="timer-container">
+        <div class="timer-header">
+          <span>Tiempo de Marea</span>
+          <span id="timerVal">60s</span>
+        </div>
+        <div class="timer-track">
+          <div class="timer-fill" id="timerFill"></div>
+        </div>
+      </div>
+
+      <div class="hud-group">
+        <div class="hud-stat">
+          <span class="stat-label">Palabras Superadas</span>
+          <span class="stat-value" id="hudStreak" style="color: var(--moon-gold);">0</span>
+        </div>
+        <button class="btn-icon" id="btnNewWord" title="Probar otra palabra maldita">
+          <span>🔄</span>
+          <span>Reiniciar</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Playground -->
+    <div class="swamp-playground">
+      <!-- Left: Quicksand Mud Canvas -->
+      <div class="quicksand-view">
+        <span class="quicksand-status-badge" id="swampStatusBadge">ESTADO: TIERRA FIRME</span>
+        <canvas id="swampCanvas" width="320" height="270"></canvas>
+      </div>
+
+      <!-- Right: Cipher and Virtual Keyboard -->
+      <div class="cipher-panel">
+        <!-- Clue Card -->
+        <div class="clue-card">
+          <span class="clue-tag">📜 Susurro del Cenagal</span>
+          <span class="clue-text" id="clueText">"Descifrando las runas del fango..."</span>
+        </div>
+
+        <!-- Word Slots -->
+        <div class="word-slots-wrapper" id="wordSlots">
+          <!-- Dynamically populated letter slots -->
+        </div>
+
+        <!-- Virtual Keyboard -->
+        <div class="virtual-keyboard" id="keyboard">
+          <!-- Rows will be injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Controls Info -->
+    <div class="bottom-bar">
+      <span>⌨️ Puedes escribir directamente con tu teclado físico o tocar las letras en pantalla.</span>
+      <span>¡Adivina la palabra del maleficio antes de que el lodo te devore!</span>
+    </div>
+  </div>
+
+  <!-- How to Play Modal -->
+  <div class="modal-backdrop" id="helpModal">
+    <div class="modal-box">
+      <button class="modal-close-corner" id="btnCloseHelp">&times;</button>
+      <div class="modal-icon">🪢🧪</div>
+      <h2 class="modal-title">Cómo Jugar</h2>
+      
+      <div class="how-step">
+        <div class="how-step-icon">📜</div>
+        <div><strong>Adivina el Maleficio:</strong> Lee la pista espectral e introduce letras del alfabeto para revelar la palabra oculta.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">🌊</div>
+        <div><strong>Arenas Movedizas y Marea:</strong> Cada letra errónea hunde más a la víctima en el cieno del pantano. Si cometes el límite de fallos o se agota el tiempo del reloj, la víctima se sumergirá por completo.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">⌨️</div>
+        <div><strong>Controles Universales:</strong> Pulsa las teclas virtuales en pantalla o pulsa directamente cualquier tecla <code>[A - Z]</code> en tu teclado físico.</div>
+      </div>
+
+      <div class="how-step">
+        <div class="how-step-icon">🏆</div>
+        <div><strong>Victoria:</strong> Descifra la palabra a tiempo para salvar al condenado y obtener el código secreto de Discord.</div>
+      </div>
+
+      <button class="btn-action advance" id="btnStartPlaying">
+        <span>🪢</span>
+        <span>¡Comenzar Exorcismo!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-backdrop" id="victoryModal">
+    <div class="modal-box victory">
+      <div class="modal-icon">🌿✨</div>
+      <h2 class="modal-title">¡Pantano Purificado!</h2>
+      <p class="modal-desc" id="vicDesc">
+        Has quebrado el maleficio y liberado al condenado antes de ser engullido por las arenas movedizas.
+      </p>
+
+      <div style="font-size: 0.95rem; color: var(--parchment);">
+        Palabra Descifrada: <strong id="vicWordVal" style="color: var(--moon-gold);">NIGROMANTE</strong>
+      </div>
+
+      <div class="secret-scroll">
+        <span class="scroll-label">Palabra Clave Desbloqueada</span>
+        <div class="code-display">ARENAS-MALDITAS</div>
+      </div>
+
+      <button class="btn-action discord" id="copyDiscordBtn">
+        <span>📋</span>
+        <span>Copiar para Discord</span>
+      </button>
+
+      <button class="btn-action advance" id="btnNextWordVictory">
+        <span>🔮</span>
+        <span>Descifrar Otra Palabra</span>
+      </button>
+
+      <a href="../../index.html" class="btn-action advance" style="background: rgba(14,24,18,0.7);">
+        <span>⚰️</span>
+        <span>Volver a La Krypta</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Defeat Modal -->
+  <div class="modal-backdrop" id="defeatModal">
+    <div class="modal-box defeat">
+      <div class="modal-icon">💀🫧</div>
+      <h2 class="modal-title">¡Devorado por el Cieno!</h2>
+      <p class="modal-desc">
+        Las arenas movedizas del pantano han reclamado otra alma para la eternidad.
+      </p>
+
+      <div style="font-size: 0.95rem; color: var(--parchment);">
+        La palabra oculta era: <strong id="defWordVal" style="color: var(--moon-gold);">-</strong>
+      </div>
+
+      <button class="btn-action retry" id="btnRetry">
+        <span>🔄</span>
+        <span>Intentar de Nuevo</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       HALLOWEEN VOCABULARY BANK WITH LORE CLUES
+       ========================================================================== */
+    const WORDS_BANK = [
+      { word: "NIGROMANTE", clue: "Aquel que profana tumbas y despierta a los muertos de su reposo." },
+      { word: "SARCOFAGO", clue: "Cofre de piedra maciza tallada donde duerme la realeza maldita." },
+      { word: "GUADAÑA", clue: "El filo curvo y ensangrentado con el que la Parca cosecha almas." },
+      { word: "ECTOPLASMA", clue: "Sustancia viscosa y fría rezumada por apariciones espectrales." },
+      { word: "CATACUMBAS", clue: "Laberinto de osarios subterráneos bajo la catedral olvidada." },
+      { word: "NOSFERATU", clue: "Antiguo señor de las sombras eternas sediento de sangre viva." },
+      { word: "CALDERO", clue: "Recipiente de hierro negro donde hierven pócimas de brujas." },
+      { word: "PENTAGRAMA", clue: "Sello arcano de cinco puntas trazado con ceniza ritual en el suelo." },
+      { word: "QUIMERA", clue: "Bestia antinatural engendrada por la unión de distintas criaturas." },
+      { word: "ESPECTRO", clue: "Ánima atormentada condenada a vagar entre la niebla sin descanso." },
+      { word: "CRIPTOGRAMA", clue: "Mensaje cifrado con glifos demoníacos para ocultar un secreto." },
+      { word: "GARGOLA", clue: "Centinela alado de piedra que despierta cuando el sol se oculta." },
+      { word: "LICANTROPO", clue: "Mortal cuya bestia salvaje e insaciable despierta bajo la luna llena." },
+      { word: "MALEDICCION", clue: "Sentencia oscura e irrevocable arrojada sobre un linaje maldito." },
+      { word: "HECATOMBE", clue: "Sacrificio fúnebre solemne ofrecido en las brasas del averno." },
+      { word: "CENAGAL", clue: "Marisma pútrida de aguas turbias donde yacen cuerpos olvidados." },
+      { word: "EXORCISMO", clue: "Rito sagrado para expulsar entidades oscuras de un cuerpo poseído." },
+      { word: "GRIMORIO", clue: "Tomo de pergaminos encuadernados en piel con encantamientos prohibidos." },
+      { word: "CANDELABRO", clue: "Soporte de bronce y cera negra que ilumina los mausoleos fúnebres." },
+      { word: "APARICION", clue: "Silueta fantasmal que se materializa brevemente en la penumbra." }
+    ];
+
+    /* ==========================================================================
+       PROCEDURAL WEB AUDIO SYNTHESIZER
+       ========================================================================== */
+    class SwampAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playKeyTap() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(280, t);
+        osc.frequency.exponentialRampToValueAtTime(140, t + 0.05);
+        gain.gain.setValueAtTime(0.12, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.05);
+      }
+
+      playCorrect() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        [523.25, 659.25, 783.99].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, t + i * 0.04);
+          gain.gain.setValueAtTime(0.18, t + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.04 + 0.28);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.04);
+          osc.stop(t + i * 0.04 + 0.28);
+        });
+      }
+
+      playMudSplash() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        // Low bubbling mud squelch
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(45, t + 0.22);
+        gain.gain.setValueAtTime(0.26, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.22);
+
+        // Bubble pop
+        const bOsc = this.ctx.createOscillator();
+        const bGain = this.ctx.createGain();
+        bOsc.type = 'sine';
+        bOsc.frequency.setValueAtTime(220, t + 0.08);
+        bOsc.frequency.exponentialRampToValueAtTime(360, t + 0.16);
+        bGain.gain.setValueAtTime(0.15, t + 0.08);
+        bGain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+        bOsc.connect(bGain);
+        bGain.connect(this.ctx.destination);
+        bOsc.start(t + 0.08);
+        bOsc.stop(t + 0.16);
+      }
+
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const notes = [440, 554.37, 659.25, 880];
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t + i * 0.12);
+          gain.gain.setValueAtTime(0.25, t + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.6);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.12);
+          osc.stop(t + i * 0.12 + 0.6);
+        });
+      }
+
+      playDefeat() {
+        if (!this.enabled || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        [180, 150, 110, 80].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, t + i * 0.14);
+          osc.frequency.exponentialRampToValueAtTime(f * 0.7, t + i * 0.14 + 0.25);
+          gain.gain.setValueAtTime(0.24, t + i * 0.14);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.14 + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.14);
+          osc.stop(t + i * 0.14 + 0.25);
+        });
+      }
+    }
+
+    const audio = new SwampAudio();
+
+    /* ==========================================================================
+       GAME STATE & SETUP
+       ========================================================================== */
+    const canvas = document.getElementById('swampCanvas');
+    const ctx = canvas.getContext('2d');
+    const vignette = document.getElementById('vignette');
+    const toast = document.getElementById('toast');
+
+    // HUD Elements
+    const diffSelect = document.getElementById('diffSelect');
+    const hudMistakes = document.getElementById('hudMistakes');
+    const hudStreak = document.getElementById('hudStreak');
+    const timerVal = document.getElementById('timerVal');
+    const timerFill = document.getElementById('timerFill');
+    const swampStatusBadge = document.getElementById('swampStatusBadge');
+    const clueText = document.getElementById('clueText');
+    const wordSlots = document.getElementById('wordSlots');
+    const keyboardContainer = document.getElementById('keyboard');
+
+    // Modals
+    const helpModal = document.getElementById('helpModal');
+    const victoryModal = document.getElementById('victoryModal');
+    const defeatModal = document.getElementById('defeatModal');
+
+    // Difficulty settings
+    const DIFFICULTIES = {
+      easy: { maxMistakes: 10, timeLimit: 90 },
+      normal: { maxMistakes: 8, timeLimit: 60 },
+      hard: { maxMistakes: 6, timeLimit: 45 }
+    };
+
+    let currentDifficulty = 'normal';
+    let currentWordObj = null;
+    let guessedLetters = new Set();
+    let mistakeCount = 0;
+    let maxMistakes = 8;
+    let timeRemaining = 60;
+    let totalTime = 60;
+    let timerInterval = null;
+    let streakCount = 0;
+    let isGameOver = false;
+    let isPaused = false;
+
+    // Animated Swamp Bubbles and Ripples
+    let bubbles = [];
+    for (let i = 0; i < 16; i++) {
+      bubbles.push({
+        x: 20 + Math.random() * 280,
+        y: 190 + Math.random() * 70,
+        r: 2 + Math.random() * 4.5,
+        speed: 0.35 + Math.random() * 0.6,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+
+    /* --- Keyboard Layout --- */
+    const KEYBOARD_ROWS = [
+      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ'],
+      ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+    ];
+
+    function buildKeyboard() {
+      keyboardContainer.innerHTML = '';
+      KEYBOARD_ROWS.forEach(row => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'kb-row';
+        row.forEach(char => {
+          const btn = document.createElement('button');
+          btn.className = 'kb-key';
+          btn.textContent = char;
+          btn.dataset.key = char;
+          btn.setAttribute('aria-label', `Letra ${char}`);
+          btn.addEventListener('click', () => handleGuess(char));
+          rowEl.appendChild(btn);
+        });
+        keyboardContainer.appendChild(rowEl);
+      });
+    }
+
+    /* --- Start New Word Round --- */
+    function startNewRound() {
+      const cfg = DIFFICULTIES[currentDifficulty];
+      maxMistakes = cfg.maxMistakes;
+      totalTime = cfg.timeLimit;
+      timeRemaining = totalTime;
+
+      mistakeCount = 0;
+      guessedLetters.clear();
+      isGameOver = false;
+      isPaused = false;
+
+      // Pick random word different from last one if possible
+      let pool = WORDS_BANK;
+      if (currentWordObj && pool.length > 1) {
+        pool = pool.filter(w => w.word !== currentWordObj.word);
+      }
+      currentWordObj = pool[Math.floor(Math.random() * pool.length)];
+
+      // Update Clue
+      clueText.textContent = `"${currentWordObj.clue}"`;
+
+      // Update HUD
+      updateMistakesHUD();
+      updateTimerDisplay();
+
+      // Render Word Slots
+      renderWordSlots();
+
+      // Reset Virtual Keys
+      const keys = keyboardContainer.querySelectorAll('.kb-key');
+      keys.forEach(k => {
+        k.className = 'kb-key';
+        k.disabled = false;
+      });
+
+      // Modals
+      victoryModal.classList.remove('active');
+      defeatModal.classList.remove('active');
+
+      // Start Timer
+      clearInterval(timerInterval);
+      timerInterval = setInterval(tickTimer, 1000);
+    }
+
+    function renderWordSlots() {
+      wordSlots.innerHTML = '';
+      const word = currentWordObj.word;
+      for (let i = 0; i < word.length; i++) {
+        const char = word[i];
+        const slot = document.createElement('div');
+        if (char === ' ') {
+          slot.className = 'letter-slot space-slot';
+        } else {
+          slot.className = 'letter-slot';
+          slot.dataset.char = char;
+          if (guessedLetters.has(char)) {
+            slot.textContent = char;
+            slot.classList.add('revealed');
+          } else {
+            slot.textContent = '';
+          }
+        }
+        wordSlots.appendChild(slot);
+      }
+    }
+
+    function updateMistakesHUD() {
+      const remaining = maxMistakes - mistakeCount;
+      hudMistakes.textContent = `${remaining} / ${maxMistakes}`;
+      if (remaining <= 2) {
+        hudMistakes.style.color = 'var(--blood-red)';
+      } else if (remaining <= 4) {
+        hudMistakes.style.color = 'var(--moon-gold)';
+      } else {
+        hudMistakes.style.color = 'var(--toxic-green)';
+      }
+
+      // Update Quicksand Status Badge
+      const ratio = mistakeCount / maxMistakes;
+      if (ratio === 0) {
+        swampStatusBadge.textContent = 'ESTADO: TIERRA FIRME';
+        swampStatusBadge.style.color = 'var(--toxic-green)';
+      } else if (ratio < 0.35) {
+        swampStatusBadge.textContent = 'ESTADO: HUNDIDO A LOS TOBILLOS';
+        swampStatusBadge.style.color = 'var(--moon-gold)';
+      } else if (ratio < 0.65) {
+        swampStatusBadge.textContent = 'ESTADO: CIENO A LA CINTURA';
+        swampStatusBadge.style.color = 'var(--pumpkin-orange)';
+      } else if (ratio < 0.9) {
+        swampStatusBadge.textContent = 'ESTADO: CIENO AL CUELLO';
+        swampStatusBadge.style.color = 'var(--blood-red)';
+      } else {
+        swampStatusBadge.textContent = 'ESTADO: AL BORDE DEL ABISMO';
+        swampStatusBadge.style.color = 'var(--blood-red)';
+      }
+    }
+
+    function updateTimerDisplay() {
+      timerVal.textContent = `${timeRemaining}s`;
+      const pct = (timeRemaining / totalTime) * 100;
+      timerFill.style.width = `${pct}%`;
+      if (timeRemaining <= 15) {
+        timerFill.classList.add('danger');
+        timerVal.style.color = 'var(--blood-red)';
+      } else {
+        timerFill.classList.remove('danger');
+        timerVal.style.color = 'var(--text-muted)';
+      }
+    }
+
+    function tickTimer() {
+      if (isGameOver || isPaused) return;
+
+      timeRemaining--;
+      updateTimerDisplay();
+
+      if (timeRemaining <= 0) {
+        handleTimeout();
+      }
+    }
+
+    function handleTimeout() {
+      isGameOver = true;
+      clearInterval(timerInterval);
+      audio.playDefeat();
+      flashVignette('danger');
+      streakCount = 0;
+      hudStreak.textContent = streakCount;
+
+      document.getElementById('defWordVal').textContent = currentWordObj.word;
+      defeatModal.classList.add('active');
+    }
+
+    /* --- Guess Evaluation --- */
+    function handleGuess(letter) {
+      if (isGameOver || isPaused) return;
+      audio.init();
+
+      letter = letter.toUpperCase();
+      if (guessedLetters.has(letter)) return;
+
+      guessedLetters.add(letter);
+      const keyBtn = keyboardContainer.querySelector(`[data-key="${letter}"]`);
+
+      const word = currentWordObj.word;
+      if (word.includes(letter)) {
+        // Correct guess!
+        audio.playCorrect();
+        if (keyBtn) {
+          keyBtn.classList.add('correct');
+          keyBtn.disabled = true;
+        }
+        renderWordSlots();
+        checkVictoryCondition();
+      } else {
+        // Wrong guess!
+        mistakeCount++;
+        audio.playMudSplash();
+        flashVignette('danger');
+        if (keyBtn) {
+          keyBtn.classList.add('wrong');
+          keyBtn.disabled = true;
+        }
+        updateMistakesHUD();
+
+        if (mistakeCount >= maxMistakes) {
+          handleDefeat();
+        }
+      }
+    }
+
+    function checkVictoryCondition() {
+      const word = currentWordObj.word;
+      let won = true;
+      for (let i = 0; i < word.length; i++) {
+        if (word[i] !== ' ' && !guessedLetters.has(word[i])) {
+          won = false;
+          break;
+        }
+      }
+
+      if (won) {
+        isGameOver = true;
+        isPaused = true;
+        clearInterval(timerInterval);
+        audio.playVictory();
+        flashVignette('flash-gold');
+
+        streakCount++;
+        hudStreak.textContent = streakCount;
+
+        // Persist day 27 cleared state
+        localStorage.setItem('krypt_day_27_cleared', 'true');
+
+        document.getElementById('vicWordVal').textContent = currentWordObj.word;
+        victoryModal.classList.add('active');
+      }
+    }
+
+    function handleDefeat() {
+      isGameOver = true;
+      isPaused = true;
+      clearInterval(timerInterval);
+      audio.playDefeat();
+      flashVignette('danger');
+
+      streakCount = 0;
+      hudStreak.textContent = streakCount;
+
+      document.getElementById('defWordVal').textContent = currentWordObj.word;
+      defeatModal.classList.add('active');
+    }
+
+    /* --- Visual Notifications & Shakes --- */
+    function flashVignette(cssClass) {
+      vignette.classList.add(cssClass);
+      setTimeout(() => {
+        vignette.classList.remove(cssClass);
+      }, 300);
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    /* ==========================================================================
+       CANVAS SWAMP & SINKING SOUL ANIMATION
+       ========================================================================== */
+    function drawSwamp() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const W = canvas.width;
+      const H = canvas.height;
+
+      // 1. Sinister Bog Sky & Weeping Willow Background
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+      skyGrad.addColorStop(0, '#060d08');
+      skyGrad.addColorStop(0.5, '#0c1a11');
+      skyGrad.addColorStop(1, '#152419');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Distant sickly green full moon
+      ctx.save();
+      ctx.fillStyle = 'rgba(57, 255, 20, 0.08)';
+      ctx.beginPath();
+      ctx.arc(W * 0.8, 55, 65, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#b0e2b8';
+      ctx.beginPath();
+      ctx.arc(W * 0.8, 55, 26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Weeping willow silhouettes and hanging Spanish moss
+      ctx.strokeStyle = '#09130c';
+      ctx.lineWidth = 2.5;
+      for (let x = 15; x < W; x += 35) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.quadraticCurveTo(x + 10, 50, x - 5, 95);
+        ctx.stroke();
+      }
+
+      // Wooden Gallows Scaffold Structure
+      ctx.fillStyle = '#211812';
+      ctx.strokeStyle = '#120d09';
+      ctx.lineWidth = 2;
+      // Vertical post
+      ctx.fillRect(60, 20, 18, 220);
+      ctx.strokeRect(60, 20, 18, 220);
+      // Top beam
+      ctx.fillRect(50, 20, 120, 14);
+      ctx.strokeRect(50, 20, 120, 14);
+      // Diagonal brace
+      ctx.beginPath();
+      ctx.moveTo(78, 70);
+      ctx.lineTo(120, 34);
+      ctx.lineTo(128, 42);
+      ctx.lineTo(78, 80);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Hanging Rope
+      ctx.strokeStyle = '#a48958';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(150, 34);
+      ctx.lineTo(150, 68);
+      ctx.stroke();
+
+      // 2. Mud & Quicksand Surface Level Calculation
+      // BASE Mud Level is at Y = 205
+      // With each mistake, the doomed soul sinks deeper by sinking offset!
+      const sinkRatio = Math.min(1, mistakeCount / maxMistakes);
+      const sinkOffsetY = sinkRatio * 95; // sinks up to 95px downward
+
+      // Soul / Skeleton Position
+      const soulX = 150;
+      const baseHeadY = 90;
+      const currentSoulY = baseHeadY + sinkOffsetY;
+
+      // 3. Draw Doomed Soul (Skeleton / Necromancer)
+      ctx.save();
+      // Clip everything below mud surface? Mud will be drawn ON TOP later to naturally submerge it!
+
+      // Skeleton Skull
+      ctx.fillStyle = '#e4dfd3';
+      ctx.strokeStyle = '#36322b';
+      ctx.lineWidth = 2;
+
+      // Head
+      ctx.beginPath();
+      ctx.arc(soulX, currentSoulY, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Eye sockets (glow red or teal)
+      ctx.fillStyle = (mistakeCount >= maxMistakes - 2) ? '#ff2a4b' : '#00e5ff';
+      ctx.beginPath();
+      ctx.arc(soulX - 5, currentSoulY - 1, 3, 0, Math.PI * 2);
+      ctx.arc(soulX + 5, currentSoulY - 1, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Spine & Ribcage
+      ctx.strokeStyle = '#e4dfd3';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(soulX, currentSoulY + 14);
+      ctx.lineTo(soulX, currentSoulY + 50); // Spine
+      ctx.stroke();
+
+      // Ribs
+      ctx.lineWidth = 2;
+      for (let r = 0; r < 3; r++) {
+        ctx.beginPath();
+        ctx.moveTo(soulX - 10, currentSoulY + 22 + r * 7);
+        ctx.lineTo(soulX + 10, currentSoulY + 22 + r * 7);
+        ctx.stroke();
+      }
+
+      // Arms struggling (dynamic waving based on sink ratio)
+      const armWiggle = Math.sin(Date.now() * 0.006) * 6;
+      ctx.beginPath();
+      // Left arm
+      ctx.moveTo(soulX - 6, currentSoulY + 20);
+      ctx.lineTo(soulX - 22, currentSoulY + 10 + armWiggle);
+      ctx.lineTo(soulX - 28, currentSoulY - 2 + armWiggle);
+      // Right arm
+      ctx.moveTo(soulX + 6, currentSoulY + 20);
+      ctx.lineTo(soulX + 22, currentSoulY + 10 - armWiggle);
+      ctx.lineTo(soulX + 28, currentSoulY - 2 - armWiggle);
+      ctx.stroke();
+
+      // Legs / Pelvis
+      ctx.beginPath();
+      ctx.moveTo(soulX, currentSoulY + 50);
+      ctx.lineTo(soulX - 10, currentSoulY + 80);
+      ctx.moveTo(soulX, currentSoulY + 50);
+      ctx.lineTo(soulX + 10, currentSoulY + 80);
+      ctx.stroke();
+
+      // Rope loop around neck
+      ctx.strokeStyle = '#a48958';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(soulX, currentSoulY + 14, 8, 4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // 4. Muddy Quicksand Reservoir Layer (Overlaps the bottom)
+      const mudTopY = 175;
+      const mudGrad = ctx.createLinearGradient(0, mudTopY, 0, H);
+      mudGrad.addColorStop(0, '#2d2216');
+      mudGrad.addColorStop(0.15, '#1d170f');
+      mudGrad.addColorStop(0.4, '#131b14');
+      mudGrad.addColorStop(1, '#070f09');
+
+      ctx.fillStyle = mudGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, mudTopY);
+
+      // Undulating swamp mud wave surface
+      const t = Date.now() * 0.002;
+      for (let x = 0; x <= W; x += 10) {
+        const wave = Math.sin(t + x * 0.03) * 3 + Math.cos(t * 0.7 + x * 0.02) * 2;
+        ctx.lineTo(x, mudTopY + wave);
+      }
+      ctx.lineTo(W, H);
+      ctx.lineTo(0, H);
+      ctx.closePath();
+      ctx.fill();
+
+      // Slime & toxic foam line on mud edge
+      ctx.strokeStyle = 'rgba(57, 255, 20, 0.4)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let x = 0; x <= W; x += 10) {
+        const wave = Math.sin(t + x * 0.03) * 3 + Math.cos(t * 0.7 + x * 0.02) * 2;
+        if (x === 0) ctx.moveTo(x, mudTopY + wave);
+        else ctx.lineTo(x, mudTopY + wave);
+      }
+      ctx.stroke();
+
+      // 5. Rising Toxic Bubbles
+      bubbles.forEach(b => {
+        b.y -= b.speed;
+        b.x += Math.sin(b.phase + Date.now() * 0.003) * 0.4;
+        if (b.y < mudTopY - 4) {
+          b.y = 230 + Math.random() * 30;
+          b.x = 20 + Math.random() * 280;
+        }
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(57, 255, 20, 0.35)';
+        ctx.strokeStyle = 'rgba(57, 255, 20, 0.8)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Highlight glint
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // 6. Splatters if recently hit
+      if (mistakeCount > 0) {
+        ctx.fillStyle = '#3a2b1b';
+        for (let s = 0; s < mistakeCount * 2; s++) {
+          const sx = soulX + Math.sin(s * 1.7) * 25;
+          const sy = mudTopY - 6 + Math.cos(s * 2.3) * 8;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      requestAnimationFrame(drawSwamp);
+    }
+
+    /* ==========================================================================
+       EVENT LISTENERS & BINDINGS
+       ========================================================================== */
+    // Physical Keyboard Listener
+    window.addEventListener('keydown', (e) => {
+      if (isGameOver || isPaused) return;
+
+      const key = e.key.toUpperCase();
+      if (/^[A-ZÑ]$/.test(key)) {
+        handleGuess(key);
+      }
+    });
+
+    // Difficulty Select Change
+    diffSelect.addEventListener('change', (e) => {
+      audio.init();
+      currentDifficulty = e.target.value;
+      startNewRound();
+      showToast(`Dificultad cambiada: ${diffSelect.options[diffSelect.selectedIndex].text}`);
+    });
+
+    // Reset / New Word Button
+    document.getElementById('btnNewWord').addEventListener('click', () => {
+      audio.init();
+      audio.playKeyTap();
+      startNewRound();
+      showToast('Nuevo maleficio conjurado.');
+    });
+
+    // Audio Toggle
+    const btnAudioToggle = document.getElementById('btnAudioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+    const audioLabel = document.getElementById('audioLabel');
+
+    btnAudioToggle.addEventListener('click', () => {
+      audio.enabled = !audio.enabled;
+      if (audio.enabled) {
+        audioIcon.textContent = '🔊';
+        audioLabel.textContent = 'Sonido';
+        audio.init();
+        showToast('Sonido activado');
+      } else {
+        audioIcon.textContent = '🔇';
+        audioLabel.textContent = 'Silencio';
+        showToast('Sonido silenciado');
+      }
+    });
+
+    // Help Modal
+    document.getElementById('btnHowTo').addEventListener('click', () => {
+      helpModal.classList.add('active');
+      isPaused = true;
+    });
+
+    document.getElementById('btnCloseHelp').addEventListener('click', () => {
+      helpModal.classList.remove('active');
+      if (!victoryModal.classList.contains('active') && !defeatModal.classList.contains('active')) {
+        isPaused = false;
+      }
+    });
+
+    document.getElementById('btnStartPlaying').addEventListener('click', () => {
+      helpModal.classList.remove('active');
+      if (!victoryModal.classList.contains('active') && !defeatModal.classList.contains('active')) {
+        isPaused = false;
+      }
+    });
+
+    // Retry / Next Word Buttons
+    document.getElementById('btnRetry').addEventListener('click', () => {
+      defeatModal.classList.remove('active');
+      startNewRound();
+    });
+
+    document.getElementById('btnNextWordVictory').addEventListener('click', () => {
+      victoryModal.classList.remove('active');
+      startNewRound();
+    });
+
+    // Discord Spoiler Copy Button (No visual spoiler tag, payload has ||ARENAS-MALDITAS||)
+    const copyDiscordBtn = document.getElementById('copyDiscordBtn');
+    copyDiscordBtn.addEventListener('click', () => {
+      const discordText = `🎃 ¡He superado el Día 27 en La Krypta! Código: ||ARENAS-MALDITAS|| (Palabra: ${currentWordObj.word}, Racha: ${streakCount})`;
+      navigator.clipboard.writeText(discordText).then(() => {
+        copyDiscordBtn.innerHTML = '<span>✔️</span><span>¡Copiado!</span>';
+        showToast('Mensaje copiado para Discord');
+        setTimeout(() => {
+          copyDiscordBtn.innerHTML = '<span>📋</span><span>Copiar para Discord</span>';
+        }, 2500);
+      }).catch(() => {
+        showToast('Error al copiar');
+      });
+    });
+
+    // Initialize Game
+    buildKeyboard();
+    startNewRound();
+    requestAnimationFrame(drawSwamp);
+  </script>
+</body>
+</html>
